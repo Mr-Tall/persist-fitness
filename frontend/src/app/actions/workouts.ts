@@ -9,8 +9,12 @@ const createWorkoutSchema = z.object({
   title: z.string().min(1, "Workout title is required"),
   goal: z.string().optional(),
   notes: z.string().optional(),
-  date: z.coerce.date(),
+  date: z.string().min(1, "Date is required"),
 });
+
+function calendarDateToUtcNoon(dateString: string) {
+  return new Date(`${dateString}T12:00:00.000Z`);
+}
 
 export async function createWorkout(formData: FormData) {
   const session = await auth();
@@ -32,7 +36,7 @@ export async function createWorkout(formData: FormData) {
       title: parsed.title,
       goal: parsed.goal,
       notes: parsed.notes,
-      date: parsed.date,
+      date: calendarDateToUtcNoon(parsed.date),
     },
   });
 

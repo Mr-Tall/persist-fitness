@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { formatWorkoutDate } from "@/lib/format-date";
 
 export default async function WorkoutsPage() {
   const session = await auth();
@@ -78,7 +79,7 @@ export default async function WorkoutsPage() {
                   <div>
                     <h2 className="text-xl font-semibold">{workout.title}</h2>
                     <p className="mt-1 text-sm text-neutral-500">
-                      {workout.date.toLocaleDateString()} ·{" "}
+                      {formatWorkoutDate(workout.date)} ·{" "}
                       {workout.goal || "No goal set"}
                     </p>
                   </div>

@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
+import { formatWorkoutDate } from "@/lib/format-date";
 
 type WorkoutDetailPageProps = {
   params: Promise<{
@@ -51,7 +52,7 @@ export default async function WorkoutDetailPage({
         <h1 className="mt-4 text-3xl font-bold">{workout.title}</h1>
 
         <p className="mt-2 text-neutral-600">
-          {workout.date.toLocaleDateString()} · {workout.goal || "No goal set"}
+          {formatWorkoutDate(workout.date)} · {workout.goal || "No goal set"}
         </p>
 
         {workout.notes && (
