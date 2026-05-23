@@ -42,3 +42,26 @@ export async function createWorkout(formData: FormData) {
 
   redirect(`/workouts/${workout.id}`);
 }
+
+export async function deleteWorkout(formData: FormData) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    redirect("/login");
+  }
+
+  const workoutId = String(formData.get("workoutId") ?? "");
+
+  if (!workoutId) {
+    throw new Error("Workout ID is required");
+  }
+
+  await db.workout.deleteMany({
+    where: {
+      id: workoutId,
+      userId: session.user.id,
+    },
+  });
+
+  redirect("/workouts");
+}
