@@ -1,10 +1,25 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";
+import { MobileNav } from "@/components/navigation/mobile-nav";
 
 export const metadata: Metadata = {
-  title: "Persist Fitness",
-  description: "AI-assisted workout tracking built around consistency and progression.",
+  title: {
+    default: "Persist Fitness",
+    template: "%s | Persist Fitness",
+  },
+  description:
+    "An AI-assisted workout companion for tracking workouts, logging sets, and building consistent training habits.",
+  applicationName: "Persist Fitness",
+  appleWebApp: {
+    capable: true,
+    title: "Persist Fitness",
+    statusBarStyle: "black-translucent",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  themeColor: "#10b981",
 };
 
 export default function RootLayout({
@@ -21,7 +36,7 @@ export default function RootLayout({
               Persist Fitness
             </Link>
 
-            <div className="flex items-center gap-5 text-sm font-medium text-neutral-700">
+            <div className="hidden items-center gap-5 text-sm font-medium text-neutral-700 md:flex">
               <Link href="/dashboard" className="hover:text-neutral-950">
                 Dashboard
               </Link>
@@ -44,7 +59,8 @@ export default function RootLayout({
           </nav>
         </header>
 
-        {children}
+        <div className="pb-20 md:pb-0">{children}</div>
+        <MobileNav />
       </body>
     </html>
   );

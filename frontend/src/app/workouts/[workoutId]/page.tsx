@@ -51,7 +51,7 @@ export default async function WorkoutDetailPage({
   }
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-10">
+    <main className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-10">
       <section className="mb-8">
         <Link href="/workouts" className="text-sm font-medium text-emerald-600">
           ← Back to workouts
