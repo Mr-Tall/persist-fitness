@@ -7,6 +7,11 @@ import Link from "next/link";
 import { AddExerciseForm } from "./add-exercise-form";
 import { AddSetForm } from "./add-set-form";
 import { DeleteWorkoutButton } from "./delete-workout-button";
+import {
+  deleteExerciseFromWorkout,
+  deleteSetFromExercise,
+} from "@/app/actions/workout-exercises";
+import { DeleteInlineButton } from "./delete-inline-button";
 
 type WorkoutDetailPageProps = {
   params: Promise<{
@@ -104,15 +109,24 @@ export default async function WorkoutDetailPage({
             {workout.exercises.map((exercise) => (
               <div
                 key={exercise.id}
-                className="rounded-2xl border border-neutral-200 p-5"
+                className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm"
               >
-                <div className="flex flex-col justify-between gap-2 md:flex-row md:items-center">
+                <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
                   <div>
                     <h3 className="text-lg font-semibold">{exercise.name}</h3>
                     <p className="text-sm text-neutral-500">
                       {exercise.sets.length} sets logged
                     </p>
                   </div>
+
+                  <form action={deleteExerciseFromWorkout}>
+                    <input type="hidden" name="workoutId" value={workout.id} />
+                    <input type="hidden" name="workoutExerciseId" value={exercise.id} />
+                    <DeleteInlineButton
+                      label="Delete exercise"
+                      confirmMessage={`Delete ${exercise.name} and all of its sets?`}
+                    />
+                  </form>
                 </div>
 
                 {exercise.sets.length > 0 && (
@@ -126,6 +140,7 @@ export default async function WorkoutDetailPage({
                           <th className="py-2 pr-4">RIR</th>
                           <th className="py-2 pr-4">Tempo</th>
                           <th className="py-2 pr-4">Notes</th>
+                          <th className="py-2 pr-4"></th>
                         </tr>
                       </thead>
 
@@ -140,6 +155,16 @@ export default async function WorkoutDetailPage({
                             <td className="py-2 pr-4">{set.rir ?? "—"}</td>
                             <td className="py-2 pr-4">{set.tempo || "—"}</td>
                             <td className="py-2 pr-4">{set.notes || "—"}</td>
+                            <td className="py-2 pr-4">
+                              <form action={deleteSetFromExercise}>
+                                <input type="hidden" name="workoutId" value={workout.id} />
+                                <input type="hidden" name="workoutSetId" value={set.id} />
+                                <DeleteInlineButton
+                                  label="Delete"
+                                  confirmMessage={`Delete set ${set.setNumber}?`}
+                                />
+                              </form>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -147,10 +172,7 @@ export default async function WorkoutDetailPage({
                   </div>
                 )}
 
-                <AddSetForm
-                  workoutId={workout.id}
-                  workoutExerciseId={exercise.id}
-                />
+                <AddSetForm workoutId={workout.id} workoutExerciseId={exercise.id} />
               </div>
             ))}
           </div>

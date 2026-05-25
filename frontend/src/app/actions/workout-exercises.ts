@@ -21,6 +21,26 @@ const addSetSchema = z.object({
   notes: z.string().optional(),
 });
 
+const deleteExerciseSchema = z.object({
+  workoutId: z.string().min(1),
+  workoutExerciseId: z.string().min(1),
+});
+
+const deleteSetSchema = z.object({
+  workoutId: z.string().min(1),
+  workoutSetId: z.string().min(1),
+});
+
+async function requireUserId() {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    redirect("/login");
+  }
+
+  return session.user.id;
+}
+
 async function verifyWorkoutOwner(workoutId: string, userId: string) {
   const workout = await db.workout.findFirst({
     where: {
@@ -40,18 +60,14 @@ async function verifyWorkoutOwner(workoutId: string, userId: string) {
 }
 
 export async function addExerciseToWorkout(formData: FormData) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    redirect("/login");
-  }
+  const userId = await requireUserId();
 
   const parsed = addExerciseSchema.parse({
     workoutId: formData.get("workoutId"),
     name: formData.get("name"),
   });
 
-  await verifyWorkoutOwner(parsed.workoutId, session.user.id);
+  await verifyWorkoutOwner(parsed.workoutId, userId);
 
   const exerciseCount = await db.workoutExercise.count({
     where: {
@@ -62,7 +78,7 @@ export async function addExerciseToWorkout(formData: FormData) {
   await db.workoutExercise.create({
     data: {
       workoutId: parsed.workoutId,
-      name: parsed.name,
+      name: parsed.name.trim(),
       order: exerciseCount,
     },
   });
@@ -71,11 +87,7 @@ export async function addExerciseToWorkout(formData: FormData) {
 }
 
 export async function addSetToExercise(formData: FormData) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    redirect("/login");
-  }
+  const userId = await requireUserId();
 
   const parsed = addSetSchema.parse({
     workoutId: formData.get("workoutId"),
@@ -87,7 +99,7 @@ export async function addSetToExercise(formData: FormData) {
     notes: formData.get("notes") || undefined,
   });
 
-  await verifyWorkoutOwner(parsed.workoutId, session.user.id);
+  await verifyWorkoutOwner(parsed.workoutId, userId);
 
   const workoutExercise = await db.workoutExercise.findFirst({
     where: {
@@ -110,10 +122,89 @@ export async function addSetToExercise(formData: FormData) {
       reps: parsed.reps,
       weight: parsed.weight,
       rir: parsed.rir,
-      tempo: parsed.tempo,
-      notes: parsed.notes,
+      tempo: parsed.tempo?.trim() || undefined,
+      notes: parsed.notes?.trim() || undefined,
     },
   });
+
+  revalidatePath(`/workouts/${parsed.workoutId}`);
+}
+
+export async function deleteExerciseFromWorkout(formData: FormData) {
+  const userId = await requireUserId();
+
+  const parsed = deleteExerciseSchema.parse({
+    workoutId: formData.get("workoutId"),
+    workoutExerciseId: formData.get("workoutExerciseId"),
+  });
+
+  await verifyWorkoutOwner(parsed.workoutId, userId);
+
+  await db.workoutExercise.deleteMany({
+    where: {
+      id: parsed.workoutExerciseId,
+      workoutId: parsed.workoutId,
+    },
+  });
+
+  revalidatePath(`/workouts/${parsed.workoutId}`);
+}
+
+export async function deleteSetFromExercise(formData: FormData) {
+  const userId = await requireUserId();
+
+  const parsed = deleteSetSchema.parse({
+    workoutId: formData.get("workoutId"),
+    workoutSetId: formData.get("workoutSetId"),
+  });
+
+  await verifyWorkoutOwner(parsed.workoutId, userId);
+
+  const set = await db.workoutSet.findFirst({
+    where: {
+      id: parsed.workoutSetId,
+      workoutExercise: {
+        workoutId: parsed.workoutId,
+      },
+    },
+    select: {
+      id: true,
+      workoutExerciseId: true,
+      setNumber: true,
+    },
+  });
+
+  if (!set) {
+    throw new Error("Set not found");
+  }
+
+  await db.workoutSet.delete({
+    where: {
+      id: set.id,
+    },
+  });
+
+  const remainingSets = await db.workoutSet.findMany({
+    where: {
+      workoutExerciseId: set.workoutExerciseId,
+    },
+    orderBy: {
+      setNumber: "asc",
+    },
+  });
+
+  await Promise.all(
+    remainingSets.map((remainingSet, index) =>
+      db.workoutSet.update({
+        where: {
+          id: remainingSet.id,
+        },
+        data: {
+          setNumber: index + 1,
+        },
+      })
+    )
+  );
 
   revalidatePath(`/workouts/${parsed.workoutId}`);
 }

@@ -1,6 +1,7 @@
-import { auth } from "@/auth";
-import { redirect } from "next/navigation";
 import { createWorkout } from "@/app/actions/workouts";
+import { auth } from "@/auth";
+import { PageHeader } from "@/components/ui/page-header";
+import { redirect } from "next/navigation";
 
 export default async function NewWorkoutPage() {
   const session = await auth();
@@ -13,32 +14,37 @@ export default async function NewWorkoutPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-10">
-      <section className="mb-8">
-        <p className="text-sm font-medium uppercase tracking-[0.25em] text-emerald-600">
-          New workout
-        </p>
-        <h1 className="mt-3 text-3xl font-bold">Log a training session</h1>
-        <p className="mt-3 text-neutral-600">
-          Start with the session details. Next, we’ll add exercises and sets.
-        </p>
-      </section>
+      <PageHeader
+        eyebrow="New workout"
+        title="Log a training session"
+        description="Start with the session details. After creating the workout, you’ll add exercises and sets."
+      />
 
-      <form action={createWorkout} className="space-y-6 rounded-3xl border border-neutral-200 p-6">
+      <form
+        action={createWorkout}
+        className="space-y-6 rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6"
+      >
         <div>
-          <label className="block text-sm font-medium">Workout title</label>
+          <label htmlFor="title" className="block text-sm font-medium">
+            Workout title
+          </label>
           <input
+            id="title"
             name="title"
             placeholder="Example: Push Day, Upper Strength, Leg Day"
-            className="mt-2 w-full rounded-xl border border-neutral-300 px-3 py-2"
+            className="mt-2 w-full rounded-xl border border-neutral-300 px-3 py-2 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
             required
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Goal</label>
+          <label htmlFor="goal" className="block text-sm font-medium">
+            Goal
+          </label>
           <select
+            id="goal"
             name="goal"
-            className="mt-2 w-full rounded-xl border border-neutral-300 px-3 py-2"
+            className="mt-2 w-full rounded-xl border border-neutral-300 px-3 py-2 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
             defaultValue=""
           >
             <option value="">No specific goal</option>
@@ -51,31 +57,37 @@ export default async function NewWorkoutPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Date</label>
+          <label htmlFor="date" className="block text-sm font-medium">
+            Date
+          </label>
           <input
+            id="date"
             name="date"
             type="date"
             defaultValue={today}
-            className="mt-2 w-full rounded-xl border border-neutral-300 px-3 py-2"
+            className="mt-2 w-full rounded-xl border border-neutral-300 px-3 py-2 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
             required
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Notes</label>
+          <label htmlFor="notes" className="block text-sm font-medium">
+            Notes
+          </label>
           <textarea
+            id="notes"
             name="notes"
             rows={4}
             placeholder="How did the session feel? Any soreness, form notes, or goals?"
-            className="mt-2 w-full rounded-xl border border-neutral-300 px-3 py-2"
+            className="mt-2 w-full rounded-xl border border-neutral-300 px-3 py-2 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
           />
         </div>
 
         <button
           type="submit"
-          className="rounded-xl bg-neutral-950 px-5 py-3 font-semibold text-white hover:bg-neutral-800"
+          className="w-full rounded-xl bg-neutral-950 px-5 py-3 font-semibold text-white transition hover:bg-neutral-800 sm:w-auto"
         >
-          Create workout
+          Create workout and add exercises
         </button>
       </form>
     </main>
