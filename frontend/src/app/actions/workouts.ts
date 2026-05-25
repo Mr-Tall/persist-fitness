@@ -65,3 +65,56 @@ export async function deleteWorkout(formData: FormData) {
 
   redirect("/workouts");
 }
+
+export async function repeatWorkout(formData: FormData) {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    redirect("/login");
+  }
+
+  const workoutId = String(formData.get("workoutId") ?? "");
+
+  if (!workoutId) {
+    throw new Error("Workout ID is required");
+  }
+
+  const originalWorkout = await db.workout.findFirst({
+    where: {
+      id: workoutId,
+      userId: session.user.id,
+    },
+    include: {
+      exercises: {
+        orderBy: {
+          order: "asc",
+        },
+      },
+    },
+  });
+
+  if (!originalWorkout) {
+    throw new Error("Workout not found");
+  }
+
+  const today = new Date().toISOString().split("T")[0];
+
+  const newWorkout = await db.workout.create({
+    data: {
+      userId: session.user.id,
+      title: originalWorkout.title,
+      goal: originalWorkout.goal,
+      notes: null,
+      date: new Date(`${today}T12:00:00.000Z`),
+      exercises: {
+        create: originalWorkout.exercises.map((exercise) => ({
+          exerciseId: exercise.exerciseId,
+          name: exercise.name,
+          order: exercise.order,
+        })),
+      },
+    },
+  });
+
+  redirect(`/workouts/${newWorkout.id}`);
+}

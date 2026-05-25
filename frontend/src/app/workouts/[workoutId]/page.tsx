@@ -1,5 +1,10 @@
+import { deleteWorkout, repeatWorkout } from "@/app/actions/workouts";
+import {
+  deleteExerciseFromWorkout,
+  deleteSetFromExercise,
+} from "@/app/actions/workout-exercises";
 import { auth } from "@/auth";
-import { deleteWorkout } from "@/app/actions/workouts";
+import { DeleteInlineButton } from "@/app/workouts/[workoutId]/delete-inline-button";
 import { db } from "@/lib/db";
 import { formatWorkoutDate } from "@/lib/format-date";
 import { notFound, redirect } from "next/navigation";
@@ -7,11 +12,6 @@ import Link from "next/link";
 import { AddExerciseForm } from "./add-exercise-form";
 import { AddSetForm } from "./add-set-form";
 import { DeleteWorkoutButton } from "./delete-workout-button";
-import {
-  deleteExerciseFromWorkout,
-  deleteSetFromExercise,
-} from "@/app/actions/workout-exercises";
-import { DeleteInlineButton } from "./delete-inline-button";
 import { EditSetForm } from "./edit-set-form";
 
 type WorkoutDetailPageProps = {
@@ -72,9 +72,21 @@ export default async function WorkoutDetailPage({
             </p>
           </div>
 
-          <form action={deleteWorkout}>
-            <DeleteWorkoutButton workoutId={workout.id} />
-          </form>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <form action={repeatWorkout}>
+              <input type="hidden" name="workoutId" value={workout.id} />
+              <button
+                type="submit"
+                className="w-full rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600 sm:w-auto"
+              >
+                Repeat workout
+              </button>
+            </form>
+
+            <form action={deleteWorkout}>
+              <DeleteWorkoutButton workoutId={workout.id} />
+            </form>
+          </div>
         </div>
 
         {workout.notes && (
@@ -89,7 +101,8 @@ export default async function WorkoutDetailPage({
           <div>
             <h2 className="text-xl font-semibold">Exercises</h2>
             <p className="mt-1 text-sm text-neutral-600">
-              Add movements, then log sets with reps, weight, RIR, tempo, and notes.
+              Add movements, then log sets with reps, weight, RIR, tempo, and
+              notes.
             </p>
           </div>
         </div>
@@ -122,7 +135,11 @@ export default async function WorkoutDetailPage({
 
                   <form action={deleteExerciseFromWorkout}>
                     <input type="hidden" name="workoutId" value={workout.id} />
-                    <input type="hidden" name="workoutExerciseId" value={exercise.id} />
+                    <input
+                      type="hidden"
+                      name="workoutExerciseId"
+                      value={exercise.id}
+                    />
                     <DeleteInlineButton
                       label="Delete exercise"
                       confirmMessage={`Delete ${exercise.name} and all of its sets?`}
@@ -132,7 +149,6 @@ export default async function WorkoutDetailPage({
 
                 {exercise.sets.length > 0 && (
                   <>
-                    {/* Mobile set cards */}
                     <div className="mt-4 space-y-3 md:hidden">
                       {exercise.sets.map((set) => (
                         <div
@@ -146,7 +162,9 @@ export default async function WorkoutDetailPage({
                               </p>
                               <p className="mt-1 text-sm text-neutral-600">
                                 {set.reps ?? "—"} reps
-                                {set.weight !== null ? ` · ${set.weight} lb` : ""}
+                                {set.weight !== null
+                                  ? ` · ${set.weight} lb`
+                                  : ""}
                               </p>
                             </div>
 
@@ -154,8 +172,16 @@ export default async function WorkoutDetailPage({
                               <EditSetForm workoutId={workout.id} set={set} />
 
                               <form action={deleteSetFromExercise}>
-                                <input type="hidden" name="workoutId" value={workout.id} />
-                                <input type="hidden" name="workoutSetId" value={set.id} />
+                                <input
+                                  type="hidden"
+                                  name="workoutId"
+                                  value={workout.id}
+                                />
+                                <input
+                                  type="hidden"
+                                  name="workoutSetId"
+                                  value={set.id}
+                                />
                                 <DeleteInlineButton
                                   label="Delete"
                                   confirmMessage={`Delete set ${set.setNumber}?`}
@@ -190,7 +216,6 @@ export default async function WorkoutDetailPage({
                       ))}
                     </div>
 
-                    {/* Desktop set table */}
                     <div className="mt-4 hidden overflow-x-auto md:block">
                       <table className="w-full border-collapse text-left text-sm">
                         <thead>
@@ -207,22 +232,42 @@ export default async function WorkoutDetailPage({
 
                         <tbody>
                           {exercise.sets.map((set) => (
-                            <tr key={set.id} className="border-b border-neutral-100">
+                            <tr
+                              key={set.id}
+                              className="border-b border-neutral-100"
+                            >
                               <td className="py-2 pr-4">{set.setNumber}</td>
                               <td className="py-2 pr-4">{set.reps ?? "—"}</td>
                               <td className="py-2 pr-4">
-                                {set.weight !== null ? `${set.weight} lb` : "—"}
+                                {set.weight !== null
+                                  ? `${set.weight} lb`
+                                  : "—"}
                               </td>
                               <td className="py-2 pr-4">{set.rir ?? "—"}</td>
-                              <td className="py-2 pr-4">{set.tempo || "—"}</td>
-                              <td className="py-2 pr-4">{set.notes || "—"}</td>
+                              <td className="py-2 pr-4">
+                                {set.tempo || "—"}
+                              </td>
+                              <td className="py-2 pr-4">
+                                {set.notes || "—"}
+                              </td>
                               <td className="py-2 pr-4">
                                 <div className="flex items-center gap-2">
-                                  <EditSetForm workoutId={workout.id} set={set} />
+                                  <EditSetForm
+                                    workoutId={workout.id}
+                                    set={set}
+                                  />
 
                                   <form action={deleteSetFromExercise}>
-                                    <input type="hidden" name="workoutId" value={workout.id} />
-                                    <input type="hidden" name="workoutSetId" value={set.id} />
+                                    <input
+                                      type="hidden"
+                                      name="workoutId"
+                                      value={workout.id}
+                                    />
+                                    <input
+                                      type="hidden"
+                                      name="workoutSetId"
+                                      value={set.id}
+                                    />
                                     <DeleteInlineButton
                                       label="Delete"
                                       confirmMessage={`Delete set ${set.setNumber}?`}
@@ -238,7 +283,10 @@ export default async function WorkoutDetailPage({
                   </>
                 )}
 
-                <AddSetForm workoutId={workout.id} workoutExerciseId={exercise.id} />
+                <AddSetForm
+                  workoutId={workout.id}
+                  workoutExerciseId={exercise.id}
+                />
               </div>
             ))}
           </div>
