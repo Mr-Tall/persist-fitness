@@ -3,16 +3,18 @@ import {
   deleteExerciseFromWorkout,
   deleteSetFromExercise,
 } from "@/app/actions/workout-exercises";
-import { auth } from "@/auth";
 import { DeleteInlineButton } from "@/app/workouts/[workoutId]/delete-inline-button";
+import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { formatWorkoutDate } from "@/lib/format-date";
+import { getPreviousPerformanceByExerciseName } from "@/lib/previous-performance";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { AddExerciseForm } from "./add-exercise-form";
 import { AddSetForm } from "./add-set-form";
 import { DeleteWorkoutButton } from "./delete-workout-button";
 import { EditSetForm } from "./edit-set-form";
+import { PreviousPerformanceCard } from "./previous-performance-card";
 
 type WorkoutDetailPageProps = {
   params: Promise<{
@@ -56,6 +58,20 @@ export default async function WorkoutDetailPage({
     notFound();
   }
 
+  const previousPerformanceByExerciseId = new Map(
+    await Promise.all(
+      workout.exercises.map(async (exercise) => {
+        const previous = await getPreviousPerformanceByExerciseName({
+          userId: session.user.id,
+          currentWorkoutId: workout.id,
+          exerciseName: exercise.name,
+        });
+
+        return [exercise.id, previous] as const;
+      })
+    )
+  );
+
   return (
     <main className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-10">
       <section className="mb-8">
@@ -96,7 +112,7 @@ export default async function WorkoutDetailPage({
         )}
       </section>
 
-      <section className="rounded-3xl border border-neutral-200 p-6">
+      <section className="rounded-3xl border border-neutral-200 p-5 sm:p-6">
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div>
             <h2 className="text-xl font-semibold">Exercises</h2>
@@ -147,8 +163,15 @@ export default async function WorkoutDetailPage({
                   </form>
                 </div>
 
+                <PreviousPerformanceCard
+                  previous={
+                    previousPerformanceByExerciseId.get(exercise.id) ?? null
+                  }
+                />
+
                 {exercise.sets.length > 0 && (
                   <>
+                    {/* Mobile set cards */}
                     <div className="mt-4 space-y-3 md:hidden">
                       {exercise.sets.map((set) => (
                         <div
@@ -216,6 +239,7 @@ export default async function WorkoutDetailPage({
                       ))}
                     </div>
 
+                    {/* Desktop set table */}
                     <div className="mt-4 hidden overflow-x-auto md:block">
                       <table className="w-full border-collapse text-left text-sm">
                         <thead>
