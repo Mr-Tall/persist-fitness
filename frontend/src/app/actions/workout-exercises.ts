@@ -31,6 +31,16 @@ const deleteSetSchema = z.object({
   workoutSetId: z.string().min(1),
 });
 
+const updateSetSchema = z.object({
+  workoutId: z.string().min(1),
+  workoutSetId: z.string().min(1),
+  reps: z.coerce.number().int().min(0).optional(),
+  weight: z.coerce.number().min(0).optional(),
+  rir: z.coerce.number().int().min(0).max(10).optional(),
+  tempo: z.string().optional(),
+  notes: z.string().optional(),
+});
+
 async function requireUserId() {
   const session = await auth();
 
@@ -170,7 +180,6 @@ export async function deleteSetFromExercise(formData: FormData) {
     select: {
       id: true,
       workoutExerciseId: true,
-      setNumber: true,
     },
   });
 
@@ -205,6 +214,53 @@ export async function deleteSetFromExercise(formData: FormData) {
       })
     )
   );
+
+  revalidatePath(`/workouts/${parsed.workoutId}`);
+}
+
+export async function updateSetInExercise(formData: FormData) {
+  const userId = await requireUserId();
+
+  const parsed = updateSetSchema.parse({
+    workoutId: formData.get("workoutId"),
+    workoutSetId: formData.get("workoutSetId"),
+    reps: formData.get("reps") || undefined,
+    weight: formData.get("weight") || undefined,
+    rir: formData.get("rir") || undefined,
+    tempo: formData.get("tempo") || undefined,
+    notes: formData.get("notes") || undefined,
+  });
+
+  await verifyWorkoutOwner(parsed.workoutId, userId);
+
+  const set = await db.workoutSet.findFirst({
+    where: {
+      id: parsed.workoutSetId,
+      workoutExercise: {
+        workoutId: parsed.workoutId,
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!set) {
+    throw new Error("Set not found");
+  }
+
+  await db.workoutSet.update({
+    where: {
+      id: parsed.workoutSetId,
+    },
+    data: {
+      reps: parsed.reps,
+      weight: parsed.weight,
+      rir: parsed.rir,
+      tempo: parsed.tempo?.trim() || null,
+      notes: parsed.notes?.trim() || null,
+    },
+  });
 
   revalidatePath(`/workouts/${parsed.workoutId}`);
 }
