@@ -46,6 +46,9 @@ export default function RootLayout({
               <Link href="/workouts" className="hover:text-neutral-950">
                 Workouts
               </Link>
+              <Link href="/routines" className="hover:text-neutral-950">
+                Routines
+              </Link>
               <Link href="/exercises" className="hover:text-neutral-950">
                 Exercises
               </Link>
