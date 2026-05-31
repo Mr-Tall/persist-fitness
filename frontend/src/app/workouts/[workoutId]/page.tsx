@@ -58,7 +58,7 @@ export default async function WorkoutDetailPage({
     notFound();
   }
 
-  const libraryExercises = await db.exercise.findMany({
+  const libraryExercisesRaw = await db.exercise.findMany({
     orderBy: {
       name: "asc",
     },
@@ -67,8 +67,24 @@ export default async function WorkoutDetailPage({
       name: true,
       equipment: true,
       primaryMuscles: true,
+      favoritedBy: {
+        where: {
+          userId: session.user.id,
+        },
+        select: {
+          id: true,
+        },
+      },
     },
   });
+
+  const libraryExercises = libraryExercisesRaw.map((exercise) => ({
+    id: exercise.id,
+    name: exercise.name,
+    equipment: exercise.equipment,
+    primaryMuscles: exercise.primaryMuscles,
+    isFavorite: exercise.favoritedBy.length > 0,
+  }));
 
   const previousPerformanceByExerciseId = new Map(
     await Promise.all(

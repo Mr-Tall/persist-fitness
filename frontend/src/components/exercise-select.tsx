@@ -3,6 +3,7 @@ type ExerciseOption = {
   name: string;
   equipment: string | null;
   primaryMuscles: string[];
+  isFavorite?: boolean;
 };
 
 type ExerciseSelectProps = {
@@ -10,24 +11,42 @@ type ExerciseSelectProps = {
 };
 
 export function ExerciseSelect({ exercises }: ExerciseSelectProps) {
+  const favoriteExercises = exercises.filter((exercise) => exercise.isFavorite);
+  const otherExercises = exercises.filter((exercise) => !exercise.isFavorite);
+
   return (
     <div className="space-y-3">
       <div>
         <label className="block text-xs font-medium text-neutral-500">
           Choose from library
         </label>
+
         <select
           name="exerciseId"
           defaultValue=""
           className="mt-1 w-full rounded-xl border border-neutral-300 px-3 py-3"
         >
           <option value="">Custom exercise</option>
-          {exercises.map((exercise) => (
-            <option key={exercise.id} value={exercise.id}>
-              {exercise.name}
-              {exercise.equipment ? ` · ${exercise.equipment}` : ""}
-            </option>
-          ))}
+
+          {favoriteExercises.length > 0 && (
+            <optgroup label="Favorites">
+              {favoriteExercises.map((exercise) => (
+                <option key={exercise.id} value={exercise.id}>
+                  ★ {exercise.name}
+                  {exercise.equipment ? ` · ${exercise.equipment}` : ""}
+                </option>
+              ))}
+            </optgroup>
+          )}
+
+          <optgroup label="All exercises">
+            {otherExercises.map((exercise) => (
+              <option key={exercise.id} value={exercise.id}>
+                {exercise.name}
+                {exercise.equipment ? ` · ${exercise.equipment}` : ""}
+              </option>
+            ))}
+          </optgroup>
         </select>
       </div>
 

@@ -44,7 +44,7 @@ export default async function RoutineDetailPage({
     notFound();
   }
 
-  const libraryExercises = await db.exercise.findMany({
+  const libraryExercisesRaw = await db.exercise.findMany({
     orderBy: {
       name: "asc",
     },
@@ -53,8 +53,24 @@ export default async function RoutineDetailPage({
       name: true,
       equipment: true,
       primaryMuscles: true,
+      favoritedBy: {
+        where: {
+          userId: session.user.id,
+        },
+        select: {
+          id: true,
+        },
+      },
     },
   });
+
+  const libraryExercises = libraryExercisesRaw.map((exercise) => ({
+    id: exercise.id,
+    name: exercise.name,
+    equipment: exercise.equipment,
+    primaryMuscles: exercise.primaryMuscles,
+    isFavorite: exercise.favoritedBy.length > 0,
+  }));
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-10">
