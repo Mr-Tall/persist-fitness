@@ -5,6 +5,12 @@ import Link from "next/link";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
+import { getDashboardAnalytics } from "@/lib/dashboard-analytics";
+import { formatWorkoutDate } from "@/lib/format-date";
+
+function formatVolume(volume: number) {
+  return `${Math.round(volume).toLocaleString()} lb`;
+}
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -13,37 +19,26 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const [profile, workoutCount, recentWorkouts] = await Promise.all([
+  const [profile, analytics] = await Promise.all([
     db.profile.findUnique({
       where: {
         userId: session.user.id,
       },
     }),
-    db.workout.count({
-      where: {
-        userId: session.user.id,
-      },
-    }),
-    db.workout.findMany({
-      where: {
-        userId: session.user.id,
-      },
-      orderBy: {
-        date: "desc",
-      },
-      take: 3,
-    }),
+    getDashboardAnalytics(session.user.id),
   ]);
 
   const hasProfile = Boolean(profile);
-  const hasWorkouts = workoutCount > 0;
+  const hasWorkouts = analytics.workoutCount > 0;
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
       <PageHeader
         eyebrow="Dashboard"
-        title={`Welcome back${session.user.name ? `, ${session.user.name.split(" ")[0]}` : ""}`}
-        description="Your training home base for profile data, workout history, and future AI-powered suggestions."
+        title={`Welcome back${
+          session.user.name ? `, ${session.user.name.split(" ")[0]}` : ""
+        }`}
+        description="Your training home base for consistency, workload, routines, and future AI-powered suggestions."
         action={<LogoutButton />}
       />
 
@@ -91,21 +86,41 @@ export default async function DashboardPage() {
 
       <section className="grid gap-4 md:grid-cols-3">
         <StatCard
-          label="Logged workouts"
-          value={workoutCount}
-          helper="Total sessions saved"
+          label="Total workouts"
+          value={analytics.workoutCount}
+          helper="All sessions saved"
+        />
+
+        <StatCard
+          label="This week"
+          value={analytics.workoutsThisWeek}
+          helper="Workouts logged this week"
+        />
+
+        <StatCard
+          label="Current streak"
+          value={`${analytics.currentStreak} day${
+            analytics.currentStreak === 1 ? "" : "s"
+          }`}
+          helper="Based on workout days"
+        />
+
+        <StatCard
+          label="Total sets"
+          value={analytics.totalSets}
+          helper="Every logged set"
+        />
+
+        <StatCard
+          label="Total volume"
+          value={formatVolume(analytics.totalVolume)}
+          helper="Weight × reps across all sets"
         />
 
         <StatCard
           label="Current goal"
           value={profile?.primaryGoal ?? "Not set"}
-          helper="Used for future workout suggestions"
-        />
-
-        <StatCard
-          label="Preferred split"
-          value={profile?.preferredSplit ?? "Not set"}
-          helper="Helps shape your weekly plan"
+          helper="Used for future suggestions"
         />
       </section>
 
@@ -165,7 +180,7 @@ export default async function DashboardPage() {
           </Link>
         </div>
 
-        {recentWorkouts.length === 0 ? (
+        {analytics.recentWorkouts.length === 0 ? (
           <div className="mt-5 rounded-2xl border border-dashed border-neutral-300 p-6 text-center">
             <p className="font-medium">No workouts yet</p>
             <Link
@@ -177,7 +192,7 @@ export default async function DashboardPage() {
           </div>
         ) : (
           <div className="mt-5 space-y-3">
-            {recentWorkouts.map((workout) => (
+            {analytics.recentWorkouts.map((workout) => (
               <Link
                 key={workout.id}
                 href={`/workouts/${workout.id}`}
@@ -185,6 +200,7 @@ export default async function DashboardPage() {
               >
                 <p className="font-semibold">{workout.title}</p>
                 <p className="mt-1 text-sm text-neutral-500">
+                  {formatWorkoutDate(workout.date)} ·{" "}
                   {workout.goal || "No goal set"}
                 </p>
               </Link>
