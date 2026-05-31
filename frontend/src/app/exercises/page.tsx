@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { PageHeader } from "@/components/ui/page-header";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
+import { FavoriteExerciseButton } from "./favorite-exercise-button";
 
 export default async function ExercisesPage() {
   const session = await auth();
@@ -14,6 +15,16 @@ export default async function ExercisesPage() {
     orderBy: {
       name: "asc",
     },
+    include: {
+      favoritedBy: {
+        where: {
+          userId: session.user.id,
+        },
+        select: {
+          id: true,
+        },
+      },
+    },
   });
 
   return (
@@ -21,7 +32,7 @@ export default async function ExercisesPage() {
       <PageHeader
         eyebrow="Exercises"
         title="Exercise library"
-        description="Browse the starter exercise library. This will power search, routines, previous performance, substitutions, and future AI suggestions."
+        description="Browse the starter exercise library. This powers routines, previous performance, substitutions, and future AI suggestions."
       />
 
       {exercises.length === 0 ? (
@@ -47,11 +58,18 @@ export default async function ExercisesPage() {
                   </p>
                 </div>
 
-                {exercise.category && (
-                  <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                    {exercise.category}
-                  </span>
-                )}
+                <div className="flex flex-wrap gap-2">
+                  {exercise.category && (
+                    <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                      {exercise.category}
+                    </span>
+                  )}
+
+                  <FavoriteExerciseButton
+                    exerciseId={exercise.id}
+                    isFavorite={exercise.favoritedBy.length > 0}
+                  />
+                </div>
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2">
