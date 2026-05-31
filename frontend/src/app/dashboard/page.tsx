@@ -1,12 +1,13 @@
 import { auth } from "@/auth";
-import { db } from "@/lib/db";
-import { redirect } from "next/navigation";
-import Link from "next/link";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
+import { db } from "@/lib/db";
 import { getDashboardAnalytics } from "@/lib/dashboard-analytics";
 import { formatWorkoutDate } from "@/lib/format-date";
+import { getTopExercisePersonalRecords } from "@/lib/personal-records";
+import { redirect } from "next/navigation";
+import Link from "next/link";
 
 function formatVolume(volume: number) {
   return `${Math.round(volume).toLocaleString()} lb`;
@@ -19,13 +20,14 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const [profile, analytics] = await Promise.all([
+  const [profile, analytics, personalRecords] = await Promise.all([
     db.profile.findUnique({
       where: {
         userId: session.user.id,
       },
     }),
     getDashboardAnalytics(session.user.id),
+    getTopExercisePersonalRecords(session.user.id, 5),
   ]);
 
   const hasProfile = Boolean(profile);
@@ -38,7 +40,7 @@ export default async function DashboardPage() {
         title={`Welcome back${
           session.user.name ? `, ${session.user.name.split(" ")[0]}` : ""
         }`}
-        description="Your training home base for consistency, workload, routines, and future AI-powered suggestions."
+        description="Your training home base for consistency, workload, routines, personal records, and future AI-powered suggestions."
         action={<LogoutButton />}
       />
 
@@ -122,6 +124,50 @@ export default async function DashboardPage() {
           value={profile?.primaryGoal ?? "Not set"}
           helper="Used for future suggestions"
         />
+      </section>
+
+      <section className="mt-8 rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6">
+        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+          <div>
+            <h2 className="text-xl font-semibold">Personal records</h2>
+            <p className="mt-1 text-sm text-neutral-600">
+              Your strongest logged sets ranked by estimated one-rep max.
+            </p>
+          </div>
+        </div>
+
+        {personalRecords.length === 0 ? (
+          <div className="mt-5 rounded-2xl border border-dashed border-neutral-300 p-6 text-center">
+            <p className="font-medium">No PRs yet</p>
+            <p className="mt-2 text-sm text-neutral-600">
+              Log sets with weight and reps to start building personal records.
+            </p>
+          </div>
+        ) : (
+          <div className="mt-5 space-y-3">
+            {personalRecords.map((record) => (
+              <Link
+                key={`${record.exerciseName}-${record.workoutId}`}
+                href={`/workouts/${record.workoutId}`}
+                className="block rounded-2xl border border-neutral-200 p-4 transition hover:border-neutral-400 hover:bg-neutral-50"
+              >
+                <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+                  <div>
+                    <p className="font-semibold">{record.exerciseName}</p>
+                    <p className="mt-1 text-sm text-neutral-500">
+                      {record.weight} lb × {record.reps} reps ·{" "}
+                      {formatWorkoutDate(record.workoutDate)}
+                    </p>
+                  </div>
+
+                  <div className="rounded-full bg-amber-50 px-3 py-1 text-sm font-semibold text-amber-700">
+                    est. 1RM {Math.round(record.estimatedOneRepMax)} lb
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </section>
 
       {profile && (
