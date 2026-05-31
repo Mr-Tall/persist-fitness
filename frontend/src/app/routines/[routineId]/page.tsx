@@ -44,6 +44,18 @@ export default async function RoutineDetailPage({
     notFound();
   }
 
+  const libraryExercises = await db.exercise.findMany({
+    orderBy: {
+      name: "asc",
+    },
+    select: {
+      id: true,
+      name: true,
+      equipment: true,
+      primaryMuscles: true,
+    },
+  });
+
   return (
     <main className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-10">
       <section className="mb-8">
@@ -80,7 +92,10 @@ export default async function RoutineDetailPage({
       </section>
 
       <section className="space-y-6">
-        <AddTemplateExerciseForm routineId={routine.id} />
+        <AddTemplateExerciseForm
+          routineId={routine.id}
+          exercises={libraryExercises}
+        />
 
         <div className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm">
           <h2 className="text-xl font-semibold">Planned exercises</h2>

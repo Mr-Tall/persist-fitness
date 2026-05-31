@@ -7,7 +7,7 @@ import { DeleteInlineButton } from "@/app/workouts/[workoutId]/delete-inline-but
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { formatWorkoutDate } from "@/lib/format-date";
-import { getPreviousPerformanceByExerciseName } from "@/lib/previous-performance";
+import { getPreviousPerformanceForExercise } from "@/lib/previous-performance";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { AddExerciseForm } from "./add-exercise-form";
@@ -58,12 +58,25 @@ export default async function WorkoutDetailPage({
     notFound();
   }
 
+  const libraryExercises = await db.exercise.findMany({
+    orderBy: {
+      name: "asc",
+    },
+    select: {
+      id: true,
+      name: true,
+      equipment: true,
+      primaryMuscles: true,
+    },
+  });
+
   const previousPerformanceByExerciseId = new Map(
     await Promise.all(
       workout.exercises.map(async (exercise) => {
-        const previous = await getPreviousPerformanceByExerciseName({
+        const previous = await getPreviousPerformanceForExercise({
           userId: session.user.id,
           currentWorkoutId: workout.id,
+          exerciseId: exercise.exerciseId,
           exerciseName: exercise.name,
         });
 
@@ -124,7 +137,7 @@ export default async function WorkoutDetailPage({
         </div>
 
         <div className="mt-6">
-          <AddExerciseForm workoutId={workout.id} />
+          <AddExerciseForm workoutId={workout.id} exercises={libraryExercises} />
         </div>
 
         {workout.exercises.length === 0 ? (

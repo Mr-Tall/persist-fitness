@@ -12,21 +12,19 @@ export type PreviousPerformance = {
   }[];
 };
 
-export async function getPreviousPerformanceByExerciseName({
+export async function getPreviousPerformanceForExercise({
   userId,
   currentWorkoutId,
+  exerciseId,
   exerciseName,
 }: {
   userId: string;
   currentWorkoutId: string;
+  exerciseId: string | null;
   exerciseName: string;
 }): Promise<PreviousPerformance | null> {
   const previousExercise = await db.workoutExercise.findFirst({
     where: {
-      name: {
-        equals: exerciseName,
-        mode: "insensitive",
-      },
       workout: {
         userId,
         id: {
@@ -36,6 +34,26 @@ export async function getPreviousPerformanceByExerciseName({
       sets: {
         some: {},
       },
+      OR: exerciseId
+        ? [
+            {
+              exerciseId,
+            },
+            {
+              name: {
+                equals: exerciseName,
+                mode: "insensitive",
+              },
+            },
+          ]
+        : [
+            {
+              name: {
+                equals: exerciseName,
+                mode: "insensitive",
+              },
+            },
+          ],
     },
     orderBy: {
       workout: {

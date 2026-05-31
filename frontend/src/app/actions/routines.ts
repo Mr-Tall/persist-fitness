@@ -14,7 +14,8 @@ const createRoutineSchema = z.object({
 
 const addTemplateExerciseSchema = z.object({
   routineId: z.string().min(1),
-  name: z.string().min(1, "Exercise name is required"),
+  exerciseId: z.string().optional(),
+  name: z.string().optional(),
   sets: z.coerce.number().int().min(1).max(20).optional(),
   reps: z.string().optional(),
   notes: z.string().optional(),
@@ -89,13 +90,40 @@ export async function addExerciseToRoutine(formData: FormData) {
 
   const parsed = addTemplateExerciseSchema.parse({
     routineId: formData.get("routineId"),
-    name: formData.get("name"),
+    exerciseId: formData.get("exerciseId") || undefined,
+    name: formData.get("name") || undefined,
     sets: formData.get("sets") || undefined,
     reps: formData.get("reps") || undefined,
     notes: formData.get("notes") || undefined,
   });
 
   await verifyRoutineOwner(parsed.routineId, userId);
+
+  let exerciseName = parsed.name?.trim() || "";
+  let exerciseId = parsed.exerciseId || null;
+
+  if (exerciseId) {
+    const libraryExercise = await db.exercise.findUnique({
+      where: {
+        id: exerciseId,
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+
+    if (!libraryExercise) {
+      throw new Error("Selected exercise not found");
+    }
+
+    exerciseName = libraryExercise.name;
+    exerciseId = libraryExercise.id;
+  }
+
+  if (!exerciseName) {
+    throw new Error("Exercise name is required");
+  }
 
   const exerciseCount = await db.templateExercise.count({
     where: {
@@ -106,7 +134,8 @@ export async function addExerciseToRoutine(formData: FormData) {
   await db.templateExercise.create({
     data: {
       templateId: parsed.routineId,
-      name: parsed.name.trim(),
+      exerciseId,
+      name: exerciseName,
       sets: parsed.sets,
       reps: parsed.reps?.trim() || undefined,
       notes: parsed.notes?.trim() || undefined,

@@ -8,7 +8,8 @@ import { z } from "zod";
 
 const addExerciseSchema = z.object({
   workoutId: z.string().min(1),
-  name: z.string().min(1, "Exercise name is required"),
+  exerciseId: z.string().optional(),
+  name: z.string().optional(),
 });
 
 const addSetSchema = z.object({
@@ -74,10 +75,37 @@ export async function addExerciseToWorkout(formData: FormData) {
 
   const parsed = addExerciseSchema.parse({
     workoutId: formData.get("workoutId"),
-    name: formData.get("name"),
+    exerciseId: formData.get("exerciseId") || undefined,
+    name: formData.get("name") || undefined,
   });
 
   await verifyWorkoutOwner(parsed.workoutId, userId);
+
+  let exerciseName = parsed.name?.trim() || "";
+  let exerciseId = parsed.exerciseId || null;
+
+  if (exerciseId) {
+    const libraryExercise = await db.exercise.findUnique({
+      where: {
+        id: exerciseId,
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+
+    if (!libraryExercise) {
+      throw new Error("Selected exercise not found");
+    }
+
+    exerciseName = libraryExercise.name;
+    exerciseId = libraryExercise.id;
+  }
+
+  if (!exerciseName) {
+    throw new Error("Exercise name is required");
+  }
 
   const exerciseCount = await db.workoutExercise.count({
     where: {
@@ -88,7 +116,8 @@ export async function addExerciseToWorkout(formData: FormData) {
   await db.workoutExercise.create({
     data: {
       workoutId: parsed.workoutId,
-      name: parsed.name.trim(),
+      exerciseId,
+      name: exerciseName,
       order: exerciseCount,
     },
   });

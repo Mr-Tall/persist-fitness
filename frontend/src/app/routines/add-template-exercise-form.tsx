@@ -1,11 +1,19 @@
 import { addExerciseToRoutine } from "@/app/actions/routines";
+import { ExerciseSelect } from "@/components/exercise-select";
 
 type AddTemplateExerciseFormProps = {
   routineId: string;
+  exercises: {
+    id: string;
+    name: string;
+    equipment: string | null;
+    primaryMuscles: string[];
+  }[];
 };
 
 export function AddTemplateExerciseForm({
   routineId,
+  exercises,
 }: AddTemplateExerciseFormProps) {
   return (
     <form
@@ -19,19 +27,11 @@ export function AddTemplateExerciseForm({
         Add planned movements for this routine.
       </p>
 
-      <div className="mt-4 grid gap-3 md:grid-cols-5">
-        <div className="md:col-span-2">
-          <label className="block text-xs font-medium text-neutral-500">
-            Exercise
-          </label>
-          <input
-            name="name"
-            placeholder="Example: Bench Press"
-            className="mt-1 w-full rounded-xl border border-neutral-300 px-3 py-3"
-            required
-          />
-        </div>
+      <div className="mt-4">
+        <ExerciseSelect exercises={exercises} />
+      </div>
 
+      <div className="mt-4 grid gap-3 md:grid-cols-3">
         <div>
           <label className="block text-xs font-medium text-neutral-500">
             Sets

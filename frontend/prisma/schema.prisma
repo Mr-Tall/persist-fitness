@@ -82,7 +82,7 @@ model Profile {
 
 model Exercise {
   id               String   @id @default(cuid())
-  name             String
+  name             String   
   force            String?
   level            String?
   mechanic         String?
