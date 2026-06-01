@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { PageHeader } from "@/components/ui/page-header";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { FavoriteExerciseButton } from "./favorite-exercise-button";
 
 export default async function ExercisesPage() {
@@ -47,16 +48,16 @@ export default async function ExercisesPage() {
           {exercises.map((exercise) => (
             <article
               key={exercise.id}
-              className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm"
+              className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm transition hover:border-neutral-400 hover:bg-neutral-50"
             >
               <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
-                <div>
+                <Link href={`/exercises/${exercise.id}`} className="block">
                   <h2 className="text-lg font-semibold">{exercise.name}</h2>
                   <p className="mt-1 text-sm text-neutral-500">
                     {exercise.equipment || "No equipment"} ·{" "}
                     {exercise.mechanic || "Movement"}
                   </p>
-                </div>
+                </Link>
 
                 <div className="flex flex-wrap gap-2">
                   {exercise.category && (
@@ -72,39 +73,41 @@ export default async function ExercisesPage() {
                 </div>
               </div>
 
-              <div className="mt-4 flex flex-wrap gap-2">
-                {exercise.primaryMuscles.map((muscle) => (
-                  <span
-                    key={muscle}
-                    className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-700"
-                  >
-                    {muscle}
-                  </span>
-                ))}
+              <Link href={`/exercises/${exercise.id}`} className="block">
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {exercise.primaryMuscles.map((muscle) => (
+                    <span
+                      key={muscle}
+                      className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-700"
+                    >
+                      {muscle}
+                    </span>
+                  ))}
 
-                {exercise.secondaryMuscles.map((muscle) => (
-                  <span
-                    key={muscle}
-                    className="rounded-full bg-neutral-50 px-3 py-1 text-xs font-medium text-neutral-500"
-                  >
-                    {muscle}
-                  </span>
-                ))}
-              </div>
+                  {exercise.secondaryMuscles.map((muscle) => (
+                    <span
+                      key={muscle}
+                      className="rounded-full bg-neutral-50 px-3 py-1 text-xs font-medium text-neutral-500"
+                    >
+                      {muscle}
+                    </span>
+                  ))}
+                </div>
 
-              {exercise.instructions.length > 0 && (
-                <details className="mt-4 rounded-2xl bg-neutral-50 p-4">
-                  <summary className="cursor-pointer text-sm font-semibold">
-                    Instructions
-                  </summary>
+                {exercise.instructions.length > 0 && (
+                  <details className="mt-4 rounded-2xl bg-neutral-50 p-4">
+                    <summary className="cursor-pointer text-sm font-semibold">
+                      Instructions
+                    </summary>
 
-                  <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-6 text-neutral-600">
-                    {exercise.instructions.map((instruction) => (
-                      <li key={instruction}>{instruction}</li>
-                    ))}
-                  </ol>
-                </details>
-              )}
+                    <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-6 text-neutral-600">
+                      {exercise.instructions.map((instruction) => (
+                        <li key={instruction}>{instruction}</li>
+                      ))}
+                    </ol>
+                  </details>
+                )}
+              </Link>
             </article>
           ))}
         </section>
