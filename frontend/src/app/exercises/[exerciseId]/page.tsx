@@ -1,5 +1,6 @@
-import { auth } from "@/auth";
 import { FavoriteExerciseButton } from "@/app/exercises/favorite-exercise-button";
+import { auth } from "@/auth";
+import { ExerciseProgressChart } from "@/components/charts/exercise-progress-chart";
 import { PageHeader } from "@/components/ui/page-header";
 import { db } from "@/lib/db";
 import { formatWorkoutDate } from "@/lib/format-date";
@@ -60,7 +61,7 @@ export default async function ExerciseDetailPage({
     },
     orderBy: {
       workout: {
-        date: "desc",
+        date: "asc",
       },
     },
     include: {
@@ -98,6 +99,37 @@ export default async function ExerciseDetailPage({
         }))
     )
     .sort((a, b) => b.estimatedOneRepMax - a.estimatedOneRepMax)[0];
+
+  const chartPoints = loggedExercises
+    .map((loggedExercise) => {
+      const bestSetForWorkout = loggedExercise.sets
+        .filter((set) => set.weight !== null && set.reps !== null && set.reps > 0)
+        .map((set) => ({
+          weight: set.weight as number,
+          reps: set.reps as number,
+          estimatedOneRepMax: estimateOneRepMax(
+            set.weight as number,
+            set.reps as number
+          ),
+        }))
+        .sort((a, b) => b.estimatedOneRepMax - a.estimatedOneRepMax)[0];
+
+      if (!bestSetForWorkout) {
+        return null;
+      }
+
+      return {
+        label: formatWorkoutDate(loggedExercise.workout.date),
+        estimatedOneRepMax: bestSetForWorkout.estimatedOneRepMax,
+        bestWeight: bestSetForWorkout.weight,
+        bestReps: bestSetForWorkout.reps,
+      };
+    })
+    .filter((point): point is NonNullable<typeof point> => point !== null);
+
+  const historyForDisplay = [...loggedExercises].sort(
+    (a, b) => b.workout.date.getTime() - a.workout.date.getTime()
+  );
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10">
@@ -140,6 +172,10 @@ export default async function ExerciseDetailPage({
             {bestSet ? `${Math.round(bestSet.estimatedOneRepMax)} lb` : "—"}
           </h2>
         </div>
+      </section>
+
+      <section className="mt-8">
+        <ExerciseProgressChart points={chartPoints} />
       </section>
 
       <section className="mt-8 grid gap-6 md:grid-cols-[1fr_1.4fr]">
@@ -207,7 +243,7 @@ export default async function ExerciseDetailPage({
             Past workouts where you logged this exercise from the library.
           </p>
 
-          {loggedExercises.length === 0 ? (
+          {historyForDisplay.length === 0 ? (
             <div className="mt-6 rounded-2xl border border-dashed border-neutral-300 p-6 text-center">
               <p className="font-medium">No history yet</p>
               <p className="mt-2 text-sm text-neutral-600">
@@ -216,7 +252,7 @@ export default async function ExerciseDetailPage({
             </div>
           ) : (
             <div className="mt-5 space-y-4">
-              {loggedExercises.map((loggedExercise) => (
+              {historyForDisplay.map((loggedExercise) => (
                 <Link
                   key={loggedExercise.id}
                   href={`/workouts/${loggedExercise.workout.id}`}
