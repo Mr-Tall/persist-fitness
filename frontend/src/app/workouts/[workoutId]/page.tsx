@@ -8,6 +8,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { formatWorkoutDate } from "@/lib/format-date";
 import { getPreviousPerformanceForExercise } from "@/lib/previous-performance";
+import { getSetPrStatuses } from "@/lib/set-pr-status";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { AddExerciseForm } from "./add-exercise-form";
@@ -101,6 +102,21 @@ export default async function WorkoutDetailPage({
     )
   );
 
+  const prStatusByExerciseId = new Map(
+    await Promise.all(
+      workout.exercises.map(async (exercise) => {
+        const statuses = await getSetPrStatuses({
+          userId: session.user.id,
+          currentWorkoutId: workout.id,
+          exerciseId: exercise.exerciseId,
+          exerciseName: exercise.name,
+        });
+
+        return [exercise.id, statuses] as const;
+      })
+    )
+  );
+
   return (
     <main className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-10">
       <section className="mb-8">
@@ -165,145 +181,67 @@ export default async function WorkoutDetailPage({
           </div>
         ) : (
           <div className="mt-6 space-y-6">
-            {workout.exercises.map((exercise) => (
-              <div
-                key={exercise.id}
-                className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm"
-              >
-                <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
-                  <div>
-                    <h3 className="text-lg font-semibold">{exercise.name}</h3>
-                    <p className="text-sm text-neutral-500">
-                      {exercise.sets.length} sets logged
-                    </p>
-                  </div>
+            {workout.exercises.map((exercise) => {
+              const prStatuses =
+                prStatusByExerciseId.get(exercise.id) ?? new Map();
 
-                  <form action={deleteExerciseFromWorkout}>
-                    <input type="hidden" name="workoutId" value={workout.id} />
-                    <input
-                      type="hidden"
-                      name="workoutExerciseId"
-                      value={exercise.id}
-                    />
-                    <DeleteInlineButton
-                      label="Delete exercise"
-                      confirmMessage={`Delete ${exercise.name} and all of its sets?`}
-                    />
-                  </form>
-                </div>
-
-                <PreviousPerformanceCard
-                  previous={
-                    previousPerformanceByExerciseId.get(exercise.id) ?? null
-                  }
-                />
-
-                {exercise.sets.length > 0 && (
-                  <>
-                    {/* Mobile set cards */}
-                    <div className="mt-4 space-y-3 md:hidden">
-                      {exercise.sets.map((set) => (
-                        <div
-                          key={set.id}
-                          className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4"
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <p className="text-sm font-semibold text-neutral-950">
-                                Set {set.setNumber}
-                              </p>
-                              <p className="mt-1 text-sm text-neutral-600">
-                                {set.reps ?? "—"} reps
-                                {set.weight !== null
-                                  ? ` · ${set.weight} lb`
-                                  : ""}
-                              </p>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                              <EditSetForm workoutId={workout.id} set={set} />
-
-                              <form action={deleteSetFromExercise}>
-                                <input
-                                  type="hidden"
-                                  name="workoutId"
-                                  value={workout.id}
-                                />
-                                <input
-                                  type="hidden"
-                                  name="workoutSetId"
-                                  value={set.id}
-                                />
-                                <DeleteInlineButton
-                                  label="Delete"
-                                  confirmMessage={`Delete set ${set.setNumber}?`}
-                                />
-                              </form>
-                            </div>
-                          </div>
-
-                          <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
-                            <div className="rounded-xl bg-white p-2">
-                              <p className="text-neutral-500">RIR</p>
-                              <p className="mt-1 font-semibold text-neutral-950">
-                                {set.rir ?? "—"}
-                              </p>
-                            </div>
-
-                            <div className="rounded-xl bg-white p-2">
-                              <p className="text-neutral-500">Tempo</p>
-                              <p className="mt-1 font-semibold text-neutral-950">
-                                {set.tempo || "—"}
-                              </p>
-                            </div>
-
-                            <div className="rounded-xl bg-white p-2">
-                              <p className="text-neutral-500">Notes</p>
-                              <p className="mt-1 truncate font-semibold text-neutral-950">
-                                {set.notes || "—"}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+              return (
+                <div
+                  key={exercise.id}
+                  className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm"
+                >
+                  <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+                    <div>
+                      <h3 className="text-lg font-semibold">{exercise.name}</h3>
+                      <p className="text-sm text-neutral-500">
+                        {exercise.sets.length} sets logged
+                      </p>
                     </div>
 
-                    {/* Desktop set table */}
-                    <div className="mt-4 hidden overflow-x-auto md:block">
-                      <table className="w-full border-collapse text-left text-sm">
-                        <thead>
-                          <tr className="border-b border-neutral-200 text-neutral-500">
-                            <th className="py-2 pr-4">Set</th>
-                            <th className="py-2 pr-4">Reps</th>
-                            <th className="py-2 pr-4">Weight</th>
-                            <th className="py-2 pr-4">RIR</th>
-                            <th className="py-2 pr-4">Tempo</th>
-                            <th className="py-2 pr-4">Notes</th>
-                            <th className="py-2 pr-4"></th>
-                          </tr>
-                        </thead>
+                    <form action={deleteExerciseFromWorkout}>
+                      <input type="hidden" name="workoutId" value={workout.id} />
+                      <input
+                        type="hidden"
+                        name="workoutExerciseId"
+                        value={exercise.id}
+                      />
+                      <DeleteInlineButton
+                        label="Delete exercise"
+                        confirmMessage={`Delete ${exercise.name} and all of its sets?`}
+                      />
+                    </form>
+                  </div>
 
-                        <tbody>
-                          {exercise.sets.map((set) => (
-                            <tr
+                  <PreviousPerformanceCard
+                    previous={
+                      previousPerformanceByExerciseId.get(exercise.id) ?? null
+                    }
+                  />
+
+                  {exercise.sets.length > 0 && (
+                    <>
+                      <div className="mt-4 space-y-3 md:hidden">
+                        {exercise.sets.map((set) => {
+                          const prStatus = prStatuses.get(set.id);
+
+                          return (
+                            <div
                               key={set.id}
-                              className="border-b border-neutral-100"
+                              className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4"
                             >
-                              <td className="py-2 pr-4">{set.setNumber}</td>
-                              <td className="py-2 pr-4">{set.reps ?? "—"}</td>
-                              <td className="py-2 pr-4">
-                                {set.weight !== null
-                                  ? `${set.weight} lb`
-                                  : "—"}
-                              </td>
-                              <td className="py-2 pr-4">{set.rir ?? "—"}</td>
-                              <td className="py-2 pr-4">
-                                {set.tempo || "—"}
-                              </td>
-                              <td className="py-2 pr-4">
-                                {set.notes || "—"}
-                              </td>
-                              <td className="py-2 pr-4">
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <p className="text-sm font-semibold text-neutral-950">
+                                    Set {set.setNumber}
+                                  </p>
+                                  <p className="mt-1 text-sm text-neutral-600">
+                                    {set.reps ?? "—"} reps
+                                    {set.weight !== null
+                                      ? ` · ${set.weight} lb`
+                                      : ""}
+                                  </p>
+                                </div>
+
                                 <div className="flex items-center gap-2">
                                   <EditSetForm
                                     workoutId={workout.id}
@@ -327,21 +265,137 @@ export default async function WorkoutDetailPage({
                                     />
                                   </form>
                                 </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </>
-                )}
+                              </div>
 
-                <AddSetForm
-                  workoutId={workout.id}
-                  workoutExerciseId={exercise.id}
-                />
-              </div>
-            ))}
+                              {prStatus?.isPersonalRecord && (
+                                <div className="mt-3 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
+                                  New PR 🎉 est. 1RM{" "}
+                                  {Math.round(
+                                    prStatus.estimatedOneRepMax ?? 0
+                                  )}{" "}
+                                  lb
+                                </div>
+                              )}
+
+                              <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+                                <div className="rounded-xl bg-white p-2">
+                                  <p className="text-neutral-500">RIR</p>
+                                  <p className="mt-1 font-semibold text-neutral-950">
+                                    {set.rir ?? "—"}
+                                  </p>
+                                </div>
+
+                                <div className="rounded-xl bg-white p-2">
+                                  <p className="text-neutral-500">Tempo</p>
+                                  <p className="mt-1 font-semibold text-neutral-950">
+                                    {set.tempo || "—"}
+                                  </p>
+                                </div>
+
+                                <div className="rounded-xl bg-white p-2">
+                                  <p className="text-neutral-500">Notes</p>
+                                  <p className="mt-1 truncate font-semibold text-neutral-950">
+                                    {set.notes || "—"}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <div className="mt-4 hidden overflow-x-auto md:block">
+                        <table className="w-full border-collapse text-left text-sm">
+                          <thead>
+                            <tr className="border-b border-neutral-200 text-neutral-500">
+                              <th className="py-2 pr-4">Set</th>
+                              <th className="py-2 pr-4">Reps</th>
+                              <th className="py-2 pr-4">Weight</th>
+                              <th className="py-2 pr-4">RIR</th>
+                              <th className="py-2 pr-4">Tempo</th>
+                              <th className="py-2 pr-4">Notes</th>
+                              <th className="py-2 pr-4">PR</th>
+                              <th className="py-2 pr-4"></th>
+                            </tr>
+                          </thead>
+
+                          <tbody>
+                            {exercise.sets.map((set) => {
+                              const prStatus = prStatuses.get(set.id);
+
+                              return (
+                                <tr
+                                  key={set.id}
+                                  className="border-b border-neutral-100"
+                                >
+                                  <td className="py-2 pr-4">{set.setNumber}</td>
+                                  <td className="py-2 pr-4">
+                                    {set.reps ?? "—"}
+                                  </td>
+                                  <td className="py-2 pr-4">
+                                    {set.weight !== null
+                                      ? `${set.weight} lb`
+                                      : "—"}
+                                  </td>
+                                  <td className="py-2 pr-4">
+                                    {set.rir ?? "—"}
+                                  </td>
+                                  <td className="py-2 pr-4">
+                                    {set.tempo || "—"}
+                                  </td>
+                                  <td className="py-2 pr-4">
+                                    {set.notes || "—"}
+                                  </td>
+                                  <td className="py-2 pr-4">
+                                    {prStatus?.isPersonalRecord ? (
+                                      <span className="rounded-full bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700">
+                                        New PR
+                                      </span>
+                                    ) : (
+                                      "—"
+                                    )}
+                                  </td>
+                                  <td className="py-2 pr-4">
+                                    <div className="flex items-center gap-2">
+                                      <EditSetForm
+                                        workoutId={workout.id}
+                                        set={set}
+                                      />
+
+                                      <form action={deleteSetFromExercise}>
+                                        <input
+                                          type="hidden"
+                                          name="workoutId"
+                                          value={workout.id}
+                                        />
+                                        <input
+                                          type="hidden"
+                                          name="workoutSetId"
+                                          value={set.id}
+                                        />
+                                        <DeleteInlineButton
+                                          label="Delete"
+                                          confirmMessage={`Delete set ${set.setNumber}?`}
+                                        />
+                                      </form>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </>
+                  )}
+
+                  <AddSetForm
+                    workoutId={workout.id}
+                    workoutExerciseId={exercise.id}
+                  />
+                </div>
+              );
+            })}
           </div>
         )}
       </section>
