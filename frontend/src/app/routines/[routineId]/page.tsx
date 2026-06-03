@@ -1,5 +1,6 @@
 import {
   deleteExerciseFromRoutine,
+  deleteRoutine,
   startRoutine,
 } from "@/app/actions/routines";
 import { auth } from "@/auth";
@@ -8,6 +9,8 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { AddTemplateExerciseForm } from "../add-template-exercise-form";
 import { DeleteRoutineExerciseButton } from "../delete-routine-exercise-button";
+import { DeleteRoutineButton } from "./delete-routine-button";
+import { EditRoutineForm } from "./edit-routine-form";
 
 type RoutineDetailPageProps = {
   params: Promise<{
@@ -89,15 +92,31 @@ export default async function RoutineDetailPage({
             </p>
           </div>
 
-          <form action={startRoutine}>
-            <input type="hidden" name="routineId" value={routine.id} />
-            <button
-              type="submit"
-              className="w-full rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600 sm:w-auto"
-            >
-              Start workout
-            </button>
-          </form>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <form action={startRoutine}>
+              <input type="hidden" name="routineId" value={routine.id} />
+              <button
+                type="submit"
+                className="w-full rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600 sm:w-auto"
+              >
+                Start workout
+              </button>
+            </form>
+
+            <EditRoutineForm
+              routine={{
+                id: routine.id,
+                title: routine.title,
+                goal: routine.goal,
+                description: routine.description,
+              }}
+            />
+
+            <form action={deleteRoutine}>
+              <input type="hidden" name="routineId" value={routine.id} />
+              <DeleteRoutineButton routineTitle={routine.title} />
+            </form>
+          </div>
         </div>
 
         {routine.description && (

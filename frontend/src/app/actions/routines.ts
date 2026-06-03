@@ -12,6 +12,17 @@ const createRoutineSchema = z.object({
   description: z.string().optional(),
 });
 
+const updateRoutineSchema = z.object({
+  routineId: z.string().min(1),
+  title: z.string().min(1, "Routine title is required"),
+  goal: z.string().optional(),
+  description: z.string().optional(),
+});
+
+const deleteRoutineSchema = z.object({
+  routineId: z.string().min(1),
+});
+
 const addTemplateExerciseSchema = z.object({
   routineId: z.string().min(1),
   exerciseId: z.string().optional(),
@@ -83,6 +94,50 @@ export async function createRoutine(formData: FormData) {
   });
 
   redirect(`/routines/${routine.id}`);
+}
+
+export async function updateRoutine(formData: FormData) {
+  const userId = await requireUserId();
+
+  const parsed = updateRoutineSchema.parse({
+    routineId: formData.get("routineId"),
+    title: formData.get("title"),
+    goal: formData.get("goal") || undefined,
+    description: formData.get("description") || undefined,
+  });
+
+  await verifyRoutineOwner(parsed.routineId, userId);
+
+  await db.workoutTemplate.update({
+    where: {
+      id: parsed.routineId,
+    },
+    data: {
+      title: parsed.title.trim(),
+      goal: parsed.goal?.trim() || null,
+      description: parsed.description?.trim() || null,
+    },
+  });
+
+  revalidatePath(`/routines/${parsed.routineId}`);
+}
+
+export async function deleteRoutine(formData: FormData) {
+  const userId = await requireUserId();
+
+  const parsed = deleteRoutineSchema.parse({
+    routineId: formData.get("routineId"),
+  });
+
+  await verifyRoutineOwner(parsed.routineId, userId);
+
+  await db.workoutTemplate.delete({
+    where: {
+      id: parsed.routineId,
+    },
+  });
+
+  redirect("/routines");
 }
 
 export async function addExerciseToRoutine(formData: FormData) {
