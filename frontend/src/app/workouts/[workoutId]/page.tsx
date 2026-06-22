@@ -15,6 +15,7 @@ import { AddExerciseForm } from "./add-exercise-form";
 import { AddSetForm } from "./add-set-form";
 import { DeleteWorkoutButton } from "./delete-workout-button";
 import { EditSetForm } from "./edit-set-form";
+import { EditWorkoutForm } from "./edit-workout-form";
 import { PreviousPerformanceCard } from "./previous-performance-card";
 
 type WorkoutDetailPageProps = {
@@ -129,7 +130,8 @@ export default async function WorkoutDetailPage({
             <h1 className="text-3xl font-bold">{workout.title}</h1>
 
             <p className="mt-2 text-neutral-600">
-              {formatWorkoutDate(workout.date)} · {workout.goal || "No goal set"}
+              {formatWorkoutDate(workout.date)} ·{" "}
+              {workout.goal || "No goal set"}
             </p>
           </div>
 
@@ -149,6 +151,16 @@ export default async function WorkoutDetailPage({
             </form>
           </div>
         </div>
+
+        <EditWorkoutForm
+          workout={{
+            id: workout.id,
+            title: workout.title,
+            goal: workout.goal,
+            notes: workout.notes,
+            date: workout.date,
+          }}
+        />
 
         {workout.notes && (
           <p className="mt-4 rounded-2xl bg-neutral-100 p-4 text-neutral-700">

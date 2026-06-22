@@ -2,6 +2,7 @@
 
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
@@ -12,30 +13,44 @@ const createWorkoutSchema = z.object({
   date: z.string().min(1, "Date is required"),
 });
 
+const updateWorkoutSchema = z.object({
+  workoutId: z.string().min(1, "Workout ID is required"),
+  title: z.string().min(1, "Workout title is required"),
+  goal: z.string().optional(),
+  notes: z.string().optional(),
+  date: z.string().min(1, "Date is required"),
+});
+
 function calendarDateToUtcNoon(dateString: string) {
   return new Date(`${dateString}T12:00:00.000Z`);
 }
 
-export async function createWorkout(formData: FormData) {
+async function requireUserId() {
   const session = await auth();
 
   if (!session?.user?.id) {
     redirect("/login");
   }
 
+  return session.user.id;
+}
+
+export async function createWorkout(formData: FormData) {
+  const userId = await requireUserId();
+
   const parsed = createWorkoutSchema.parse({
     title: formData.get("title"),
-    goal: formData.get("goal"),
-    notes: formData.get("notes"),
+    goal: formData.get("goal") || undefined,
+    notes: formData.get("notes") || undefined,
     date: formData.get("date"),
   });
 
   const workout = await db.workout.create({
     data: {
-      userId: session.user.id,
-      title: parsed.title,
-      goal: parsed.goal,
-      notes: parsed.notes,
+      userId,
+      title: parsed.title.trim(),
+      goal: parsed.goal?.trim() || null,
+      notes: parsed.notes?.trim() || null,
       date: calendarDateToUtcNoon(parsed.date),
     },
   });
@@ -43,12 +58,41 @@ export async function createWorkout(formData: FormData) {
   redirect(`/workouts/${workout.id}`);
 }
 
-export async function deleteWorkout(formData: FormData) {
-  const session = await auth();
+export async function updateWorkout(formData: FormData) {
+  const userId = await requireUserId();
 
-  if (!session?.user?.id) {
-    redirect("/login");
+  const parsed = updateWorkoutSchema.parse({
+    workoutId: formData.get("workoutId"),
+    title: formData.get("title"),
+    goal: formData.get("goal") || undefined,
+    notes: formData.get("notes") || undefined,
+    date: formData.get("date"),
+  });
+
+  const updatedWorkout = await db.workout.updateMany({
+    where: {
+      id: parsed.workoutId,
+      userId,
+    },
+    data: {
+      title: parsed.title.trim(),
+      goal: parsed.goal?.trim() || null,
+      notes: parsed.notes?.trim() || null,
+      date: calendarDateToUtcNoon(parsed.date),
+    },
+  });
+
+  if (updatedWorkout.count === 0) {
+    throw new Error("Workout not found");
   }
+
+  revalidatePath(`/workouts/${parsed.workoutId}`);
+  revalidatePath("/workouts");
+  revalidatePath("/dashboard");
+}
+
+export async function deleteWorkout(formData: FormData) {
+  const userId = await requireUserId();
 
   const workoutId = String(formData.get("workoutId") ?? "");
 
@@ -59,7 +103,7 @@ export async function deleteWorkout(formData: FormData) {
   await db.workout.deleteMany({
     where: {
       id: workoutId,
-      userId: session.user.id,
+      userId,
     },
   });
 
@@ -67,11 +111,7 @@ export async function deleteWorkout(formData: FormData) {
 }
 
 export async function repeatWorkout(formData: FormData) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    redirect("/login");
-  }
+  const userId = await requireUserId();
 
   const workoutId = String(formData.get("workoutId") ?? "");
 
@@ -82,7 +122,7 @@ export async function repeatWorkout(formData: FormData) {
   const originalWorkout = await db.workout.findFirst({
     where: {
       id: workoutId,
-      userId: session.user.id,
+      userId,
     },
     include: {
       exercises: {
@@ -101,7 +141,7 @@ export async function repeatWorkout(formData: FormData) {
 
   const newWorkout = await db.workout.create({
     data: {
-      userId: session.user.id,
+      userId,
       title: originalWorkout.title,
       goal: originalWorkout.goal,
       notes: null,
