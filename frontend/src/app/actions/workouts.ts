@@ -25,6 +25,11 @@ function calendarDateToUtcNoon(dateString: string) {
   return new Date(`${dateString}T12:00:00.000Z`);
 }
 
+function todayAtUtcNoon() {
+  const today = new Date().toISOString().split("T")[0];
+  return new Date(`${today}T12:00:00.000Z`);
+}
+
 async function requireUserId() {
   const session = await auth();
 
@@ -52,6 +57,22 @@ export async function createWorkout(formData: FormData) {
       goal: parsed.goal?.trim() || null,
       notes: parsed.notes?.trim() || null,
       date: calendarDateToUtcNoon(parsed.date),
+    },
+  });
+
+  redirect(`/workouts/${workout.id}`);
+}
+
+export async function startTodaysWorkout() {
+  const userId = await requireUserId();
+
+  const workout = await db.workout.create({
+    data: {
+      userId,
+      title: "Today's Workout",
+      goal: null,
+      notes: null,
+      date: todayAtUtcNoon(),
     },
   });
 
@@ -137,15 +158,13 @@ export async function repeatWorkout(formData: FormData) {
     throw new Error("Workout not found");
   }
 
-  const today = new Date().toISOString().split("T")[0];
-
   const newWorkout = await db.workout.create({
     data: {
       userId,
       title: originalWorkout.title,
       goal: originalWorkout.goal,
       notes: null,
-      date: new Date(`${today}T12:00:00.000Z`),
+      date: todayAtUtcNoon(),
       exercises: {
         create: originalWorkout.exercises.map((exercise) => ({
           exerciseId: exercise.exerciseId,

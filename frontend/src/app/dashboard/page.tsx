@@ -1,3 +1,4 @@
+import { startTodaysWorkout } from "@/app/actions/workouts";
 import { auth } from "@/auth";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { PageHeader } from "@/components/ui/page-header";
@@ -43,6 +44,35 @@ export default async function DashboardPage() {
         description="Your training home base for consistency, workload, routines, personal records, and future AI-powered suggestions."
         action={<LogoutButton />}
       />
+
+      <section className="mb-8 rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6">
+        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+          <div>
+            <h2 className="text-xl font-semibold">Ready to train?</h2>
+            <p className="mt-1 text-sm text-neutral-600">
+              Start a blank workout for today and add exercises as you go.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <form action={startTodaysWorkout}>
+              <button
+                type="submit"
+                className="w-full rounded-xl bg-emerald-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600 sm:w-auto"
+              >
+                Start today's workout
+              </button>
+            </form>
+
+            <Link
+              href="/routines"
+              className="w-full rounded-xl border border-neutral-300 px-5 py-3 text-center text-sm font-semibold transition hover:bg-neutral-50 sm:w-auto"
+            >
+              Start from routine
+            </Link>
+          </div>
+        </div>
+      </section>
 
       {(!hasProfile || !hasWorkouts) && (
         <section className="mb-8 rounded-3xl border border-emerald-200 bg-emerald-50 p-5 sm:p-6">
