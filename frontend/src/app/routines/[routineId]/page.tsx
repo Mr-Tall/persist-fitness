@@ -11,6 +11,7 @@ import { AddTemplateExerciseForm } from "../add-template-exercise-form";
 import { DeleteRoutineExerciseButton } from "../delete-routine-exercise-button";
 import { DeleteRoutineButton } from "./delete-routine-button";
 import { EditRoutineForm } from "./edit-routine-form";
+import { EditTemplateExerciseForm } from "./edit-template-exercise-form";
 
 type RoutineDetailPageProps = {
   params: Promise<{
@@ -151,30 +152,51 @@ export default async function RoutineDetailPage({
               {routine.exercises.map((exercise, index) => (
                 <div
                   key={exercise.id}
-                  className="flex flex-col justify-between gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 sm:flex-row sm:items-center"
+                  className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4"
                 >
-                  <div>
-                    <p className="font-semibold">
-                      {index + 1}. {exercise.name}
-                    </p>
-                    <p className="mt-1 text-sm text-neutral-600">
-                      {exercise.sets ? `${exercise.sets} sets` : "Sets not set"}
-                      {exercise.reps ? ` · ${exercise.reps} reps` : ""}
-                      {exercise.notes ? ` · ${exercise.notes}` : ""}
-                    </p>
-                  </div>
+                  <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+                    <div>
+                      <p className="font-semibold">
+                        {index + 1}. {exercise.name}
+                      </p>
+                      <p className="mt-1 text-sm text-neutral-600">
+                        {exercise.sets
+                          ? `${exercise.sets} sets`
+                          : "Sets not set"}
+                        {exercise.reps ? ` · ${exercise.reps} reps` : ""}
+                        {exercise.notes ? ` · ${exercise.notes}` : ""}
+                      </p>
+                    </div>
 
-                  <form action={deleteExerciseFromRoutine}>
-                    <input type="hidden" name="routineId" value={routine.id} />
-                    <input
-                      type="hidden"
-                      name="templateExerciseId"
-                      value={exercise.id}
-                    />
-                    <DeleteRoutineExerciseButton
-                      exerciseName={exercise.name}
-                    />
-                  </form>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                      <EditTemplateExerciseForm
+                        routineId={routine.id}
+                        exercise={{
+                          id: exercise.id,
+                          name: exercise.name,
+                          sets: exercise.sets,
+                          reps: exercise.reps,
+                          notes: exercise.notes,
+                        }}
+                      />
+
+                      <form action={deleteExerciseFromRoutine}>
+                        <input
+                          type="hidden"
+                          name="routineId"
+                          value={routine.id}
+                        />
+                        <input
+                          type="hidden"
+                          name="templateExerciseId"
+                          value={exercise.id}
+                        />
+                        <DeleteRoutineExerciseButton
+                          exerciseName={exercise.name}
+                        />
+                      </form>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>

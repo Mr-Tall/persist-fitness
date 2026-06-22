@@ -32,6 +32,14 @@ const addTemplateExerciseSchema = z.object({
   notes: z.string().optional(),
 });
 
+const updateTemplateExerciseSchema = z.object({
+  routineId: z.string().min(1),
+  templateExerciseId: z.string().min(1),
+  sets: z.coerce.number().int().min(1).max(20).optional(),
+  reps: z.string().optional(),
+  notes: z.string().optional(),
+});
+
 const deleteTemplateExerciseSchema = z.object({
   routineId: z.string().min(1),
   templateExerciseId: z.string().min(1),
@@ -120,6 +128,7 @@ export async function updateRoutine(formData: FormData) {
   });
 
   revalidatePath(`/routines/${parsed.routineId}`);
+  revalidatePath("/routines");
 }
 
 export async function deleteRoutine(formData: FormData) {
@@ -197,6 +206,41 @@ export async function addExerciseToRoutine(formData: FormData) {
       order: exerciseCount,
     },
   });
+
+  revalidatePath(`/routines/${parsed.routineId}`);
+}
+
+export async function updateExerciseInRoutine(formData: FormData) {
+  const userId = await requireUserId();
+
+  const parsed = updateTemplateExerciseSchema.parse({
+    routineId: formData.get("routineId"),
+    templateExerciseId: formData.get("templateExerciseId"),
+    sets: formData.get("sets") || undefined,
+    reps: formData.get("reps") || undefined,
+    notes: formData.get("notes") || undefined,
+  });
+
+  await verifyRoutineOwner(parsed.routineId, userId);
+
+  const updatedExercise = await db.templateExercise.updateMany({
+    where: {
+      id: parsed.templateExerciseId,
+      templateId: parsed.routineId,
+      template: {
+        userId,
+      },
+    },
+    data: {
+      sets: parsed.sets,
+      reps: parsed.reps?.trim() || null,
+      notes: parsed.notes?.trim() || null,
+    },
+  });
+
+  if (updatedExercise.count === 0) {
+    throw new Error("Routine exercise not found");
+  }
 
   revalidatePath(`/routines/${parsed.routineId}`);
 }
