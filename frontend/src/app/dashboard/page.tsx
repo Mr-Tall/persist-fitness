@@ -1,7 +1,6 @@
 import { startTodaysWorkout } from "@/app/actions/workouts";
 import { auth } from "@/auth";
 import { LogoutButton } from "@/components/auth/logout-button";
-import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { db } from "@/lib/db";
 import { getDashboardAnalytics } from "@/lib/dashboard-analytics";
@@ -14,6 +13,42 @@ function formatVolume(volume: number) {
   return `${Math.round(volume).toLocaleString()} lb`;
 }
 
+function getFirstName(name?: string | null) {
+  return name?.split(" ")[0] ?? "athlete";
+}
+
+function getTrainingStatus(workoutsThisWeek: number) {
+  if (workoutsThisWeek >= 4) {
+    return {
+      label: "High output week",
+      message:
+        "You are stacking sessions consistently. Keep recovery in mind as volume climbs.",
+    };
+  }
+
+  if (workoutsThisWeek >= 2) {
+    return {
+      label: "Good momentum",
+      message:
+        "You are building the week well. One or two more quality sessions would keep the streak strong.",
+    };
+  }
+
+  if (workoutsThisWeek === 1) {
+    return {
+      label: "Week started",
+      message:
+        "You have one session logged this week. Start another workout when you are ready.",
+    };
+  }
+
+  return {
+    label: "Fresh week",
+    message:
+      "No workouts logged this week yet. Start a session today and build momentum.",
+  };
+}
+
 export default async function DashboardPage() {
   const session = await auth();
 
@@ -21,7 +56,7 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const [profile, analytics, personalRecords] = await Promise.all([
+  const [profile, analytics, personalRecords, routineCount] = await Promise.all([
     db.profile.findUnique({
       where: {
         userId: session.user.id,
@@ -29,36 +64,61 @@ export default async function DashboardPage() {
     }),
     getDashboardAnalytics(session.user.id),
     getTopExercisePersonalRecords(session.user.id, 5),
+    db.workoutTemplate.count({
+      where: {
+        userId: session.user.id,
+      },
+    }),
   ]);
 
   const hasProfile = Boolean(profile);
   const hasWorkouts = analytics.workoutCount > 0;
+  const hasRoutines = routineCount > 0;
+  const firstName = getFirstName(session.user.name);
+  const trainingStatus = getTrainingStatus(analytics.workoutsThisWeek);
+  const latestWorkout = analytics.recentWorkouts[0];
+  const topRecord = personalRecords[0];
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
-      <PageHeader
-        eyebrow="Dashboard"
-        title={`Welcome back${
-          session.user.name ? `, ${session.user.name.split(" ")[0]}` : ""
-        }`}
-        description="Your training home base for consistency, workload, routines, personal records, and future AI-powered suggestions."
-        action={<LogoutButton />}
-      />
+      <section className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.06] p-5 shadow-sm backdrop-blur sm:p-8">
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,rgba(52,211,153,0.24),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(132,204,22,0.12),transparent_34%)]" />
 
-      <section className="mb-8 rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6">
-        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-          <div>
-            <h2 className="text-xl font-semibold">Ready to train?</h2>
-            <p className="mt-1 text-sm text-neutral-600">
-              Start a blank workout for today and add exercises as you go.
+        <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
+          <div className="max-w-3xl">
+            <p className="text-xs font-black uppercase tracking-[0.28em] text-emerald-300">
+              Training command center
             </p>
+
+            <h1 className="mt-4 bg-gradient-to-r from-white via-neutral-100 to-neutral-400 bg-clip-text text-4xl font-black tracking-tight text-transparent sm:text-6xl">
+              Welcome back, {firstName}.
+            </h1>
+
+            <p className="mt-4 max-w-2xl text-sm leading-6 text-neutral-300 sm:text-base">
+              Persist Fitness is tracking your consistency, workload, PRs, and
+              training history so every session has context.
+            </p>
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <span className="rounded-full border border-emerald-300/30 bg-emerald-400/10 px-4 py-2 text-sm font-bold text-emerald-200">
+                {trainingStatus.label}
+              </span>
+
+              <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-neutral-300">
+                {analytics.currentStreak} day streak
+              </span>
+
+              <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-neutral-300">
+                {analytics.workoutsThisWeek} this week
+              </span>
+            </div>
           </div>
 
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="flex shrink-0 flex-col gap-2 sm:flex-row lg:flex-col">
             <form action={startTodaysWorkout}>
               <button
                 type="submit"
-                className="w-full rounded-xl bg-emerald-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600 sm:w-auto"
+                className="w-full rounded-2xl bg-emerald-400 px-6 py-4 text-sm font-black text-black shadow-[0_18px_50px_rgba(52,211,153,0.22)] transition hover:-translate-y-0.5 hover:bg-emerald-300 sm:w-auto lg:w-full"
               >
                 Start today's workout
               </button>
@@ -66,57 +126,80 @@ export default async function DashboardPage() {
 
             <Link
               href="/routines"
-              className="w-full rounded-xl border border-neutral-300 px-5 py-3 text-center text-sm font-semibold transition hover:bg-neutral-50 sm:w-auto"
+              className="w-full rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-center text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-white/10 sm:w-auto lg:w-full"
             >
               Start from routine
             </Link>
+
+            <LogoutButton />
           </div>
         </div>
       </section>
 
-      {(!hasProfile || !hasWorkouts) && (
-        <section className="mb-8 rounded-3xl border border-emerald-200 bg-emerald-50 p-5 sm:p-6">
-          <h2 className="text-lg font-semibold text-neutral-950">
-            Finish setting up Persist Fitness
-          </h2>
+      {(!hasProfile || !hasWorkouts || !hasRoutines) && (
+        <section className="mt-6 rounded-[2rem] border border-emerald-300/20 bg-emerald-400/[0.08] p-5 backdrop-blur sm:p-6">
+          <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
+            <div>
+              <h2 className="text-xl font-black text-white">
+                Finish your MVP training setup
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-neutral-300">
+                Complete these basics so the app can give better workout context
+                and eventually stronger AI-assisted recommendations.
+              </p>
+            </div>
 
-          <div className="mt-5 grid gap-3 md:grid-cols-2">
+            <div className="rounded-full border border-emerald-300/30 bg-black/20 px-4 py-2 text-sm font-bold text-emerald-200">
+              {[
+                hasProfile ? 1 : 0,
+                hasWorkouts ? 1 : 0,
+                hasRoutines ? 1 : 0,
+              ].reduce((total, value) => total + value, 0)}
+              /3 complete
+            </div>
+          </div>
+
+          <div className="mt-5 grid gap-3 md:grid-cols-3">
             <Link
               href="/settings"
-              className={`rounded-2xl border p-4 transition ${
-                hasProfile
-                  ? "border-emerald-200 bg-white text-neutral-500"
-                  : "border-emerald-300 bg-white hover:border-emerald-500"
-              }`}
+              className="rounded-2xl border border-white/10 bg-white/[0.06] p-4 transition hover:border-emerald-300/40 hover:bg-white/[0.09]"
             >
-              <p className="font-semibold">
-                {hasProfile ? "Profile complete" : "1. Complete your profile"}
+              <p className="font-black text-white">
+                {hasProfile ? "Profile complete" : "Complete profile"}
               </p>
-              <p className="mt-1 text-sm text-neutral-600">
-                Add your goal, training split, experience, and equipment.
+              <p className="mt-1 text-sm leading-5 text-neutral-400">
+                Goals, experience, equipment, and training split.
               </p>
             </Link>
 
             <Link
               href="/workouts/new"
-              className={`rounded-2xl border p-4 transition ${
-                hasWorkouts
-                  ? "border-emerald-200 bg-white text-neutral-500"
-                  : "border-emerald-300 bg-white hover:border-emerald-500"
-              }`}
+              className="rounded-2xl border border-white/10 bg-white/[0.06] p-4 transition hover:border-emerald-300/40 hover:bg-white/[0.09]"
             >
-              <p className="font-semibold">
-                {hasWorkouts ? "First workout logged" : "2. Log your first workout"}
+              <p className="font-black text-white">
+                {hasWorkouts ? "Workout logged" : "Log first workout"}
               </p>
-              <p className="mt-1 text-sm text-neutral-600">
-                Create a session, add exercises, and start tracking sets.
+              <p className="mt-1 text-sm leading-5 text-neutral-400">
+                Create a session and save your first working sets.
+              </p>
+            </Link>
+
+            <Link
+              href="/routines/new"
+              className="rounded-2xl border border-white/10 bg-white/[0.06] p-4 transition hover:border-emerald-300/40 hover:bg-white/[0.09]"
+            >
+              <p className="font-black text-white">
+                {hasRoutines ? "Routine created" : "Create a routine"}
+              </p>
+              <p className="mt-1 text-sm leading-5 text-neutral-400">
+                Build reusable templates for your weekly training.
               </p>
             </Link>
           </div>
         </section>
       )}
 
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="mt-6 grid gap-4 md:grid-cols-3">
         <StatCard
           label="Total workouts"
           value={analytics.workoutCount}
@@ -156,129 +239,229 @@ export default async function DashboardPage() {
         />
       </section>
 
-      <section className="mt-8 rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6">
+      <section className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-5 shadow-sm backdrop-blur sm:p-6">
+          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-300">
+                Next best action
+              </p>
+              <h2 className="mt-2 text-2xl font-black text-white">
+                {latestWorkout
+                  ? "Build from your last session"
+                  : "Start your first tracked session"}
+              </h2>
+            </div>
+          </div>
+
+          <p className="mt-4 text-sm leading-6 text-neutral-300">
+            {trainingStatus.message}
+          </p>
+
+          {latestWorkout ? (
+            <Link
+              href={`/workouts/${latestWorkout.id}`}
+              className="mt-5 block rounded-2xl border border-white/10 bg-black/20 p-4 transition hover:border-emerald-300/40 hover:bg-white/[0.08]"
+            >
+              <p className="text-sm font-bold text-neutral-400">
+                Latest workout
+              </p>
+              <p className="mt-2 text-xl font-black text-white">
+                {latestWorkout.title}
+              </p>
+              <p className="mt-1 text-sm text-neutral-400">
+                {formatWorkoutDate(latestWorkout.date)} ·{" "}
+                {latestWorkout.goal || "No goal set"}
+              </p>
+            </Link>
+          ) : (
+            <form action={startTodaysWorkout} className="mt-5">
+              <button
+                type="submit"
+                className="w-full rounded-2xl bg-emerald-400 px-5 py-4 text-sm font-black text-black transition hover:bg-emerald-300 sm:w-auto"
+              >
+                Start tracking now
+              </button>
+            </form>
+          )}
+        </div>
+
+        <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-5 shadow-sm backdrop-blur sm:p-6">
+          <p className="text-xs font-black uppercase tracking-[0.24em] text-amber-300">
+            Top lift
+          </p>
+
+          {topRecord ? (
+            <Link
+              href={`/workouts/${topRecord.workoutId}`}
+              className="mt-4 block rounded-2xl border border-amber-300/20 bg-amber-400/[0.08] p-4 transition hover:border-amber-300/40"
+            >
+              <p className="text-2xl font-black text-white">
+                {topRecord.exerciseName}
+              </p>
+              <p className="mt-2 text-sm text-neutral-300">
+                {topRecord.weight} lb × {topRecord.reps} reps
+              </p>
+              <p className="mt-4 inline-flex rounded-full bg-amber-300/15 px-3 py-1 text-sm font-black text-amber-200">
+                est. 1RM {Math.round(topRecord.estimatedOneRepMax)} lb
+              </p>
+            </Link>
+          ) : (
+            <div className="mt-4 rounded-2xl border border-dashed border-white/10 p-6 text-center">
+              <p className="font-bold text-white">No top lift yet</p>
+              <p className="mt-2 text-sm leading-6 text-neutral-400">
+                Log weighted sets to start building your strength profile.
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="mt-6 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+        {profile && (
+          <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-5 shadow-sm backdrop-blur sm:p-6">
+            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+              <div>
+                <h2 className="text-xl font-black text-white">
+                  Training setup
+                </h2>
+                <p className="mt-1 text-sm text-neutral-400">
+                  Current inputs for future planning.
+                </p>
+              </div>
+
+              <Link
+                href="/settings"
+                className="rounded-xl border border-white/10 px-4 py-2 text-sm font-bold text-white transition hover:bg-white/10"
+              >
+                Edit
+              </Link>
+            </div>
+
+            <div className="mt-5 grid gap-3">
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-neutral-500">
+                  Experience
+                </p>
+                <p className="mt-1 font-black text-white">
+                  {profile.experience ?? "Not set"}
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-neutral-500">
+                  Weekly availability
+                </p>
+                <p className="mt-1 font-black text-white">
+                  {profile.availableDays
+                    ? `${profile.availableDays} days`
+                    : "Not set"}
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-neutral-500">
+                  Equipment
+                </p>
+                <p className="mt-1 font-black text-white">
+                  {profile.equipment.length
+                    ? profile.equipment.join(", ")
+                    : "Not set"}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-5 shadow-sm backdrop-blur sm:p-6">
+          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+            <div>
+              <h2 className="text-xl font-black text-white">
+                Recent workouts
+              </h2>
+              <p className="mt-1 text-sm text-neutral-400">
+                Jump back into your latest sessions.
+              </p>
+            </div>
+
+            <Link
+              href="/workouts"
+              className="rounded-xl border border-white/10 px-4 py-2 text-sm font-bold text-white transition hover:bg-white/10"
+            >
+              View all
+            </Link>
+          </div>
+
+          {analytics.recentWorkouts.length === 0 ? (
+            <div className="mt-5 rounded-2xl border border-dashed border-white/10 p-6 text-center">
+              <p className="font-bold text-white">No workouts yet</p>
+              <Link
+                href="/workouts/new"
+                className="mt-4 inline-block rounded-xl bg-emerald-400 px-4 py-2 text-sm font-black text-black hover:bg-emerald-300"
+              >
+                Log first workout
+              </Link>
+            </div>
+          ) : (
+            <div className="mt-5 space-y-3">
+              {analytics.recentWorkouts.map((workout) => (
+                <Link
+                  key={workout.id}
+                  href={`/workouts/${workout.id}`}
+                  className="block rounded-2xl border border-white/10 bg-black/20 p-4 transition hover:border-emerald-300/40 hover:bg-white/[0.08]"
+                >
+                  <p className="font-black text-white">{workout.title}</p>
+                  <p className="mt-1 text-sm text-neutral-400">
+                    {formatWorkoutDate(workout.date)} ·{" "}
+                    {workout.goal || "No goal set"}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="mt-6 rounded-[2rem] border border-white/10 bg-white/[0.06] p-5 shadow-sm backdrop-blur sm:p-6">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <div>
-            <h2 className="text-xl font-semibold">Personal records</h2>
-            <p className="mt-1 text-sm text-neutral-600">
+            <h2 className="text-xl font-black text-white">Personal records</h2>
+            <p className="mt-1 text-sm text-neutral-400">
               Your strongest logged sets ranked by estimated one-rep max.
             </p>
           </div>
         </div>
 
         {personalRecords.length === 0 ? (
-          <div className="mt-5 rounded-2xl border border-dashed border-neutral-300 p-6 text-center">
-            <p className="font-medium">No PRs yet</p>
-            <p className="mt-2 text-sm text-neutral-600">
+          <div className="mt-5 rounded-2xl border border-dashed border-white/10 p-6 text-center">
+            <p className="font-bold text-white">No PRs yet</p>
+            <p className="mt-2 text-sm text-neutral-400">
               Log sets with weight and reps to start building personal records.
             </p>
           </div>
         ) : (
-          <div className="mt-5 space-y-3">
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
             {personalRecords.map((record) => (
               <Link
                 key={`${record.exerciseName}-${record.workoutId}`}
                 href={`/workouts/${record.workoutId}`}
-                className="block rounded-2xl border border-neutral-200 p-4 transition hover:border-neutral-400 hover:bg-neutral-50"
+                className="block rounded-2xl border border-white/10 bg-black/20 p-4 transition hover:border-amber-300/40 hover:bg-white/[0.08]"
               >
                 <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
                   <div>
-                    <p className="font-semibold">{record.exerciseName}</p>
-                    <p className="mt-1 text-sm text-neutral-500">
+                    <p className="font-black text-white">
+                      {record.exerciseName}
+                    </p>
+                    <p className="mt-1 text-sm text-neutral-400">
                       {record.weight} lb × {record.reps} reps ·{" "}
                       {formatWorkoutDate(record.workoutDate)}
                     </p>
                   </div>
 
-                  <div className="rounded-full bg-amber-50 px-3 py-1 text-sm font-semibold text-amber-700">
-                    est. 1RM {Math.round(record.estimatedOneRepMax)} lb
+                  <div className="rounded-full bg-amber-300/15 px-3 py-1 text-sm font-black text-amber-200">
+                    {Math.round(record.estimatedOneRepMax)} lb
                   </div>
                 </div>
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {profile && (
-        <section className="mt-8 rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6">
-          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-            <div>
-              <h2 className="text-xl font-semibold">Training setup</h2>
-              <p className="mt-1 text-sm text-neutral-600">
-                Your current preferences for workout planning.
-              </p>
-            </div>
-
-            <Link
-              href="/settings"
-              className="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-semibold hover:bg-neutral-50"
-            >
-              Edit profile
-            </Link>
-          </div>
-
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
-            <p>
-              <span className="font-medium">Experience:</span>{" "}
-              {profile.experience ?? "Not set"}
-            </p>
-            <p>
-              <span className="font-medium">Days per week:</span>{" "}
-              {profile.availableDays ?? "Not set"}
-            </p>
-            <p>
-              <span className="font-medium">Training age:</span>{" "}
-              {profile.trainingAge ?? "Not set"}
-            </p>
-            <p>
-              <span className="font-medium">Equipment:</span>{" "}
-              {profile.equipment.length ? profile.equipment.join(", ") : "Not set"}
-            </p>
-          </div>
-        </section>
-      )}
-
-      <section className="mt-8 rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6">
-        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-          <div>
-            <h2 className="text-xl font-semibold">Recent workouts</h2>
-            <p className="mt-1 text-sm text-neutral-600">
-              Quickly jump back into your latest sessions.
-            </p>
-          </div>
-
-          <Link
-            href="/workouts"
-            className="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-semibold hover:bg-neutral-50"
-          >
-            View all
-          </Link>
-        </div>
-
-        {analytics.recentWorkouts.length === 0 ? (
-          <div className="mt-5 rounded-2xl border border-dashed border-neutral-300 p-6 text-center">
-            <p className="font-medium">No workouts yet</p>
-            <Link
-              href="/workouts/new"
-              className="mt-4 inline-block rounded-xl bg-neutral-950 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800"
-            >
-              Log first workout
-            </Link>
-          </div>
-        ) : (
-          <div className="mt-5 space-y-3">
-            {analytics.recentWorkouts.map((workout) => (
-              <Link
-                key={workout.id}
-                href={`/workouts/${workout.id}`}
-                className="block rounded-2xl border border-neutral-200 p-4 transition hover:border-neutral-400 hover:bg-neutral-50"
-              >
-                <p className="font-semibold">{workout.title}</p>
-                <p className="mt-1 text-sm text-neutral-500">
-                  {formatWorkoutDate(workout.date)} ·{" "}
-                  {workout.goal || "No goal set"}
-                </p>
               </Link>
             ))}
           </div>
