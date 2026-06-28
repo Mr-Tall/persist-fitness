@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #050505;
+  --foreground: #fafafa;
 }
 
 * {
@@ -11,6 +11,7 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  background: var(--background);
 }
 
 body {
@@ -25,4 +26,122 @@ input,
 textarea,
 select {
   font: inherit;
+}
+
+::selection {
+  background: rgba(52, 211, 153, 0.35);
+}
+
+.bg-white {
+  background-color: rgba(24, 24, 27, 0.84);
+}
+
+.bg-white\/95 {
+  background-color: rgba(10, 10, 10, 0.78);
+}
+
+.bg-neutral-50,
+.bg-neutral-100 {
+  background-color: rgba(39, 39, 42, 0.72);
+}
+
+.border-neutral-100,
+.border-neutral-200,
+.border-neutral-300 {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.text-neutral-950,
+.text-neutral-900,
+.text-neutral-800 {
+  color: #fafafa;
+}
+
+.text-neutral-700 {
+  color: #e4e4e7;
+}
+
+.text-neutral-600,
+.text-neutral-500 {
+  color: #a1a1aa;
+}
+
+.shadow-sm,
+.shadow-2xl {
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
+}
+
+input,
+textarea,
+select {
+  background-color: rgba(9, 9, 11, 0.86);
+  color: #fafafa;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #71717a;
+}
+
+option {
+  background-color: #09090b;
+  color: #fafafa;
+}
+
+.bg-emerald-50 {
+  background-color: rgba(6, 78, 59, 0.35);
+}
+
+.border-emerald-100,
+.border-emerald-200,
+.border-emerald-300 {
+  border-color: rgba(52, 211, 153, 0.32);
+}
+
+.text-emerald-600,
+.text-emerald-700,
+.text-emerald-800,
+.text-emerald-950 {
+  color: #6ee7b7;
+}
+
+.bg-amber-50,
+.bg-amber-100 {
+  background-color: rgba(120, 53, 15, 0.35);
+}
+
+.border-amber-100 {
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.text-amber-700,
+.text-amber-800,
+.text-amber-900 {
+  color: #fcd34d;
+}
+
+.bg-red-50 {
+  background-color: rgba(127, 29, 29, 0.35);
+}
+
+.border-red-200 {
+  border-color: rgba(248, 113, 113, 0.35);
+}
+
+.text-red-600 {
+  color: #fca5a5;
+}
+
+.hover\:bg-neutral-50:hover,
+.hover\:bg-neutral-100:hover {
+  background-color: rgba(63, 63, 70, 0.7);
+}
+
+.hover\:text-neutral-950:hover {
+  color: #ffffff;
+}
+
+.hover\:bg-neutral-800:hover {
+  background-color: #d4d4d8;
 }

@@ -15,17 +15,17 @@ export function PageHeader({
     <section className="mb-8 flex flex-col justify-between gap-4 sm:mb-10 md:flex-row md:items-end">
       <div>
         {eyebrow && (
-          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-600">
+          <p className="text-xs font-black uppercase tracking-[0.28em] text-emerald-400">
             {eyebrow}
           </p>
         )}
 
-        <h1 className="mt-3 text-3xl font-bold tracking-tight text-neutral-950 sm:text-4xl">
+        <h1 className="mt-3 bg-gradient-to-r from-white via-neutral-100 to-neutral-400 bg-clip-text text-3xl font-black tracking-tight text-transparent sm:text-5xl">
           {title}
         </h1>
 
         {description && (
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-neutral-600 sm:text-base">
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-neutral-400 sm:text-base">
             {description}
           </p>
         )}
