@@ -16,6 +16,7 @@ import { AddSetForm } from "./add-set-form";
 import { DeleteWorkoutButton } from "./delete-workout-button";
 import { EditSetForm } from "./edit-set-form";
 import { EditWorkoutForm } from "./edit-workout-form";
+import { FinishWorkoutButton } from "./finish-workout-button";
 import { PreviousPerformanceCard } from "./previous-performance-card";
 
 type WorkoutDetailPageProps = {
@@ -47,6 +48,23 @@ function calculateWorkoutVolume(
 
 function formatVolume(volume: number) {
   return `${Math.round(volume).toLocaleString()} lb`;
+}
+
+function formatDuration(startedAt: Date | null, finishedAt: Date | null) {
+  if (!startedAt || !finishedAt) {
+    return "In progress";
+  }
+
+  const durationMs = finishedAt.getTime() - startedAt.getTime();
+  const totalMinutes = Math.max(1, Math.round(durationMs / 60000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  if (hours === 0) {
+    return `${minutes}m`;
+  }
+
+  return `${hours}h ${minutes}m`;
 }
 
 export default async function WorkoutDetailPage({
@@ -148,6 +166,8 @@ export default async function WorkoutDetailPage({
     0
   );
   const totalVolume = calculateWorkoutVolume(workout.exercises);
+  const isCompleted = workout.status === "completed";
+  const duration = formatDuration(workout.startedAt, workout.finishedAt);
 
   return (
     <main className="mx-auto max-w-5xl px-4 pb-28 pt-6 sm:px-6 sm:py-10">
@@ -173,7 +193,7 @@ export default async function WorkoutDetailPage({
             </p>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 sm:min-w-[360px]">
+          <div className="grid grid-cols-2 gap-2 sm:min-w-[420px] sm:grid-cols-4">
             <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-neutral-500">
                 Exercises
@@ -198,15 +218,26 @@ export default async function WorkoutDetailPage({
                 {formatVolume(totalVolume)}
               </p>
             </div>
+
+            <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-neutral-500">
+                Status
+              </p>
+              <p className="mt-1 text-xl font-black text-white">
+                {isCompleted ? "Done" : "Active"}
+              </p>
+            </div>
           </div>
         </div>
 
         <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <FinishWorkoutButton workoutId={workout.id} status={workout.status} />
+
           <form action={repeatWorkout}>
             <input type="hidden" name="workoutId" value={workout.id} />
             <button
               type="submit"
-              className="w-full rounded-xl bg-emerald-400 px-4 py-3 text-sm font-black text-black transition hover:bg-emerald-300 sm:w-auto"
+              className="w-full rounded-xl border border-white/10 px-4 py-3 text-sm font-black text-white transition hover:bg-white/10 sm:w-auto"
             >
               Repeat workout
             </button>
@@ -215,6 +246,22 @@ export default async function WorkoutDetailPage({
           <form action={deleteWorkout}>
             <DeleteWorkoutButton workoutId={workout.id} />
           </form>
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          <span
+            className={`rounded-full border px-3 py-1 text-xs font-black uppercase tracking-[0.16em] ${
+              isCompleted
+                ? "border-emerald-300/30 bg-emerald-400/10 text-emerald-200"
+                : "border-amber-300/30 bg-amber-400/10 text-amber-200"
+            }`}
+          >
+            {isCompleted ? "Completed" : "Active session"}
+          </span>
+
+          <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-neutral-300">
+            {duration}
+          </span>
         </div>
 
         <EditWorkoutForm
@@ -352,7 +399,9 @@ export default async function WorkoutDetailPage({
                                       Set {set.setNumber}
                                     </p>
                                     <p className="mt-1 text-2xl font-black text-white">
-                                      {set.weight !== null ? `${set.weight} lb` : "—"}{" "}
+                                      {set.weight !== null
+                                        ? `${set.weight} lb`
+                                        : "—"}{" "}
                                       <span className="text-neutral-500">×</span>{" "}
                                       {set.reps ?? "—"}
                                     </p>
@@ -384,7 +433,10 @@ export default async function WorkoutDetailPage({
                               {prStatus?.isPersonalRecord && (
                                 <div className="mt-4 rounded-2xl border border-amber-300/20 bg-amber-400/[0.10] px-4 py-3 text-sm font-black text-amber-200">
                                   New PR 🎉 est. 1RM{" "}
-                                  {Math.round(prStatus.estimatedOneRepMax ?? 0)} lb
+                                  {Math.round(
+                                    prStatus.estimatedOneRepMax ?? 0
+                                  )}{" "}
+                                  lb
                                 </div>
                               )}
 
@@ -463,10 +515,10 @@ export default async function WorkoutDetailPage({
 
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.16em] text-neutral-500">
-              Exercises
+              Status
             </p>
             <p className="mt-1 text-sm font-black text-white">
-              {workout.exercises.length}
+              {isCompleted ? "Done" : "Active"}
             </p>
           </div>
         </div>

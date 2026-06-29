@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -117,20 +118,23 @@ model FavoriteExercise {
 }
 
 model Workout {
-  id        String   @id @default(cuid())
-  userId    String
-  title     String
-  goal      String?
-  notes     String?
-  date      DateTime @default(now())
-  rpe       Int?
-  mood      String?
+  id         String    @id @default(cuid())
+  userId     String
+  title      String
+  goal       String?
+  notes      String?
+  date       DateTime  @default(now())
+  rpe        Int?
+  mood       String?
+  status     String    @default("active")
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  exercises WorkoutExercise[]
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercises  WorkoutExercise[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 }
 
 model WorkoutExercise {

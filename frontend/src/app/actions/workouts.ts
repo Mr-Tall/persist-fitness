@@ -21,6 +21,10 @@ const updateWorkoutSchema = z.object({
   date: z.string().min(1, "Date is required"),
 });
 
+const workoutIdSchema = z.object({
+  workoutId: z.string().min(1, "Workout ID is required"),
+});
+
 function calendarDateToUtcNoon(dateString: string) {
   return new Date(`${dateString}T12:00:00.000Z`);
 }
@@ -57,6 +61,9 @@ export async function createWorkout(formData: FormData) {
       goal: parsed.goal?.trim() || null,
       notes: parsed.notes?.trim() || null,
       date: calendarDateToUtcNoon(parsed.date),
+      status: "active",
+      startedAt: new Date(),
+      finishedAt: null,
     },
   });
 
@@ -73,6 +80,9 @@ export async function startTodaysWorkout() {
       goal: null,
       notes: null,
       date: todayAtUtcNoon(),
+      status: "active",
+      startedAt: new Date(),
+      finishedAt: null,
     },
   });
 
@@ -100,6 +110,60 @@ export async function updateWorkout(formData: FormData) {
       goal: parsed.goal?.trim() || null,
       notes: parsed.notes?.trim() || null,
       date: calendarDateToUtcNoon(parsed.date),
+    },
+  });
+
+  if (updatedWorkout.count === 0) {
+    throw new Error("Workout not found");
+  }
+
+  revalidatePath(`/workouts/${parsed.workoutId}`);
+  revalidatePath("/workouts");
+  revalidatePath("/dashboard");
+}
+
+export async function finishWorkout(formData: FormData) {
+  const userId = await requireUserId();
+
+  const parsed = workoutIdSchema.parse({
+    workoutId: formData.get("workoutId"),
+  });
+
+  const updatedWorkout = await db.workout.updateMany({
+    where: {
+      id: parsed.workoutId,
+      userId,
+    },
+    data: {
+      status: "completed",
+      finishedAt: new Date(),
+    },
+  });
+
+  if (updatedWorkout.count === 0) {
+    throw new Error("Workout not found");
+  }
+
+  revalidatePath(`/workouts/${parsed.workoutId}`);
+  revalidatePath("/workouts");
+  revalidatePath("/dashboard");
+}
+
+export async function reopenWorkout(formData: FormData) {
+  const userId = await requireUserId();
+
+  const parsed = workoutIdSchema.parse({
+    workoutId: formData.get("workoutId"),
+  });
+
+  const updatedWorkout = await db.workout.updateMany({
+    where: {
+      id: parsed.workoutId,
+      userId,
+    },
+    data: {
+      status: "active",
+      finishedAt: null,
     },
   });
 
@@ -165,6 +229,9 @@ export async function repeatWorkout(formData: FormData) {
       goal: originalWorkout.goal,
       notes: null,
       date: todayAtUtcNoon(),
+      status: "active",
+      startedAt: new Date(),
+      finishedAt: null,
       exercises: {
         create: originalWorkout.exercises.map((exercise) => ({
           exerciseId: exercise.exerciseId,
