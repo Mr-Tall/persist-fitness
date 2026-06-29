@@ -1,6 +1,9 @@
+"use client";
+
 import { addExerciseToWorkout } from "@/app/actions/workout-exercises";
 import { ExerciseSelect } from "@/components/exercise-select";
 import { SubmitButton } from "@/components/ui/submit-button";
+import { useState } from "react";
 
 type AddExerciseFormProps = {
   workoutId: string;
@@ -14,6 +17,8 @@ type AddExerciseFormProps = {
 };
 
 export function AddExerciseForm({ workoutId, exercises }: AddExerciseFormProps) {
+  const [canSubmit, setCanSubmit] = useState(false);
+
   return (
     <form
       action={addExerciseToWorkout}
@@ -27,12 +32,16 @@ export function AddExerciseForm({ workoutId, exercises }: AddExerciseFormProps) 
       </p>
 
       <div className="mt-4">
-        <ExerciseSelect exercises={exercises} />
+        <ExerciseSelect
+          exercises={exercises}
+          onValidityChange={setCanSubmit}
+        />
       </div>
 
       <SubmitButton
         pendingText="Adding exercise..."
-        className="mt-4 w-full rounded-xl bg-emerald-400 px-5 py-3 font-black text-black transition hover:bg-emerald-300 sm:w-auto"
+        disabled={!canSubmit}
+        className="mt-4 w-full rounded-xl bg-emerald-400 px-5 py-3 font-black text-black transition hover:bg-emerald-300 disabled:bg-neutral-700 disabled:text-neutral-400 sm:w-auto"
       >
         Add exercise
       </SubmitButton>

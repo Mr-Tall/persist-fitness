@@ -104,8 +104,9 @@ export async function addExerciseToWorkout(formData: FormData) {
   }
 
   if (!exerciseName) {
-    throw new Error("Exercise name is required");
-  }
+      revalidatePath(`/workouts/${parsed.workoutId}`);
+      return;
+    }
 
   const exerciseCount = await db.workoutExercise.count({
     where: {
