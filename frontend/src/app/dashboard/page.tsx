@@ -1,4 +1,3 @@
-import { startTodaysWorkout } from "@/app/actions/workouts";
 import { auth } from "@/auth";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { StatCard } from "@/components/ui/stat-card";
@@ -8,6 +7,7 @@ import { formatWorkoutDate } from "@/lib/format-date";
 import { getTopExercisePersonalRecords } from "@/lib/personal-records";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { StartWorkoutButton } from "./start-workout-button";
 
 function formatVolume(volume: number) {
   return `${Math.round(volume).toLocaleString()} lb`;
@@ -115,14 +115,7 @@ export default async function DashboardPage() {
           </div>
 
           <div className="flex shrink-0 flex-col gap-2 sm:flex-row lg:flex-col">
-            <form action={startTodaysWorkout}>
-              <button
-                type="submit"
-                className="w-full rounded-2xl bg-emerald-400 px-6 py-4 text-sm font-black text-black shadow-[0_18px_50px_rgba(52,211,153,0.22)] transition hover:-translate-y-0.5 hover:bg-emerald-300 sm:w-auto lg:w-full"
-              >
-                Start today's workout
-              </button>
-            </form>
+            <StartWorkoutButton />
 
             <Link
               href="/routines"
@@ -275,14 +268,9 @@ export default async function DashboardPage() {
               </p>
             </Link>
           ) : (
-            <form action={startTodaysWorkout} className="mt-5">
-              <button
-                type="submit"
-                className="w-full rounded-2xl bg-emerald-400 px-5 py-4 text-sm font-black text-black transition hover:bg-emerald-300 sm:w-auto"
-              >
-                Start tracking now
-              </button>
-            </form>
+            <div className="mt-5">
+              <StartWorkoutButton />
+            </div>
           )}
         </div>
 

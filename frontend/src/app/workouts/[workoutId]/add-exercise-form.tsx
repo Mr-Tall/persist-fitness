@@ -1,5 +1,6 @@
 import { addExerciseToWorkout } from "@/app/actions/workout-exercises";
 import { ExerciseSelect } from "@/components/exercise-select";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 type AddExerciseFormProps = {
   workoutId: string;
@@ -8,6 +9,7 @@ type AddExerciseFormProps = {
     name: string;
     equipment: string | null;
     primaryMuscles: string[];
+    isFavorite?: boolean;
   }[];
 };
 
@@ -15,12 +17,12 @@ export function AddExerciseForm({ workoutId, exercises }: AddExerciseFormProps) 
   return (
     <form
       action={addExerciseToWorkout}
-      className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm"
+      className="rounded-3xl border border-white/10 bg-white/[0.06] p-5 shadow-sm backdrop-blur"
     >
       <input type="hidden" name="workoutId" value={workoutId} />
 
-      <h2 className="text-lg font-semibold">Add exercise</h2>
-      <p className="mt-1 text-sm text-neutral-600">
+      <h2 className="text-lg font-black text-white">Add exercise</h2>
+      <p className="mt-1 text-sm leading-6 text-neutral-400">
         Choose from the library or add a custom movement.
       </p>
 
@@ -28,12 +30,12 @@ export function AddExerciseForm({ workoutId, exercises }: AddExerciseFormProps) 
         <ExerciseSelect exercises={exercises} />
       </div>
 
-      <button
-        type="submit"
-        className="mt-4 w-full rounded-xl bg-neutral-950 px-5 py-3 font-semibold text-white transition hover:bg-neutral-800 sm:w-auto"
+      <SubmitButton
+        pendingText="Adding exercise..."
+        className="mt-4 w-full rounded-xl bg-emerald-400 px-5 py-3 font-black text-black transition hover:bg-emerald-300 sm:w-auto"
       >
         Add exercise
-      </button>
+      </SubmitButton>
     </form>
   );
 }
