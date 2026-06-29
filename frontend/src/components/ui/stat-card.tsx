@@ -1,3 +1,5 @@
+import { Card } from "./card";
+
 type StatCardProps = {
   label: string;
   value: string | number;
@@ -6,7 +8,7 @@ type StatCardProps = {
 
 export function StatCard({ label, value, helper }: StatCardProps) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-4 shadow-sm backdrop-blur sm:p-5">
+    <Card className="p-4 sm:p-5">
       <p className="text-sm font-medium text-neutral-400">{label}</p>
       <h2 className="mt-2 text-3xl font-black tracking-tight text-white">
         {value}
@@ -14,6 +16,6 @@ export function StatCard({ label, value, helper }: StatCardProps) {
       {helper && (
         <p className="mt-1 text-xs leading-5 text-neutral-500">{helper}</p>
       )}
-    </div>
+    </Card>
   );
 }

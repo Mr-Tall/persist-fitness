@@ -1,5 +1,10 @@
 import { auth } from "@/auth";
 import { LogoutButton } from "@/components/auth/logout-button";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { MetricBadge } from "@/components/ui/metric-badge";
+import { Section } from "@/components/ui/section";
 import { StatCard } from "@/components/ui/stat-card";
 import { db } from "@/lib/db";
 import { getDashboardAnalytics } from "@/lib/dashboard-analytics";
@@ -71,11 +76,7 @@ function calculateWorkoutVolume(
   }, 0);
 }
 
-function getSetCount(
-  exercises: {
-    sets: unknown[];
-  }[]
-) {
+function getSetCount(exercises: { sets: unknown[] }[]) {
   return exercises.reduce((total, exercise) => total + exercise.sets.length, 0);
 }
 
@@ -149,7 +150,7 @@ export default async function DashboardPage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
-      <section className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.06] p-5 shadow-sm backdrop-blur sm:p-8">
+      <Card className="relative overflow-hidden p-5 sm:p-8">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,rgba(52,211,153,0.24),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(132,204,22,0.12),transparent_34%)]" />
 
         <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
@@ -168,37 +169,24 @@ export default async function DashboardPage() {
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
-              <span className="rounded-full border border-emerald-300/30 bg-emerald-400/10 px-4 py-2 text-sm font-bold text-emerald-200">
-                {trainingStatus.label}
-              </span>
-
-              <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-neutral-300">
-                {analytics.currentStreak} day streak
-              </span>
-
-              <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-neutral-300">
-                {analytics.workoutsThisWeek} this week
-              </span>
+              <MetricBadge variant="emerald">{trainingStatus.label}</MetricBadge>
+              <MetricBadge>{analytics.currentStreak} day streak</MetricBadge>
+              <MetricBadge>{analytics.workoutsThisWeek} this week</MetricBadge>
             </div>
           </div>
 
           <div className="flex shrink-0 flex-col gap-2 sm:flex-row lg:flex-col">
             <StartWorkoutButton />
-
-            <Link
-              href="/routines"
-              className="w-full rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-center text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-white/10 sm:w-auto lg:w-full"
-            >
+            <Button href="/routines" variant="secondary" fullWidth>
               Start from routine
-            </Link>
-
+            </Button>
             <LogoutButton />
           </div>
         </div>
-      </section>
+      </Card>
 
       {activeWorkout && (
-        <section className="mt-6 overflow-hidden rounded-[2rem] border border-emerald-300/25 bg-emerald-400/[0.08] p-5 shadow-sm backdrop-blur sm:p-6">
+        <Card variant="emerald" className="mt-6 p-5 sm:p-6">
           <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-300">
@@ -215,47 +203,44 @@ export default async function DashboardPage() {
               </p>
             </div>
 
-            <Link
-              href={`/workouts/${activeWorkout.id}`}
-              className="rounded-2xl bg-emerald-400 px-6 py-4 text-center text-sm font-black text-black transition hover:bg-emerald-300"
-            >
+            <Button href={`/workouts/${activeWorkout.id}`}>
               Resume workout
-            </Link>
+            </Button>
           </div>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+            <Card className="rounded-2xl bg-black/20 p-4">
               <p className="text-xs font-black uppercase tracking-[0.18em] text-neutral-500">
                 Sets logged
               </p>
               <p className="mt-1 text-2xl font-black text-white">
                 {activeWorkoutSets}
               </p>
-            </div>
+            </Card>
 
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+            <Card className="rounded-2xl bg-black/20 p-4">
               <p className="text-xs font-black uppercase tracking-[0.18em] text-neutral-500">
                 Volume
               </p>
               <p className="mt-1 text-2xl font-black text-white">
                 {formatVolume(activeWorkoutVolume)}
               </p>
-            </div>
+            </Card>
 
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+            <Card className="rounded-2xl bg-black/20 p-4">
               <p className="text-xs font-black uppercase tracking-[0.18em] text-neutral-500">
                 Exercises
               </p>
               <p className="mt-1 text-2xl font-black text-white">
                 {activeWorkout.exercises.length}
               </p>
-            </div>
+            </Card>
           </div>
-        </section>
+        </Card>
       )}
 
       {(!hasProfile || !hasWorkouts || !hasRoutines) && (
-        <section className="mt-6 rounded-[2rem] border border-emerald-300/20 bg-emerald-400/[0.08] p-5 backdrop-blur sm:p-6">
+        <Card variant="emerald" className="mt-6 p-5 sm:p-6">
           <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
             <div>
               <h2 className="text-xl font-black text-white">
@@ -267,14 +252,14 @@ export default async function DashboardPage() {
               </p>
             </div>
 
-            <div className="rounded-full border border-emerald-300/30 bg-black/20 px-4 py-2 text-sm font-bold text-emerald-200">
+            <MetricBadge variant="emerald">
               {[
                 hasProfile ? 1 : 0,
                 hasWorkouts ? 1 : 0,
                 hasRoutines ? 1 : 0,
               ].reduce((total, value) => total + value, 0)}
               /3 complete
-            </div>
+            </MetricBadge>
           </div>
 
           <div className="mt-5 grid gap-3 md:grid-cols-3">
@@ -314,7 +299,7 @@ export default async function DashboardPage() {
               </p>
             </Link>
           </div>
-        </section>
+        </Card>
       )}
 
       <section className="mt-6 grid gap-4 md:grid-cols-3">
@@ -323,13 +308,11 @@ export default async function DashboardPage() {
           value={analytics.workoutCount}
           helper="All sessions saved"
         />
-
         <StatCard
           label="This week"
           value={analytics.workoutsThisWeek}
           helper="Workouts logged this week"
         />
-
         <StatCard
           label="Current streak"
           value={`${analytics.currentStreak} day${
@@ -337,19 +320,16 @@ export default async function DashboardPage() {
           }`}
           helper="Based on workout days"
         />
-
         <StatCard
           label="Total sets"
           value={analytics.totalSets}
           helper="Every logged set"
         />
-
         <StatCard
           label="Total volume"
           value={formatVolume(analytics.totalVolume)}
           helper="Weight × reps across all sets"
         />
-
         <StatCard
           label="Current goal"
           value={profile?.primaryGoal ?? "Not set"}
@@ -358,23 +338,17 @@ export default async function DashboardPage() {
       </section>
 
       <section className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-5 shadow-sm backdrop-blur sm:p-6">
-          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-300">
-                Next best action
-              </p>
-              <h2 className="mt-2 text-2xl font-black text-white">
-                {activeWorkout
-                  ? "Finish your active session"
-                  : latestWorkout
-                    ? "Build from your last session"
-                    : "Start your first tracked session"}
-              </h2>
-            </div>
-          </div>
-
-          <p className="mt-4 text-sm leading-6 text-neutral-300">
+        <Section
+          eyebrow="Next best action"
+          title={
+            activeWorkout
+              ? "Finish your active session"
+              : latestWorkout
+                ? "Build from your last session"
+                : "Start your first tracked session"
+          }
+        >
+          <p className="text-sm leading-6 text-neutral-300">
             {activeWorkout
               ? "You have a workout in progress. Resume it before starting another session so your training history stays clean."
               : trainingStatus.message}
@@ -416,17 +390,13 @@ export default async function DashboardPage() {
               <StartWorkoutButton />
             </div>
           )}
-        </div>
+        </Section>
 
-        <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-5 shadow-sm backdrop-blur sm:p-6">
-          <p className="text-xs font-black uppercase tracking-[0.24em] text-amber-300">
-            Top lift
-          </p>
-
+        <Section eyebrow="Top lift">
           {topRecord ? (
             <Link
               href={`/workouts/${topRecord.workoutId}`}
-              className="mt-4 block rounded-2xl border border-amber-300/20 bg-amber-400/[0.08] p-4 transition hover:border-amber-300/40"
+              className="block rounded-2xl border border-amber-300/20 bg-amber-400/[0.08] p-4 transition hover:border-amber-300/40"
             >
               <p className="text-2xl font-black text-white">
                 {topRecord.exerciseName}
@@ -439,48 +409,36 @@ export default async function DashboardPage() {
               </p>
             </Link>
           ) : (
-            <div className="mt-4 rounded-2xl border border-dashed border-white/10 p-6 text-center">
-              <p className="font-bold text-white">No top lift yet</p>
-              <p className="mt-2 text-sm leading-6 text-neutral-400">
-                Log weighted sets to start building your strength profile.
-              </p>
-            </div>
+            <EmptyState
+              title="No top lift yet"
+              description="Log weighted sets to start building your strength profile."
+            />
           )}
-        </div>
+        </Section>
       </section>
 
       <section className="mt-6 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
         {profile && (
-          <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-5 shadow-sm backdrop-blur sm:p-6">
-            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-              <div>
-                <h2 className="text-xl font-black text-white">
-                  Training setup
-                </h2>
-                <p className="mt-1 text-sm text-neutral-400">
-                  Current inputs for future planning.
-                </p>
-              </div>
-
-              <Link
-                href="/settings"
-                className="rounded-xl border border-white/10 px-4 py-2 text-sm font-bold text-white transition hover:bg-white/10"
-              >
+          <Section
+            title="Training setup"
+            description="Current inputs for future planning."
+            action={
+              <Button href="/settings" variant="secondary">
                 Edit
-              </Link>
-            </div>
-
-            <div className="mt-5 grid gap-3">
-              <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+              </Button>
+            }
+          >
+            <div className="grid gap-3">
+              <Card className="rounded-2xl bg-black/20 p-4">
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-neutral-500">
                   Experience
                 </p>
                 <p className="mt-1 font-black text-white">
                   {profile.experience ?? "Not set"}
                 </p>
-              </div>
+              </Card>
 
-              <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+              <Card className="rounded-2xl bg-black/20 p-4">
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-neutral-500">
                   Weekly availability
                 </p>
@@ -489,9 +447,9 @@ export default async function DashboardPage() {
                     ? `${profile.availableDays} days`
                     : "Not set"}
                 </p>
-              </div>
+              </Card>
 
-              <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+              <Card className="rounded-2xl bg-black/20 p-4">
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-neutral-500">
                   Equipment
                 </p>
@@ -500,89 +458,58 @@ export default async function DashboardPage() {
                     ? profile.equipment.join(", ")
                     : "Not set"}
                 </p>
-              </div>
+              </Card>
             </div>
-          </div>
+          </Section>
         )}
 
-        <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-5 shadow-sm backdrop-blur sm:p-6">
-          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-            <div>
-              <h2 className="text-xl font-black text-white">
-                Recent workouts
-              </h2>
-              <p className="mt-1 text-sm text-neutral-400">
-                Jump back into your latest sessions.
-              </p>
-            </div>
-
-            <Link
-              href="/workouts"
-              className="rounded-xl border border-white/10 px-4 py-2 text-sm font-bold text-white transition hover:bg-white/10"
-            >
+        <Section
+          title="Recent workouts"
+          description="Jump back into your latest sessions."
+          action={
+            <Button href="/workouts" variant="secondary">
               View all
-            </Link>
-          </div>
-
+            </Button>
+          }
+        >
           {analytics.recentWorkouts.length === 0 ? (
-            <div className="mt-5 rounded-2xl border border-dashed border-white/10 p-6 text-center">
-              <p className="font-bold text-white">No workouts yet</p>
-              <Link
-                href="/workouts/new"
-                className="mt-4 inline-block rounded-xl bg-emerald-400 px-4 py-2 text-sm font-black text-black hover:bg-emerald-300"
-              >
-                Log first workout
-              </Link>
-            </div>
+            <EmptyState
+              title="No workouts yet"
+              actionLabel="Log first workout"
+              actionHref="/workouts/new"
+            />
           ) : (
-            <div className="mt-5 space-y-3">
+            <div className="space-y-3">
               {analytics.recentWorkouts.map((workout) => (
                 <Link
                   key={workout.id}
                   href={`/workouts/${workout.id}`}
                   className="block rounded-2xl border border-white/10 bg-black/20 p-4 transition hover:border-emerald-300/40 hover:bg-white/[0.08]"
                 >
-                  <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-                    <div>
-                      <p className="font-black text-white">{workout.title}</p>
-                      <p className="mt-1 text-sm text-neutral-400">
-                        {formatWorkoutDate(workout.date)} ·{" "}
-                        {workout.goal || "No goal set"}
-                      </p>
-                    </div>
-
-                    {"status" in workout && workout.status === "active" && (
-                      <span className="rounded-full border border-amber-300/30 bg-amber-400/10 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-amber-200">
-                        Active
-                      </span>
-                    )}
-                  </div>
+                  <p className="font-black text-white">{workout.title}</p>
+                  <p className="mt-1 text-sm text-neutral-400">
+                    {formatWorkoutDate(workout.date)} ·{" "}
+                    {workout.goal || "No goal set"}
+                  </p>
                 </Link>
               ))}
             </div>
           )}
-        </div>
+        </Section>
       </section>
 
-      <section className="mt-6 rounded-[2rem] border border-white/10 bg-white/[0.06] p-5 shadow-sm backdrop-blur sm:p-6">
-        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-          <div>
-            <h2 className="text-xl font-black text-white">Personal records</h2>
-            <p className="mt-1 text-sm text-neutral-400">
-              Your strongest logged sets ranked by estimated one-rep max.
-            </p>
-          </div>
-        </div>
-
+      <Section
+        className="mt-6"
+        title="Personal records"
+        description="Your strongest logged sets ranked by estimated one-rep max."
+      >
         {personalRecords.length === 0 ? (
-          <div className="mt-5 rounded-2xl border border-dashed border-white/10 p-6 text-center">
-            <p className="font-bold text-white">No PRs yet</p>
-            <p className="mt-2 text-sm text-neutral-400">
-              Log sets with weight and reps to start building personal records.
-            </p>
-          </div>
+          <EmptyState
+            title="No PRs yet"
+            description="Log sets with weight and reps to start building personal records."
+          />
         ) : (
-          <div className="mt-5 grid gap-3 md:grid-cols-2">
+          <div className="grid gap-3 md:grid-cols-2">
             {personalRecords.map((record) => (
               <Link
                 key={`${record.exerciseName}-${record.workoutId}`}
@@ -608,7 +535,7 @@ export default async function DashboardPage() {
             ))}
           </div>
         )}
-      </section>
+      </Section>
     </main>
   );
 }

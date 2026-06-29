@@ -1,18 +1,40 @@
+import { ReactNode } from "react";
+import { Button } from "./button";
+
 type EmptyStateProps = {
   title: string;
-  description: string;
-  action?: React.ReactNode;
+  description?: string;
+  action?: ReactNode;
+  actionLabel?: string;
+  actionHref?: string;
+  children?: ReactNode;
 };
 
-export function EmptyState({ title, description, action }: EmptyStateProps) {
+export function EmptyState({
+  title,
+  description,
+  action,
+  actionLabel,
+  actionHref,
+  children,
+}: EmptyStateProps) {
   return (
-    <section className="rounded-3xl border border-dashed border-neutral-300 bg-neutral-50/60 p-8 text-center sm:p-10">
-      <h2 className="text-xl font-semibold text-neutral-950">{title}</h2>
-      <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-neutral-600">
-        {description}
-      </p>
+    <div className="rounded-3xl border border-dashed border-white/10 bg-black/20 p-8 text-center">
+      <h3 className="font-black text-white">{title}</h3>
 
-      {action && <div className="mt-6">{action}</div>}
-    </section>
+      {description && (
+        <p className="mt-2 text-sm leading-6 text-neutral-400">{description}</p>
+      )}
+
+      {action && <div className="mt-5">{action}</div>}
+
+      {!action && actionLabel && actionHref && (
+        <div className="mt-5">
+          <Button href={actionHref}>{actionLabel}</Button>
+        </div>
+      )}
+
+      {children}
+    </div>
   );
 }
