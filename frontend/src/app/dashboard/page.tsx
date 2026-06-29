@@ -49,6 +49,47 @@ function getTrainingStatus(workoutsThisWeek: number) {
   };
 }
 
+function calculateWorkoutVolume(
+  exercises: {
+    sets: {
+      weight: number | null;
+      reps: number | null;
+    }[];
+  }[]
+) {
+  return exercises.reduce((total, exercise) => {
+    return (
+      total +
+      exercise.sets.reduce((setTotal, set) => {
+        if (set.weight === null || set.reps === null) {
+          return setTotal;
+        }
+
+        return setTotal + set.weight * set.reps;
+      }, 0)
+    );
+  }, 0);
+}
+
+function getSetCount(
+  exercises: {
+    sets: unknown[];
+  }[]
+) {
+  return exercises.reduce((total, exercise) => total + exercise.sets.length, 0);
+}
+
+function formatStartedTime(startedAt: Date | null) {
+  if (!startedAt) {
+    return "Recently started";
+  }
+
+  return startedAt.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 export default async function DashboardPage() {
   const session = await auth();
 
@@ -56,20 +97,40 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const [profile, analytics, personalRecords, routineCount] = await Promise.all([
-    db.profile.findUnique({
-      where: {
-        userId: session.user.id,
-      },
-    }),
-    getDashboardAnalytics(session.user.id),
-    getTopExercisePersonalRecords(session.user.id, 5),
-    db.workoutTemplate.count({
-      where: {
-        userId: session.user.id,
-      },
-    }),
-  ]);
+  const [profile, analytics, personalRecords, routineCount, activeWorkout] =
+    await Promise.all([
+      db.profile.findUnique({
+        where: {
+          userId: session.user.id,
+        },
+      }),
+      getDashboardAnalytics(session.user.id),
+      getTopExercisePersonalRecords(session.user.id, 5),
+      db.workoutTemplate.count({
+        where: {
+          userId: session.user.id,
+        },
+      }),
+      db.workout.findFirst({
+        where: {
+          userId: session.user.id,
+          status: "active",
+        },
+        orderBy: {
+          startedAt: "desc",
+        },
+        include: {
+          exercises: {
+            include: {
+              sets: true,
+            },
+            orderBy: {
+              order: "asc",
+            },
+          },
+        },
+      }),
+    ]);
 
   const hasProfile = Boolean(profile);
   const hasWorkouts = analytics.workoutCount > 0;
@@ -78,6 +139,13 @@ export default async function DashboardPage() {
   const trainingStatus = getTrainingStatus(analytics.workoutsThisWeek);
   const latestWorkout = analytics.recentWorkouts[0];
   const topRecord = personalRecords[0];
+
+  const activeWorkoutSets = activeWorkout
+    ? getSetCount(activeWorkout.exercises)
+    : 0;
+  const activeWorkoutVolume = activeWorkout
+    ? calculateWorkoutVolume(activeWorkout.exercises)
+    : 0;
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
@@ -128,6 +196,63 @@ export default async function DashboardPage() {
           </div>
         </div>
       </section>
+
+      {activeWorkout && (
+        <section className="mt-6 overflow-hidden rounded-[2rem] border border-emerald-300/25 bg-emerald-400/[0.08] p-5 shadow-sm backdrop-blur sm:p-6">
+          <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-300">
+                Active workout
+              </p>
+
+              <h2 className="mt-2 text-2xl font-black text-white sm:text-3xl">
+                Resume {activeWorkout.title}
+              </h2>
+
+              <p className="mt-2 text-sm leading-6 text-neutral-300">
+                Started at {formatStartedTime(activeWorkout.startedAt)} ·{" "}
+                {formatWorkoutDate(activeWorkout.date)}
+              </p>
+            </div>
+
+            <Link
+              href={`/workouts/${activeWorkout.id}`}
+              className="rounded-2xl bg-emerald-400 px-6 py-4 text-center text-sm font-black text-black transition hover:bg-emerald-300"
+            >
+              Resume workout
+            </Link>
+          </div>
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-neutral-500">
+                Sets logged
+              </p>
+              <p className="mt-1 text-2xl font-black text-white">
+                {activeWorkoutSets}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-neutral-500">
+                Volume
+              </p>
+              <p className="mt-1 text-2xl font-black text-white">
+                {formatVolume(activeWorkoutVolume)}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-neutral-500">
+                Exercises
+              </p>
+              <p className="mt-1 text-2xl font-black text-white">
+                {activeWorkout.exercises.length}
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
 
       {(!hasProfile || !hasWorkouts || !hasRoutines) && (
         <section className="mt-6 rounded-[2rem] border border-emerald-300/20 bg-emerald-400/[0.08] p-5 backdrop-blur sm:p-6">
@@ -240,18 +365,37 @@ export default async function DashboardPage() {
                 Next best action
               </p>
               <h2 className="mt-2 text-2xl font-black text-white">
-                {latestWorkout
-                  ? "Build from your last session"
-                  : "Start your first tracked session"}
+                {activeWorkout
+                  ? "Finish your active session"
+                  : latestWorkout
+                    ? "Build from your last session"
+                    : "Start your first tracked session"}
               </h2>
             </div>
           </div>
 
           <p className="mt-4 text-sm leading-6 text-neutral-300">
-            {trainingStatus.message}
+            {activeWorkout
+              ? "You have a workout in progress. Resume it before starting another session so your training history stays clean."
+              : trainingStatus.message}
           </p>
 
-          {latestWorkout ? (
+          {activeWorkout ? (
+            <Link
+              href={`/workouts/${activeWorkout.id}`}
+              className="mt-5 block rounded-2xl border border-emerald-300/30 bg-emerald-400/[0.08] p-4 transition hover:border-emerald-300/50 hover:bg-emerald-400/[0.12]"
+            >
+              <p className="text-sm font-bold text-emerald-200">
+                Active session
+              </p>
+              <p className="mt-2 text-xl font-black text-white">
+                {activeWorkout.title}
+              </p>
+              <p className="mt-1 text-sm text-neutral-400">
+                {activeWorkoutSets} sets · {formatVolume(activeWorkoutVolume)}
+              </p>
+            </Link>
+          ) : latestWorkout ? (
             <Link
               href={`/workouts/${latestWorkout.id}`}
               className="mt-5 block rounded-2xl border border-white/10 bg-black/20 p-4 transition hover:border-emerald-300/40 hover:bg-white/[0.08]"
@@ -398,11 +542,21 @@ export default async function DashboardPage() {
                   href={`/workouts/${workout.id}`}
                   className="block rounded-2xl border border-white/10 bg-black/20 p-4 transition hover:border-emerald-300/40 hover:bg-white/[0.08]"
                 >
-                  <p className="font-black text-white">{workout.title}</p>
-                  <p className="mt-1 text-sm text-neutral-400">
-                    {formatWorkoutDate(workout.date)} ·{" "}
-                    {workout.goal || "No goal set"}
-                  </p>
+                  <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+                    <div>
+                      <p className="font-black text-white">{workout.title}</p>
+                      <p className="mt-1 text-sm text-neutral-400">
+                        {formatWorkoutDate(workout.date)} ·{" "}
+                        {workout.goal || "No goal set"}
+                      </p>
+                    </div>
+
+                    {"status" in workout && workout.status === "active" && (
+                      <span className="rounded-full border border-amber-300/30 bg-amber-400/10 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-amber-200">
+                        Active
+                      </span>
+                    )}
+                  </div>
                 </Link>
               ))}
             </div>

@@ -168,6 +168,7 @@ export default async function WorkoutDetailPage({
   const totalVolume = calculateWorkoutVolume(workout.exercises);
   const isCompleted = workout.status === "completed";
   const duration = formatDuration(workout.startedAt, workout.finishedAt);
+  const workoutProgress = Math.min(100, Math.round((totalSets / 12) * 100));
 
   return (
     <main className="mx-auto max-w-5xl px-4 pb-28 pt-6 sm:px-6 sm:py-10">
@@ -262,6 +263,28 @@ export default async function WorkoutDetailPage({
           <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-neutral-300">
             {duration}
           </span>
+        </div>
+
+        <div className="mt-5 rounded-2xl border border-white/10 bg-black/25 p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-neutral-500">
+                Session progress
+              </p>
+              <p className="mt-1 text-sm font-bold text-neutral-300">
+                {totalSets} / 12 sets logged
+              </p>
+            </div>
+
+            <p className="text-2xl font-black text-white">{workoutProgress}%</p>
+          </div>
+
+          <div className="mt-4 h-3 overflow-hidden rounded-full bg-white/10">
+            <div
+              className="h-full rounded-full bg-emerald-400 transition-all"
+              style={{ width: `${workoutProgress}%` }}
+            />
+          </div>
         </div>
 
         <EditWorkoutForm
