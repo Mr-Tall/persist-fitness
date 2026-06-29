@@ -24,6 +24,31 @@ type WorkoutDetailPageProps = {
   }>;
 };
 
+function calculateWorkoutVolume(
+  exercises: {
+    sets: {
+      weight: number | null;
+      reps: number | null;
+    }[];
+  }[]
+) {
+  return exercises.reduce((total, exercise) => {
+    const exerciseVolume = exercise.sets.reduce((setTotal, set) => {
+      if (set.weight === null || set.reps === null) {
+        return setTotal;
+      }
+
+      return setTotal + set.weight * set.reps;
+    }, 0);
+
+    return total + exerciseVolume;
+  }, 0);
+}
+
+function formatVolume(volume: number) {
+  return `${Math.round(volume).toLocaleString()} lb`;
+}
+
 export default async function WorkoutDetailPage({
   params,
 }: WorkoutDetailPageProps) {
@@ -118,38 +143,78 @@ export default async function WorkoutDetailPage({
     )
   );
 
+  const totalSets = workout.exercises.reduce(
+    (total, exercise) => total + exercise.sets.length,
+    0
+  );
+  const totalVolume = calculateWorkoutVolume(workout.exercises);
+
   return (
-    <main className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-10">
-      <section className="mb-8">
-        <Link href="/workouts" className="text-sm font-medium text-emerald-600">
+    <main className="mx-auto max-w-5xl px-4 pb-28 pt-6 sm:px-6 sm:py-10">
+      <section className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.06] p-5 shadow-sm backdrop-blur sm:p-7">
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,rgba(52,211,153,0.20),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(132,204,22,0.10),transparent_30%)]" />
+
+        <Link href="/workouts" className="text-sm font-bold text-emerald-300">
           ← Back to workouts
         </Link>
 
-        <div className="mt-4 flex flex-col justify-between gap-4 md:flex-row md:items-start">
+        <div className="mt-5 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
           <div>
-            <h1 className="text-3xl font-bold">{workout.title}</h1>
+            <p className="text-xs font-black uppercase tracking-[0.26em] text-emerald-300">
+              Workout mode
+            </p>
 
-            <p className="mt-2 text-neutral-600">
-              {formatWorkoutDate(workout.date)} ·{" "}
-              {workout.goal || "No goal set"}
+            <h1 className="mt-3 bg-gradient-to-r from-white via-neutral-100 to-neutral-400 bg-clip-text text-4xl font-black tracking-tight text-transparent sm:text-5xl">
+              {workout.title}
+            </h1>
+
+            <p className="mt-3 text-sm font-medium text-neutral-400">
+              {formatWorkoutDate(workout.date)} · {workout.goal || "No goal set"}
             </p>
           </div>
 
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <form action={repeatWorkout}>
-              <input type="hidden" name="workoutId" value={workout.id} />
-              <button
-                type="submit"
-                className="w-full rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600 sm:w-auto"
-              >
-                Repeat workout
-              </button>
-            </form>
+          <div className="grid grid-cols-3 gap-2 sm:min-w-[360px]">
+            <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-neutral-500">
+                Exercises
+              </p>
+              <p className="mt-1 text-2xl font-black text-white">
+                {workout.exercises.length}
+              </p>
+            </div>
 
-            <form action={deleteWorkout}>
-              <DeleteWorkoutButton workoutId={workout.id} />
-            </form>
+            <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-neutral-500">
+                Sets
+              </p>
+              <p className="mt-1 text-2xl font-black text-white">{totalSets}</p>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-neutral-500">
+                Volume
+              </p>
+              <p className="mt-1 text-xl font-black text-white">
+                {formatVolume(totalVolume)}
+              </p>
+            </div>
           </div>
+        </div>
+
+        <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <form action={repeatWorkout}>
+            <input type="hidden" name="workoutId" value={workout.id} />
+            <button
+              type="submit"
+              className="w-full rounded-xl bg-emerald-400 px-4 py-3 text-sm font-black text-black transition hover:bg-emerald-300 sm:w-auto"
+            >
+              Repeat workout
+            </button>
+          </form>
+
+          <form action={deleteWorkout}>
+            <DeleteWorkoutButton workoutId={workout.id} />
+          </form>
         </div>
 
         <EditWorkoutForm
@@ -163,19 +228,22 @@ export default async function WorkoutDetailPage({
         />
 
         {workout.notes && (
-          <p className="mt-4 rounded-2xl bg-neutral-100 p-4 text-neutral-700">
+          <p className="mt-5 rounded-2xl border border-white/10 bg-black/25 p-4 text-sm leading-6 text-neutral-300">
             {workout.notes}
           </p>
         )}
       </section>
 
-      <section className="rounded-3xl border border-neutral-200 p-5 sm:p-6">
+      <section className="mt-6 rounded-[2rem] border border-white/10 bg-white/[0.06] p-5 shadow-sm backdrop-blur sm:p-6">
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div>
-            <h2 className="text-xl font-semibold">Exercises</h2>
-            <p className="mt-1 text-sm text-neutral-600">
-              Add movements, then log sets with reps, weight, RIR, tempo, and
-              notes.
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-300">
+              Build session
+            </p>
+            <h2 className="mt-2 text-2xl font-black text-white">Exercises</h2>
+            <p className="mt-1 text-sm leading-6 text-neutral-400">
+              Add movements, log working sets, and keep your previous
+              performance in view.
             </p>
           </div>
         </div>
@@ -185,80 +253,114 @@ export default async function WorkoutDetailPage({
         </div>
 
         {workout.exercises.length === 0 ? (
-          <div className="mt-8 rounded-2xl border border-dashed border-neutral-300 p-8 text-center">
-            <h3 className="font-semibold">No exercises added yet</h3>
-            <p className="mt-2 text-sm text-neutral-600">
+          <div className="mt-8 rounded-3xl border border-dashed border-white/10 bg-black/20 p-8 text-center">
+            <h3 className="font-black text-white">No exercises added yet</h3>
+            <p className="mt-2 text-sm leading-6 text-neutral-400">
               Add your first exercise above, then start logging sets.
             </p>
           </div>
         ) : (
           <div className="mt-6 space-y-6">
-            {workout.exercises.map((exercise) => {
+            {workout.exercises.map((exercise, exerciseIndex) => {
               const prStatuses =
                 prStatusByExerciseId.get(exercise.id) ?? new Map();
 
+              const exerciseVolume = exercise.sets.reduce((total, set) => {
+                if (set.weight === null || set.reps === null) {
+                  return total;
+                }
+
+                return total + set.weight * set.reps;
+              }, 0);
+
               return (
-                <div
+                <article
                   key={exercise.id}
-                  className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm"
+                  className="overflow-hidden rounded-[2rem] border border-white/10 bg-black/20 shadow-sm backdrop-blur"
                 >
-                  <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
-                    <div>
-                      <h3 className="text-lg font-semibold">{exercise.name}</h3>
-                      <p className="text-sm text-neutral-500">
-                        {exercise.sets.length} sets logged
-                      </p>
+                  <div className="border-b border-white/10 bg-white/[0.04] p-5">
+                    <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+                      <div>
+                        <p className="text-xs font-black uppercase tracking-[0.22em] text-neutral-500">
+                          Exercise {exerciseIndex + 1}
+                        </p>
+
+                        <h3 className="mt-2 text-2xl font-black text-white">
+                          {exercise.name}
+                        </h3>
+
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-bold text-neutral-300">
+                            {exercise.sets.length} sets
+                          </span>
+
+                          <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-bold text-neutral-300">
+                            {formatVolume(exerciseVolume)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <form action={deleteExerciseFromWorkout}>
+                        <input type="hidden" name="workoutId" value={workout.id} />
+                        <input
+                          type="hidden"
+                          name="workoutExerciseId"
+                          value={exercise.id}
+                        />
+                        <DeleteInlineButton
+                          label="Delete exercise"
+                          confirmMessage={`Delete ${exercise.name} and all of its sets?`}
+                        />
+                      </form>
                     </div>
 
-                    <form action={deleteExerciseFromWorkout}>
-                      <input type="hidden" name="workoutId" value={workout.id} />
-                      <input
-                        type="hidden"
-                        name="workoutExerciseId"
-                        value={exercise.id}
-                      />
-                      <DeleteInlineButton
-                        label="Delete exercise"
-                        confirmMessage={`Delete ${exercise.name} and all of its sets?`}
-                      />
-                    </form>
+                    <PreviousPerformanceCard
+                      previous={
+                        previousPerformanceByExerciseId.get(exercise.id) ?? null
+                      }
+                    />
                   </div>
 
-                  <PreviousPerformanceCard
-                    previous={
-                      previousPerformanceByExerciseId.get(exercise.id) ?? null
-                    }
-                  />
-
-                  {exercise.sets.length > 0 && (
-                    <>
-                      <div className="mt-4 space-y-3 md:hidden">
+                  <div className="p-5">
+                    {exercise.sets.length === 0 ? (
+                      <div className="rounded-3xl border border-dashed border-white/10 bg-black/20 p-6 text-center">
+                        <p className="font-black text-white">
+                          No sets logged yet
+                        </p>
+                        <p className="mt-2 text-sm leading-6 text-neutral-400">
+                          Add your first set below when you finish the lift.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
                         {exercise.sets.map((set) => {
                           const prStatus = prStatuses.get(set.id);
 
                           return (
                             <div
                               key={set.id}
-                              className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4"
+                              className="rounded-3xl border border-white/10 bg-white/[0.05] p-4"
                             >
-                              <div className="flex items-start justify-between gap-3">
-                                <div>
-                                  <p className="text-sm font-semibold text-neutral-950">
-                                    Set {set.setNumber}
-                                  </p>
-                                  <p className="mt-1 text-sm text-neutral-600">
-                                    {set.reps ?? "—"} reps
-                                    {set.weight !== null
-                                      ? ` · ${set.weight} lb`
-                                      : ""}
-                                  </p>
+                              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex items-center gap-4">
+                                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-400 text-lg font-black text-black">
+                                    {set.setNumber}
+                                  </div>
+
+                                  <div>
+                                    <p className="text-xs font-black uppercase tracking-[0.2em] text-neutral-500">
+                                      Set {set.setNumber}
+                                    </p>
+                                    <p className="mt-1 text-2xl font-black text-white">
+                                      {set.weight !== null ? `${set.weight} lb` : "—"}{" "}
+                                      <span className="text-neutral-500">×</span>{" "}
+                                      {set.reps ?? "—"}
+                                    </p>
+                                  </div>
                                 </div>
 
                                 <div className="flex items-center gap-2">
-                                  <EditSetForm
-                                    workoutId={workout.id}
-                                    set={set}
-                                  />
+                                  <EditSetForm workoutId={workout.id} set={set} />
 
                                   <form action={deleteSetFromExercise}>
                                     <input
@@ -280,33 +382,45 @@ export default async function WorkoutDetailPage({
                               </div>
 
                               {prStatus?.isPersonalRecord && (
-                                <div className="mt-3 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
+                                <div className="mt-4 rounded-2xl border border-amber-300/20 bg-amber-400/[0.10] px-4 py-3 text-sm font-black text-amber-200">
                                   New PR 🎉 est. 1RM{" "}
-                                  {Math.round(
-                                    prStatus.estimatedOneRepMax ?? 0
-                                  )}{" "}
-                                  lb
+                                  {Math.round(prStatus.estimatedOneRepMax ?? 0)} lb
                                 </div>
                               )}
 
-                              <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
-                                <div className="rounded-xl bg-white p-2">
-                                  <p className="text-neutral-500">RIR</p>
-                                  <p className="mt-1 font-semibold text-neutral-950">
+                              <div className="mt-4 grid grid-cols-3 gap-2 text-xs sm:grid-cols-4">
+                                <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                                  <p className="font-bold uppercase tracking-[0.16em] text-neutral-500">
+                                    Reps
+                                  </p>
+                                  <p className="mt-1 text-lg font-black text-white">
+                                    {set.reps ?? "—"}
+                                  </p>
+                                </div>
+
+                                <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                                  <p className="font-bold uppercase tracking-[0.16em] text-neutral-500">
+                                    RIR
+                                  </p>
+                                  <p className="mt-1 text-lg font-black text-white">
                                     {set.rir ?? "—"}
                                   </p>
                                 </div>
 
-                                <div className="rounded-xl bg-white p-2">
-                                  <p className="text-neutral-500">Tempo</p>
-                                  <p className="mt-1 font-semibold text-neutral-950">
+                                <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                                  <p className="font-bold uppercase tracking-[0.16em] text-neutral-500">
+                                    Tempo
+                                  </p>
+                                  <p className="mt-1 truncate text-lg font-black text-white">
                                     {set.tempo || "—"}
                                   </p>
                                 </div>
 
-                                <div className="rounded-xl bg-white p-2">
-                                  <p className="text-neutral-500">Notes</p>
-                                  <p className="mt-1 truncate font-semibold text-neutral-950">
+                                <div className="col-span-3 rounded-2xl border border-white/10 bg-black/20 p-3 sm:col-span-1">
+                                  <p className="font-bold uppercase tracking-[0.16em] text-neutral-500">
+                                    Notes
+                                  </p>
+                                  <p className="mt-1 truncate text-sm font-bold text-white">
                                     {set.notes || "—"}
                                   </p>
                                 </div>
@@ -315,102 +429,48 @@ export default async function WorkoutDetailPage({
                           );
                         })}
                       </div>
+                    )}
 
-                      <div className="mt-4 hidden overflow-x-auto md:block">
-                        <table className="w-full border-collapse text-left text-sm">
-                          <thead>
-                            <tr className="border-b border-neutral-200 text-neutral-500">
-                              <th className="py-2 pr-4">Set</th>
-                              <th className="py-2 pr-4">Reps</th>
-                              <th className="py-2 pr-4">Weight</th>
-                              <th className="py-2 pr-4">RIR</th>
-                              <th className="py-2 pr-4">Tempo</th>
-                              <th className="py-2 pr-4">Notes</th>
-                              <th className="py-2 pr-4">PR</th>
-                              <th className="py-2 pr-4"></th>
-                            </tr>
-                          </thead>
-
-                          <tbody>
-                            {exercise.sets.map((set) => {
-                              const prStatus = prStatuses.get(set.id);
-
-                              return (
-                                <tr
-                                  key={set.id}
-                                  className="border-b border-neutral-100"
-                                >
-                                  <td className="py-2 pr-4">{set.setNumber}</td>
-                                  <td className="py-2 pr-4">
-                                    {set.reps ?? "—"}
-                                  </td>
-                                  <td className="py-2 pr-4">
-                                    {set.weight !== null
-                                      ? `${set.weight} lb`
-                                      : "—"}
-                                  </td>
-                                  <td className="py-2 pr-4">
-                                    {set.rir ?? "—"}
-                                  </td>
-                                  <td className="py-2 pr-4">
-                                    {set.tempo || "—"}
-                                  </td>
-                                  <td className="py-2 pr-4">
-                                    {set.notes || "—"}
-                                  </td>
-                                  <td className="py-2 pr-4">
-                                    {prStatus?.isPersonalRecord ? (
-                                      <span className="rounded-full bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700">
-                                        New PR
-                                      </span>
-                                    ) : (
-                                      "—"
-                                    )}
-                                  </td>
-                                  <td className="py-2 pr-4">
-                                    <div className="flex items-center gap-2">
-                                      <EditSetForm
-                                        workoutId={workout.id}
-                                        set={set}
-                                      />
-
-                                      <form action={deleteSetFromExercise}>
-                                        <input
-                                          type="hidden"
-                                          name="workoutId"
-                                          value={workout.id}
-                                        />
-                                        <input
-                                          type="hidden"
-                                          name="workoutSetId"
-                                          value={set.id}
-                                        />
-                                        <DeleteInlineButton
-                                          label="Delete"
-                                          confirmMessage={`Delete set ${set.setNumber}?`}
-                                        />
-                                      </form>
-                                    </div>
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    </>
-                  )}
-
-                  <AddSetForm
-                    workoutId={workout.id}
-                    workoutExerciseId={exercise.id}
-                  />
-                </div>
+                    <AddSetForm
+                      workoutId={workout.id}
+                      workoutExerciseId={exercise.id}
+                    />
+                  </div>
+                </article>
               );
             })}
           </div>
         )}
       </section>
+
+      <div className="fixed bottom-20 left-4 right-4 z-40 rounded-3xl border border-white/10 bg-black/80 p-3 shadow-[0_20px_80px_rgba(0,0,0,0.55)] backdrop-blur-xl md:hidden">
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-neutral-500">
+              Sets
+            </p>
+            <p className="mt-1 text-sm font-black text-white">{totalSets}</p>
+          </div>
+
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-neutral-500">
+              Volume
+            </p>
+            <p className="mt-1 text-sm font-black text-white">
+              {formatVolume(totalVolume)}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-neutral-500">
+              Exercises
+            </p>
+            <p className="mt-1 text-sm font-black text-white">
+              {workout.exercises.length}
+            </p>
+          </div>
+        </div>
+      </div>
     </main>
   );
 }
