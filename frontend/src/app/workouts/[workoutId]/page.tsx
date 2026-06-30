@@ -5,6 +5,12 @@ import {
 } from "@/app/actions/workout-exercises";
 import { DeleteInlineButton } from "@/app/workouts/[workoutId]/delete-inline-button";
 import { auth } from "@/auth";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { MetricBadge } from "@/components/ui/metric-badge";
+import { ProgressBar } from "@/components/ui/progress-bar";
+import { Section } from "@/components/ui/section";
 import { db } from "@/lib/db";
 import { formatWorkoutDate } from "@/lib/format-date";
 import { getPreviousPerformanceForExercise } from "@/lib/previous-performance";
@@ -34,15 +40,16 @@ function calculateWorkoutVolume(
   }[]
 ) {
   return exercises.reduce((total, exercise) => {
-    const exerciseVolume = exercise.sets.reduce((setTotal, set) => {
-      if (set.weight === null || set.reps === null) {
-        return setTotal;
-      }
+    return (
+      total +
+      exercise.sets.reduce((setTotal, set) => {
+        if (set.weight === null || set.reps === null) {
+          return setTotal;
+        }
 
-      return setTotal + set.weight * set.reps;
-    }, 0);
-
-    return total + exerciseVolume;
+        return setTotal + set.weight * set.reps;
+      }, 0)
+    );
   }, 0);
 }
 
@@ -165,6 +172,7 @@ export default async function WorkoutDetailPage({
     (total, exercise) => total + exercise.sets.length,
     0
   );
+
   const totalVolume = calculateWorkoutVolume(workout.exercises);
   const isCompleted = workout.status === "completed";
   const duration = formatDuration(workout.startedAt, workout.finishedAt);
@@ -172,12 +180,12 @@ export default async function WorkoutDetailPage({
 
   return (
     <main className="mx-auto max-w-5xl px-4 pb-28 pt-6 sm:px-6 sm:py-10">
-      <section className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.06] p-5 shadow-sm backdrop-blur sm:p-7">
+      <Card className="relative overflow-hidden p-5 sm:p-7">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,rgba(52,211,153,0.20),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(132,204,22,0.10),transparent_30%)]" />
 
-        <Link href="/workouts" className="text-sm font-bold text-emerald-300">
+        <Button href="/workouts" variant="ghost" className="px-0 py-0">
           ← Back to workouts
-        </Link>
+        </Button>
 
         <div className="mt-5 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
           <div>
@@ -195,39 +203,39 @@ export default async function WorkoutDetailPage({
           </div>
 
           <div className="grid grid-cols-2 gap-2 sm:min-w-[420px] sm:grid-cols-4">
-            <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
+            <Card className="rounded-2xl bg-black/25 p-3">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-neutral-500">
                 Exercises
               </p>
               <p className="mt-1 text-2xl font-black text-white">
                 {workout.exercises.length}
               </p>
-            </div>
+            </Card>
 
-            <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
+            <Card className="rounded-2xl bg-black/25 p-3">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-neutral-500">
                 Sets
               </p>
               <p className="mt-1 text-2xl font-black text-white">{totalSets}</p>
-            </div>
+            </Card>
 
-            <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
+            <Card className="rounded-2xl bg-black/25 p-3">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-neutral-500">
                 Volume
               </p>
               <p className="mt-1 text-xl font-black text-white">
                 {formatVolume(totalVolume)}
               </p>
-            </div>
+            </Card>
 
-            <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
+            <Card className="rounded-2xl bg-black/25 p-3">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-neutral-500">
                 Status
               </p>
               <p className="mt-1 text-xl font-black text-white">
                 {isCompleted ? "Done" : "Active"}
               </p>
-            </div>
+            </Card>
           </div>
         </div>
 
@@ -236,12 +244,9 @@ export default async function WorkoutDetailPage({
 
           <form action={repeatWorkout}>
             <input type="hidden" name="workoutId" value={workout.id} />
-            <button
-              type="submit"
-              className="w-full rounded-xl border border-white/10 px-4 py-3 text-sm font-black text-white transition hover:bg-white/10 sm:w-auto"
-            >
+            <Button type="submit" variant="secondary" fullWidth>
               Repeat workout
-            </button>
+            </Button>
           </form>
 
           <form action={deleteWorkout}>
@@ -250,42 +255,20 @@ export default async function WorkoutDetailPage({
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          <span
-            className={`rounded-full border px-3 py-1 text-xs font-black uppercase tracking-[0.16em] ${
-              isCompleted
-                ? "border-emerald-300/30 bg-emerald-400/10 text-emerald-200"
-                : "border-amber-300/30 bg-amber-400/10 text-amber-200"
-            }`}
-          >
+          <MetricBadge variant={isCompleted ? "emerald" : "amber"}>
             {isCompleted ? "Completed" : "Active session"}
-          </span>
+          </MetricBadge>
 
-          <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-neutral-300">
-            {duration}
-          </span>
+          <MetricBadge>{duration}</MetricBadge>
         </div>
 
-        <div className="mt-5 rounded-2xl border border-white/10 bg-black/25 p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-neutral-500">
-                Session progress
-              </p>
-              <p className="mt-1 text-sm font-bold text-neutral-300">
-                {totalSets} / 12 sets logged
-              </p>
-            </div>
-
-            <p className="text-2xl font-black text-white">{workoutProgress}%</p>
-          </div>
-
-          <div className="mt-4 h-3 overflow-hidden rounded-full bg-white/10">
-            <div
-              className="h-full rounded-full bg-emerald-400 transition-all"
-              style={{ width: `${workoutProgress}%` }}
-            />
-          </div>
-        </div>
+        <ProgressBar
+          value={totalSets}
+          max={12}
+          label="Session progress"
+          helper={`${totalSets} / 12 sets logged`}
+          className="mt-5"
+        />
 
         <EditWorkoutForm
           workout={{
@@ -298,36 +281,28 @@ export default async function WorkoutDetailPage({
         />
 
         {workout.notes && (
-          <p className="mt-5 rounded-2xl border border-white/10 bg-black/25 p-4 text-sm leading-6 text-neutral-300">
-            {workout.notes}
-          </p>
+          <Card className="mt-5 rounded-2xl bg-black/25 p-4">
+            <p className="text-sm leading-6 text-neutral-300">
+              {workout.notes}
+            </p>
+          </Card>
         )}
-      </section>
+      </Card>
 
-      <section className="mt-6 rounded-[2rem] border border-white/10 bg-white/[0.06] p-5 shadow-sm backdrop-blur sm:p-6">
-        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-300">
-              Build session
-            </p>
-            <h2 className="mt-2 text-2xl font-black text-white">Exercises</h2>
-            <p className="mt-1 text-sm leading-6 text-neutral-400">
-              Add movements, log working sets, and keep your previous
-              performance in view.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-6">
-          <AddExerciseForm workoutId={workout.id} exercises={libraryExercises} />
-        </div>
+      <Section
+        className="mt-6"
+        eyebrow="Build session"
+        title="Exercises"
+        description="Add movements, log working sets, and keep your previous performance in view."
+      >
+        <AddExerciseForm workoutId={workout.id} exercises={libraryExercises} />
 
         {workout.exercises.length === 0 ? (
-          <div className="mt-8 rounded-3xl border border-dashed border-white/10 bg-black/20 p-8 text-center">
-            <h3 className="font-black text-white">No exercises added yet</h3>
-            <p className="mt-2 text-sm leading-6 text-neutral-400">
-              Add your first exercise above, then start logging sets.
-            </p>
+          <div className="mt-8">
+            <EmptyState
+              title="No exercises added yet"
+              description="Add your first exercise above, then start logging sets."
+            />
           </div>
         ) : (
           <div className="mt-6 space-y-6">
@@ -344,9 +319,9 @@ export default async function WorkoutDetailPage({
               }, 0);
 
               return (
-                <article
+                <Card
                   key={exercise.id}
-                  className="overflow-hidden rounded-[2rem] border border-white/10 bg-black/20 shadow-sm backdrop-blur"
+                  className="overflow-hidden rounded-[2rem] bg-black/20 p-0"
                 >
                   <div className="border-b border-white/10 bg-white/[0.04] p-5">
                     <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
@@ -360,13 +335,8 @@ export default async function WorkoutDetailPage({
                         </h3>
 
                         <div className="mt-3 flex flex-wrap gap-2">
-                          <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-bold text-neutral-300">
-                            {exercise.sets.length} sets
-                          </span>
-
-                          <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-bold text-neutral-300">
-                            {formatVolume(exerciseVolume)}
-                          </span>
+                          <MetricBadge>{exercise.sets.length} sets</MetricBadge>
+                          <MetricBadge>{formatVolume(exerciseVolume)}</MetricBadge>
                         </div>
                       </div>
 
@@ -393,23 +363,19 @@ export default async function WorkoutDetailPage({
 
                   <div className="p-5">
                     {exercise.sets.length === 0 ? (
-                      <div className="rounded-3xl border border-dashed border-white/10 bg-black/20 p-6 text-center">
-                        <p className="font-black text-white">
-                          No sets logged yet
-                        </p>
-                        <p className="mt-2 text-sm leading-6 text-neutral-400">
-                          Add your first set below when you finish the lift.
-                        </p>
-                      </div>
+                      <EmptyState
+                        title="No sets logged yet"
+                        description="Add your first set below when you finish the lift."
+                      />
                     ) : (
                       <div className="space-y-3">
                         {exercise.sets.map((set) => {
                           const prStatus = prStatuses.get(set.id);
 
                           return (
-                            <div
+                            <Card
                               key={set.id}
-                              className="rounded-3xl border border-white/10 bg-white/[0.05] p-4"
+                              className="rounded-3xl bg-white/[0.05] p-4"
                             >
                               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                                 <div className="flex items-center gap-4">
@@ -454,53 +420,55 @@ export default async function WorkoutDetailPage({
                               </div>
 
                               {prStatus?.isPersonalRecord && (
-                                <div className="mt-4 rounded-2xl border border-amber-300/20 bg-amber-400/[0.10] px-4 py-3 text-sm font-black text-amber-200">
-                                  New PR 🎉 est. 1RM{" "}
-                                  {Math.round(
-                                    prStatus.estimatedOneRepMax ?? 0
-                                  )}{" "}
-                                  lb
+                                <div className="mt-4">
+                                  <MetricBadge variant="amber">
+                                    New PR 🎉 est. 1RM{" "}
+                                    {Math.round(
+                                      prStatus.estimatedOneRepMax ?? 0
+                                    )}{" "}
+                                    lb
+                                  </MetricBadge>
                                 </div>
                               )}
 
                               <div className="mt-4 grid grid-cols-3 gap-2 text-xs sm:grid-cols-4">
-                                <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                                <Card className="rounded-2xl bg-black/20 p-3">
                                   <p className="font-bold uppercase tracking-[0.16em] text-neutral-500">
                                     Reps
                                   </p>
                                   <p className="mt-1 text-lg font-black text-white">
                                     {set.reps ?? "—"}
                                   </p>
-                                </div>
+                                </Card>
 
-                                <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                                <Card className="rounded-2xl bg-black/20 p-3">
                                   <p className="font-bold uppercase tracking-[0.16em] text-neutral-500">
                                     RIR
                                   </p>
                                   <p className="mt-1 text-lg font-black text-white">
                                     {set.rir ?? "—"}
                                   </p>
-                                </div>
+                                </Card>
 
-                                <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                                <Card className="rounded-2xl bg-black/20 p-3">
                                   <p className="font-bold uppercase tracking-[0.16em] text-neutral-500">
                                     Tempo
                                   </p>
                                   <p className="mt-1 truncate text-lg font-black text-white">
                                     {set.tempo || "—"}
                                   </p>
-                                </div>
+                                </Card>
 
-                                <div className="col-span-3 rounded-2xl border border-white/10 bg-black/20 p-3 sm:col-span-1">
+                                <Card className="col-span-3 rounded-2xl bg-black/20 p-3 sm:col-span-1">
                                   <p className="font-bold uppercase tracking-[0.16em] text-neutral-500">
                                     Notes
                                   </p>
                                   <p className="mt-1 truncate text-sm font-bold text-white">
                                     {set.notes || "—"}
                                   </p>
-                                </div>
+                                </Card>
                               </div>
-                            </div>
+                            </Card>
                           );
                         })}
                       </div>
@@ -511,14 +479,14 @@ export default async function WorkoutDetailPage({
                       workoutExerciseId={exercise.id}
                     />
                   </div>
-                </article>
+                </Card>
               );
             })}
           </div>
         )}
-      </section>
+      </Section>
 
-      <div className="fixed bottom-20 left-4 right-4 z-40 rounded-3xl border border-white/10 bg-black/80 p-3 shadow-[0_20px_80px_rgba(0,0,0,0.55)] backdrop-blur-xl md:hidden">
+      <Card className="fixed bottom-20 left-4 right-4 z-40 rounded-3xl bg-black/80 p-3 shadow-[0_20px_80px_rgba(0,0,0,0.55)] md:hidden">
         <div className="grid grid-cols-3 gap-2 text-center">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.16em] text-neutral-500">
@@ -545,7 +513,7 @@ export default async function WorkoutDetailPage({
             </p>
           </div>
         </div>
-      </div>
+      </Card>
     </main>
   );
 }
