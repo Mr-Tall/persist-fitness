@@ -16,9 +16,9 @@ import { formatWorkoutDate } from "@/lib/format-date";
 import { getPreviousPerformanceForExercise } from "@/lib/previous-performance";
 import { getSetPrStatuses } from "@/lib/set-pr-status";
 import { notFound, redirect } from "next/navigation";
-import Link from "next/link";
 import { AddExerciseForm } from "./add-exercise-form";
 import { AddSetForm } from "./add-set-form";
+import { CompletionSummary } from "./completion-summary";
 import { DeleteWorkoutButton } from "./delete-workout-button";
 import { EditSetForm } from "./edit-set-form";
 import { EditWorkoutForm } from "./edit-workout-form";
@@ -178,6 +178,17 @@ export default async function WorkoutDetailPage({
   const duration = formatDuration(workout.startedAt, workout.finishedAt);
   const workoutProgress = Math.min(100, Math.round((totalSets / 12) * 100));
 
+  const personalRecordCount = Array.from(prStatusByExerciseId.values()).reduce(
+    (total, statuses) => {
+      return (
+        total +
+        Array.from(statuses.values()).filter((status) => status.isPersonalRecord)
+          .length
+      );
+    },
+    0
+  );
+
   return (
     <main className="mx-auto max-w-5xl px-4 pb-28 pt-6 sm:px-6 sm:py-10">
       <Card className="relative overflow-hidden p-5 sm:p-7">
@@ -288,6 +299,16 @@ export default async function WorkoutDetailPage({
           </Card>
         )}
       </Card>
+
+      {isCompleted && (
+        <CompletionSummary
+          duration={duration}
+          totalSets={totalSets}
+          totalVolume={formatVolume(totalVolume)}
+          exerciseCount={workout.exercises.length}
+          personalRecordCount={personalRecordCount}
+        />
+      )}
 
       <Section
         className="mt-6"
