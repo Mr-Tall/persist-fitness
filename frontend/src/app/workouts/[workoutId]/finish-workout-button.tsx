@@ -1,5 +1,5 @@
 import { finishWorkout, reopenWorkout } from "@/app/actions/workouts";
-import { SubmitButton } from "@/components/ui/submit-button";
+import { ToastSubmitButton } from "@/components/ui/toast-submit-button";
 
 type FinishWorkoutButtonProps = {
   workoutId: string;
@@ -16,8 +16,9 @@ export function FinishWorkoutButton({
     <form action={isCompleted ? reopenWorkout : finishWorkout}>
       <input type="hidden" name="workoutId" value={workoutId} />
 
-      <SubmitButton
+      <ToastSubmitButton
         pendingText={isCompleted ? "Reopening..." : "Finishing..."}
+        toastMessage={isCompleted ? "Reopening workout..." : "Finishing workout..."}
         className={
           isCompleted
             ? "w-full rounded-xl border border-white/10 px-4 py-3 text-sm font-black text-white transition hover:bg-white/10 sm:w-auto"
@@ -25,7 +26,7 @@ export function FinishWorkoutButton({
         }
       >
         {isCompleted ? "Reopen workout" : "Finish workout"}
-      </SubmitButton>
+      </ToastSubmitButton>
     </form>
   );
 }

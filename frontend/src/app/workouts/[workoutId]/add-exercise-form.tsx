@@ -2,7 +2,7 @@
 
 import { addExerciseToWorkout } from "@/app/actions/workout-exercises";
 import { ExerciseSelect } from "@/components/exercise-select";
-import { SubmitButton } from "@/components/ui/submit-button";
+import { ToastSubmitButton } from "@/components/ui/toast-submit-button";
 import { useState } from "react";
 
 type AddExerciseFormProps = {
@@ -38,13 +38,14 @@ export function AddExerciseForm({ workoutId, exercises }: AddExerciseFormProps) 
         />
       </div>
 
-      <SubmitButton
+      <ToastSubmitButton
         pendingText="Adding exercise..."
+        toastMessage="Adding exercise..."
         disabled={!canSubmit}
         className="mt-4 w-full rounded-xl bg-emerald-400 px-5 py-3 font-black text-black transition hover:bg-emerald-300 disabled:bg-neutral-700 disabled:text-neutral-400 sm:w-auto"
       >
         Add exercise
-      </SubmitButton>
+      </ToastSubmitButton>
     </form>
   );
 }

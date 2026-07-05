@@ -1,5 +1,5 @@
 import { addSetToExercise } from "@/app/actions/workout-exercises";
-import { SubmitButton } from "@/components/ui/submit-button";
+import { ToastSubmitButton } from "@/components/ui/toast-submit-button";
 import { RestTimer } from "./rest-timer";
 
 type AddSetFormProps = {
@@ -94,12 +94,13 @@ export function AddSetForm({ workoutId, workoutExerciseId }: AddSetFormProps) {
           </div>
 
           <div className="flex items-end">
-            <SubmitButton
+            <ToastSubmitButton
               pendingText="Saving..."
+              toastMessage="Saving set..."
               className="w-full rounded-xl bg-emerald-400 px-4 py-3 font-black text-black transition hover:bg-emerald-300"
             >
               Save set
-            </SubmitButton>
+            </ToastSubmitButton>
           </div>
         </div>
       </form>
