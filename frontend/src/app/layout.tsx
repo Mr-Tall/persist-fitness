@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { MobileNav } from "@/components/navigation/mobile-nav";
 import "./globals.css";
+import { ToastProvider } from "@/components/ui/toast-provider";
 
 export const metadata: Metadata = {
   title: {
@@ -70,6 +71,7 @@ export default function RootLayout({
 
         <div className="pb-20 md:pb-0">{children}</div>
         <MobileNav />
+        <ToastProvider />
       </body>
     </html>
   );
