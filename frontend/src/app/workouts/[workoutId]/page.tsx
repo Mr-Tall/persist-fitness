@@ -9,7 +9,6 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { MetricBadge } from "@/components/ui/metric-badge";
 import { Section } from "@/components/ui/section";
 import { db } from "@/lib/db";
-import { formatWorkoutDate } from "@/lib/format-date";
 import { getPreviousPerformanceForExercise } from "@/lib/previous-performance";
 import { getSetPrStatuses } from "@/lib/set-pr-status";
 import { notFound, redirect } from "next/navigation";
