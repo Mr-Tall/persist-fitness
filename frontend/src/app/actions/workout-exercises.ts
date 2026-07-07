@@ -6,6 +6,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
+export type AddExerciseFormState = {
+  status: "idle" | "success" | "error";
+  message: string;
+  submittedAt: number | null;
+};
+
 const addExerciseSchema = z.object({
   workoutId: z.string().min(1),
   exerciseId: z.string().optional(),
@@ -70,9 +76,22 @@ async function verifyWorkoutOwner(workoutId: string, userId: string) {
   return workout;
 }
 
-export async function addExerciseToWorkout(formData: FormData) {
-  const userId = await requireUserId();
+function getSafeActionMessage(error: unknown) {
+  if (error instanceof z.ZodError) {
+    return "Please check the form and try again.";
+  }
 
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return "Something went wrong. Please try again.";
+}
+
+async function createWorkoutExerciseFromFormData(
+  userId: string,
+  formData: FormData
+) {
   const parsed = addExerciseSchema.parse({
     workoutId: formData.get("workoutId"),
     exerciseId: formData.get("exerciseId") || undefined,
@@ -104,9 +123,13 @@ export async function addExerciseToWorkout(formData: FormData) {
   }
 
   if (!exerciseName) {
-      revalidatePath(`/workouts/${parsed.workoutId}`);
-      return;
-    }
+    return {
+      status: "error" as const,
+      message: "Select an exercise or type a custom exercise name.",
+      workoutId: parsed.workoutId,
+      exerciseName: null,
+    };
+  }
 
   const exerciseCount = await db.workoutExercise.count({
     where: {
@@ -124,6 +147,41 @@ export async function addExerciseToWorkout(formData: FormData) {
   });
 
   revalidatePath(`/workouts/${parsed.workoutId}`);
+
+  return {
+    status: "success" as const,
+    message: `Added ${exerciseName}.`,
+    workoutId: parsed.workoutId,
+    exerciseName,
+  };
+}
+
+export async function addExerciseToWorkout(formData: FormData) {
+  const userId = await requireUserId();
+  await createWorkoutExerciseFromFormData(userId, formData);
+}
+
+export async function addExerciseToWorkoutWithState(
+  _previousState: AddExerciseFormState,
+  formData: FormData
+): Promise<AddExerciseFormState> {
+  const userId = await requireUserId();
+
+  try {
+    const result = await createWorkoutExerciseFromFormData(userId, formData);
+
+    return {
+      status: result.status,
+      message: result.message,
+      submittedAt: Date.now(),
+    };
+  } catch (error) {
+    return {
+      status: "error",
+      message: getSafeActionMessage(error),
+      submittedAt: Date.now(),
+    };
+  }
 }
 
 export async function addSetToExercise(formData: FormData) {
