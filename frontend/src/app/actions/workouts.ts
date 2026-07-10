@@ -1,6 +1,6 @@
 "use server";
 
-import { auth } from "@/auth";
+import { requireUserId } from "@/lib/auth/require-user";
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -38,16 +38,6 @@ function calendarDateToUtcNoon(dateString: string) {
 function todayAtUtcNoon() {
   const today = new Date().toISOString().split("T")[0];
   return new Date(`${today}T12:00:00.000Z`);
-}
-
-async function requireUserId() {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    redirect("/login");
-  }
-
-  return session.user.id;
 }
 
 function getSafeWorkoutActionMessage(error: unknown) {

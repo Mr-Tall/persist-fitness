@@ -1,9 +1,8 @@
 "use server";
 
-import { auth } from "@/auth";
+import { requireUserId } from "@/lib/auth/require-user";
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { z } from "zod";
 
 export type AddExerciseFormState = {
@@ -59,16 +58,6 @@ const updateSetSchema = z.object({
   tempo: z.string().optional(),
   notes: z.string().optional(),
 });
-
-async function requireUserId() {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    redirect("/login");
-  }
-
-  return session.user.id;
-}
 
 async function verifyWorkoutOwner(workoutId: string, userId: string) {
   const workout = await db.workout.findFirst({

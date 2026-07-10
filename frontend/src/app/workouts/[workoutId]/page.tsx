@@ -3,7 +3,7 @@ import {
   deleteExerciseFromWorkout,
 } from "@/app/actions/workout-exercises";
 import { DeleteInlineButton } from "@/app/workouts/[workoutId]/delete-inline-button";
-import { auth } from "@/auth";
+import { requireUserId } from "@/lib/auth/require-user";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { MetricBadge } from "@/components/ui/metric-badge";
@@ -11,7 +11,7 @@ import { Section } from "@/components/ui/section";
 import { db } from "@/lib/db";
 import { getPreviousPerformanceForExercise } from "@/lib/previous-performance";
 import { getSetPrStatuses } from "@/lib/set-pr-status";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { AddExerciseForm } from "./add-exercise-form";
 import { AddSetForm } from "./add-set-form";
 import { CompletionSummary } from "./completion-summary";
@@ -72,18 +72,13 @@ function formatDuration(startedAt: Date | null, finishedAt: Date | null) {
 export default async function WorkoutDetailPage({
   params,
 }: WorkoutDetailPageProps) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    redirect("/login");
-  }
-
+  const userId = await requireUserId();
   const { workoutId } = await params;
 
   const workout = await db.workout.findFirst({
     where: {
       id: workoutId,
-      userId: session.user.id,
+      userId: userId,
     },
     include: {
       exercises: {
@@ -116,7 +111,7 @@ export default async function WorkoutDetailPage({
       primaryMuscles: true,
       favoritedBy: {
         where: {
-          userId: session.user.id,
+          userId: userId,
         },
         select: {
           id: true,
@@ -137,7 +132,7 @@ export default async function WorkoutDetailPage({
     await Promise.all(
       workout.exercises.map(async (exercise) => {
         const previous = await getPreviousPerformanceForExercise({
-          userId: session.user.id,
+          userId: userId,
           currentWorkoutId: workout.id,
           exerciseId: exercise.exerciseId,
           exerciseName: exercise.name,
@@ -152,7 +147,7 @@ export default async function WorkoutDetailPage({
     await Promise.all(
       workout.exercises.map(async (exercise) => {
         const statuses = await getSetPrStatuses({
-          userId: session.user.id,
+          userId: userId,
           currentWorkoutId: workout.id,
           exerciseId: exercise.exerciseId,
           exerciseName: exercise.name,
