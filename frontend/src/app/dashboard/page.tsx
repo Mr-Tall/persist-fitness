@@ -1,4 +1,3 @@
-import { auth } from "@/auth";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -10,9 +9,9 @@ import { db } from "@/lib/db";
 import { getDashboardAnalytics } from "@/lib/dashboard-analytics";
 import { formatWorkoutDate } from "@/lib/format-date";
 import { getTopExercisePersonalRecords } from "@/lib/personal-records";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { StartWorkoutButton } from "./start-workout-button";
+import { requireUserSession } from "@/lib/auth/require-user";
 
 function formatVolume(volume: number) {
   return `${Math.round(volume).toLocaleString()} lb`;
@@ -92,21 +91,18 @@ function formatStartedTime(startedAt: Date | null) {
 }
 
 export default async function DashboardPage() {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    redirect("/login");
-  }
+  const session = await requireUserSession();
+  const userId = session.user.id;
 
   const [profile, analytics, personalRecords, routineCount, activeWorkout] =
     await Promise.all([
       db.profile.findUnique({
         where: {
-          userId: session.user.id,
+          userId: userId,
         },
       }),
-      getDashboardAnalytics(session.user.id),
-      getTopExercisePersonalRecords(session.user.id, 5),
+      getDashboardAnalytics(userId),
+      getTopExercisePersonalRecords(userId, 5),
       db.workoutTemplate.count({
         where: {
           userId: session.user.id,

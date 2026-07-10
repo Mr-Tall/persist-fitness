@@ -1,21 +1,16 @@
-import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { redirect } from "next/navigation";
 import Link from "next/link";
+import { requireUserId } from "@/lib/auth/require-user";
 import { formatWorkoutDate } from "@/lib/format-date";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 
 export default async function WorkoutsPage() {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    redirect("/login");
-  }
+  const userId = await requireUserId();
 
   const workouts = await db.workout.findMany({
     where: {
-      userId: session.user.id,
+      userId: userId,
     },
     orderBy: {
       date: "desc",
