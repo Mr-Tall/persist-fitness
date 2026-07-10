@@ -1,7 +1,12 @@
 "use client";
 
-import { updateWorkout } from "@/app/actions/workouts";
-import { useState } from "react";
+import {
+  updateWorkoutWithState,
+  type UpdateWorkoutFormState,
+} from "@/app/actions/workouts";
+import { ToastSubmitButton } from "@/components/ui/toast-submit-button";
+import { useActionState, useEffect, useState } from "react";
+import { toast } from "sonner";
 
 type EditWorkoutFormProps = {
   workout: {
@@ -13,18 +18,65 @@ type EditWorkoutFormProps = {
   };
 };
 
+const initialState: UpdateWorkoutFormState = {
+  status: "idle",
+  message: "",
+  submittedAt: null,
+};
+
 function toDateInputValue(date: Date) {
   return date.toISOString().split("T")[0];
 }
 
 export function EditWorkoutForm({ workout }: EditWorkoutFormProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [openedAt, setOpenedAt] = useState(0);
+
+  const [state, formAction] = useActionState(
+    async (
+      previousState: UpdateWorkoutFormState,
+      formData: FormData
+    ): Promise<UpdateWorkoutFormState> => {
+      const result = await updateWorkoutWithState(previousState, formData);
+
+      if (result.status === "success") {
+        setIsOpen(false);
+      }
+
+      return result;
+    },
+    initialState
+  );
+
+  const shouldShowMessage =
+    state.status !== "idle" &&
+    state.submittedAt !== null &&
+    state.submittedAt >= openedAt &&
+    Boolean(state.message);
+
+  useEffect(() => {
+    if (!state.submittedAt || !state.message || state.submittedAt < openedAt) {
+      return;
+    }
+
+    if (state.status === "success") {
+      toast.success(state.message);
+      return;
+    }
+
+    if (state.status === "error") {
+      toast.error(state.message);
+    }
+  }, [openedAt, state.message, state.status, state.submittedAt]);
 
   if (!isOpen) {
     return (
       <button
         type="button"
-        onClick={() => setIsOpen(true)}
+        onClick={() => {
+          setOpenedAt(Date.now());
+          setIsOpen(true);
+        }}
         className="w-full rounded-xl border border-neutral-300 px-4 py-2 text-sm font-semibold transition hover:bg-neutral-50 sm:w-auto"
       >
         Edit workout
@@ -52,7 +104,7 @@ export function EditWorkoutForm({ workout }: EditWorkoutFormProps) {
         </button>
       </div>
 
-      <form action={updateWorkout} className="space-y-4">
+      <form action={formAction} className="space-y-4">
         <input type="hidden" name="workoutId" value={workout.id} />
 
         <div>
@@ -115,12 +167,26 @@ export function EditWorkoutForm({ workout }: EditWorkoutFormProps) {
           />
         </div>
 
-        <button
-          type="submit"
+        {shouldShowMessage && (
+          <p
+            role={state.status === "error" ? "alert" : "status"}
+            className={`rounded-2xl border px-4 py-3 text-sm font-bold leading-6 ${
+              state.status === "success"
+                ? "border-emerald-300/25 bg-emerald-50 text-emerald-700"
+                : "border-red-300/25 bg-red-50 text-red-700"
+            }`}
+          >
+            {state.message}
+          </p>
+        )}
+
+        <ToastSubmitButton
+          pendingText="Saving workout..."
+          toastMessage="Saving workout..."
           className="w-full rounded-xl bg-neutral-950 px-5 py-3 font-semibold text-white transition hover:bg-neutral-800 sm:w-auto"
         >
           Save workout
-        </button>
+        </ToastSubmitButton>
       </form>
     </section>
   );

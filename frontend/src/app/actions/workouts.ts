@@ -6,6 +6,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
+export type UpdateWorkoutFormState = {
+  status: "idle" | "success" | "error";
+  message: string;
+  submittedAt: number | null;
+};
+
 const createWorkoutSchema = z.object({
   title: z.string().min(1, "Workout title is required"),
   goal: z.string().optional(),
@@ -42,6 +48,65 @@ async function requireUserId() {
   }
 
   return session.user.id;
+}
+
+function getSafeWorkoutActionMessage(error: unknown) {
+  if (error instanceof z.ZodError) {
+    return error.issues[0]?.message || "Please check the form and try again.";
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return "Something went wrong. Please try again.";
+}
+
+async function updateWorkoutFromFormData(userId: string, formData: FormData) {
+  const parsed = updateWorkoutSchema.parse({
+    workoutId: formData.get("workoutId"),
+    title: formData.get("title"),
+    goal: formData.get("goal") || undefined,
+    notes: formData.get("notes") || undefined,
+    date: formData.get("date"),
+  });
+
+  const title = parsed.title.trim();
+
+  if (!title) {
+    return {
+      status: "error" as const,
+      message: "Workout title is required.",
+      workoutId: parsed.workoutId,
+    };
+  }
+
+  const updatedWorkout = await db.workout.updateMany({
+    where: {
+      id: parsed.workoutId,
+      userId,
+    },
+    data: {
+      title,
+      goal: parsed.goal?.trim() || null,
+      notes: parsed.notes?.trim() || null,
+      date: calendarDateToUtcNoon(parsed.date),
+    },
+  });
+
+  if (updatedWorkout.count === 0) {
+    throw new Error("Workout not found");
+  }
+
+  revalidatePath(`/workouts/${parsed.workoutId}`);
+  revalidatePath("/workouts");
+  revalidatePath("/dashboard");
+
+  return {
+    status: "success" as const,
+    message: "Workout details updated.",
+    workoutId: parsed.workoutId,
+  };
 }
 
 export async function createWorkout(formData: FormData) {
@@ -91,35 +156,30 @@ export async function startTodaysWorkout() {
 
 export async function updateWorkout(formData: FormData) {
   const userId = await requireUserId();
+  await updateWorkoutFromFormData(userId, formData);
+}
 
-  const parsed = updateWorkoutSchema.parse({
-    workoutId: formData.get("workoutId"),
-    title: formData.get("title"),
-    goal: formData.get("goal") || undefined,
-    notes: formData.get("notes") || undefined,
-    date: formData.get("date"),
-  });
+export async function updateWorkoutWithState(
+  _previousState: UpdateWorkoutFormState,
+  formData: FormData
+): Promise<UpdateWorkoutFormState> {
+  const userId = await requireUserId();
 
-  const updatedWorkout = await db.workout.updateMany({
-    where: {
-      id: parsed.workoutId,
-      userId,
-    },
-    data: {
-      title: parsed.title.trim(),
-      goal: parsed.goal?.trim() || null,
-      notes: parsed.notes?.trim() || null,
-      date: calendarDateToUtcNoon(parsed.date),
-    },
-  });
+  try {
+    const result = await updateWorkoutFromFormData(userId, formData);
 
-  if (updatedWorkout.count === 0) {
-    throw new Error("Workout not found");
+    return {
+      status: result.status,
+      message: result.message,
+      submittedAt: Date.now(),
+    };
+  } catch (error) {
+    return {
+      status: "error",
+      message: getSafeWorkoutActionMessage(error),
+      submittedAt: Date.now(),
+    };
   }
-
-  revalidatePath(`/workouts/${parsed.workoutId}`);
-  revalidatePath("/workouts");
-  revalidatePath("/dashboard");
 }
 
 export async function finishWorkout(formData: FormData) {
