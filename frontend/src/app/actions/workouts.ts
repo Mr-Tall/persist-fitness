@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { verifyWorkoutOwner } from "@/lib/auth/workout-access";
 
 export type UpdateWorkoutFormState = {
   status: "idle" | "success" | "error";
@@ -235,10 +236,11 @@ export async function deleteWorkout(formData: FormData) {
     throw new Error("Workout ID is required");
   }
 
-  await db.workout.deleteMany({
+  await verifyWorkoutOwner(workoutId, userId);
+
+  await db.workout.delete({
     where: {
       id: workoutId,
-      userId,
     },
   });
 

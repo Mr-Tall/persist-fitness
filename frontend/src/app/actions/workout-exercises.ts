@@ -4,6 +4,7 @@ import { requireUserId } from "@/lib/auth/require-user";
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { verifyWorkoutOwner } from "@/lib/auth/workout-access";
 
 export type AddExerciseFormState = {
   status: "idle" | "success" | "error";
@@ -58,24 +59,6 @@ const updateSetSchema = z.object({
   tempo: z.string().optional(),
   notes: z.string().optional(),
 });
-
-async function verifyWorkoutOwner(workoutId: string, userId: string) {
-  const workout = await db.workout.findFirst({
-    where: {
-      id: workoutId,
-      userId,
-    },
-    select: {
-      id: true,
-    },
-  });
-
-  if (!workout) {
-    throw new Error("Workout not found");
-  }
-
-  return workout;
-}
 
 function getSafeActionMessage(error: unknown) {
   if (error instanceof z.ZodError) {
