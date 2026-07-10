@@ -1,7 +1,12 @@
 "use client";
 
-import { updateSetInExercise } from "@/app/actions/workout-exercises";
-import { useState } from "react";
+import {
+  updateSetInExerciseWithState,
+  type UpdateSetFormState,
+} from "@/app/actions/workout-exercises";
+import { ToastSubmitButton } from "@/components/ui/toast-submit-button";
+import { useActionState, useEffect, useState } from "react";
+import { toast } from "sonner";
 
 type EditSetFormProps = {
   workoutId: string;
@@ -16,14 +21,64 @@ type EditSetFormProps = {
   };
 };
 
+const initialState: UpdateSetFormState = {
+  status: "idle",
+  message: "",
+  submittedAt: null,
+};
+
 export function EditSetForm({ workoutId, set }: EditSetFormProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [openedAt, setOpenedAt] = useState(0);
+
+  const [state, formAction] = useActionState(
+    async (
+      previousState: UpdateSetFormState,
+      formData: FormData
+    ): Promise<UpdateSetFormState> => {
+      const result = await updateSetInExerciseWithState(
+        previousState,
+        formData
+      );
+
+      if (result.status === "success") {
+        setIsOpen(false);
+      }
+
+      return result;
+    },
+    initialState
+  );
+
+  const shouldShowError =
+    state.status === "error" &&
+    state.submittedAt !== null &&
+    state.submittedAt >= openedAt &&
+    Boolean(state.message);
+
+  useEffect(() => {
+    if (!state.submittedAt || !state.message || state.submittedAt < openedAt) {
+      return;
+    }
+
+    if (state.status === "success") {
+      toast.success(state.message);
+      return;
+    }
+
+    if (state.status === "error") {
+      toast.error(state.message);
+    }
+  }, [openedAt, state.message, state.status, state.submittedAt]);
 
   if (!isOpen) {
     return (
       <button
         type="button"
-        onClick={() => setIsOpen(true)}
+        onClick={() => {
+          setOpenedAt(Date.now());
+          setIsOpen(true);
+        }}
         className="rounded-lg px-2 py-1 text-xs font-semibold text-neutral-600 transition hover:bg-neutral-100"
       >
         Edit
@@ -33,10 +88,18 @@ export function EditSetForm({ workoutId, set }: EditSetFormProps) {
 
   return (
     <div className="fixed inset-0 z-[70] flex items-end bg-black/40 p-0 sm:items-center sm:justify-center sm:p-4">
-      <div className="w-full rounded-t-3xl bg-white p-5 shadow-2xl sm:max-w-xl sm:rounded-3xl">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={`edit-set-${set.id}-title`}
+        className="w-full rounded-t-3xl bg-white p-5 shadow-2xl sm:max-w-xl sm:rounded-3xl"
+      >
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
-            <p className="text-lg font-semibold text-neutral-950">
+            <p
+              id={`edit-set-${set.id}-title`}
+              className="text-lg font-semibold text-neutral-950"
+            >
               Edit set {set.setNumber}
             </p>
             <p className="mt-1 text-sm text-neutral-500">
@@ -53,7 +116,7 @@ export function EditSetForm({ workoutId, set }: EditSetFormProps) {
           </button>
         </div>
 
-        <form action={updateSetInExercise} className="grid gap-4 sm:grid-cols-2">
+        <form action={formAction} className="grid gap-4 sm:grid-cols-2">
           <input type="hidden" name="workoutId" value={workoutId} />
           <input type="hidden" name="workoutSetId" value={set.id} />
 
@@ -65,6 +128,7 @@ export function EditSetForm({ workoutId, set }: EditSetFormProps) {
               name="reps"
               type="number"
               min="0"
+              inputMode="numeric"
               defaultValue={set.reps ?? ""}
               className="mt-1 w-full rounded-xl border border-neutral-300 px-3 py-3"
             />
@@ -79,6 +143,7 @@ export function EditSetForm({ workoutId, set }: EditSetFormProps) {
               type="number"
               min="0"
               step="0.5"
+              inputMode="decimal"
               defaultValue={set.weight ?? ""}
               className="mt-1 w-full rounded-xl border border-neutral-300 px-3 py-3"
             />
@@ -93,6 +158,7 @@ export function EditSetForm({ workoutId, set }: EditSetFormProps) {
               type="number"
               min="0"
               max="10"
+              inputMode="numeric"
               defaultValue={set.rir ?? ""}
               className="mt-1 w-full rounded-xl border border-neutral-300 px-3 py-3"
             />
@@ -122,13 +188,23 @@ export function EditSetForm({ workoutId, set }: EditSetFormProps) {
             />
           </div>
 
+          {shouldShowError && (
+            <p
+              role="alert"
+              className="rounded-2xl border border-red-300/25 bg-red-50 px-4 py-3 text-sm font-bold leading-6 text-red-700 sm:col-span-2"
+            >
+              {state.message}
+            </p>
+          )}
+
           <div className="sm:col-span-2">
-            <button
-              type="submit"
+            <ToastSubmitButton
+              pendingText="Saving changes..."
+              toastMessage="Saving set changes..."
               className="w-full rounded-xl bg-neutral-950 px-4 py-3 font-semibold text-white hover:bg-neutral-800"
             >
               Save changes
-            </button>
+            </ToastSubmitButton>
           </div>
         </form>
       </div>

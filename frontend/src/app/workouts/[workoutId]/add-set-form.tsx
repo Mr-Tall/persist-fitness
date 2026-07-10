@@ -1,5 +1,12 @@
-import { addSetToExercise } from "@/app/actions/workout-exercises";
+"use client";
+
+import {
+  addSetToExerciseWithState,
+  type AddSetFormState,
+} from "@/app/actions/workout-exercises";
 import { ToastSubmitButton } from "@/components/ui/toast-submit-button";
+import { useActionState, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { RestTimer } from "./rest-timer";
 
 type AddSetFormProps = {
@@ -7,11 +14,40 @@ type AddSetFormProps = {
   workoutExerciseId: string;
 };
 
+const initialState: AddSetFormState = {
+  status: "idle",
+  message: "",
+  submittedAt: null,
+};
+
 export function AddSetForm({ workoutId, workoutExerciseId }: AddSetFormProps) {
+  const formRef = useRef<HTMLFormElement>(null);
+  const [state, formAction] = useActionState(
+    addSetToExerciseWithState,
+    initialState
+  );
+
+  useEffect(() => {
+    if (!state.submittedAt || !state.message) {
+      return;
+    }
+
+    if (state.status === "success") {
+      toast.success(state.message);
+      formRef.current?.reset();
+      return;
+    }
+
+    if (state.status === "error") {
+      toast.error(state.message);
+    }
+  }, [state.message, state.status, state.submittedAt]);
+
   return (
     <>
       <form
-        action={addSetToExercise}
+        ref={formRef}
+        action={formAction}
         className="mt-5 rounded-3xl border border-emerald-300/20 bg-emerald-400/[0.06] p-4"
       >
         <input type="hidden" name="workoutId" value={workoutId} />
@@ -103,6 +139,19 @@ export function AddSetForm({ workoutId, workoutExerciseId }: AddSetFormProps) {
             </ToastSubmitButton>
           </div>
         </div>
+
+        {state.status !== "idle" && state.message && (
+          <p
+            role={state.status === "error" ? "alert" : "status"}
+            className={`mt-4 rounded-2xl border px-4 py-3 text-sm font-bold leading-6 ${
+              state.status === "success"
+                ? "border-emerald-300/25 bg-emerald-400/[0.08] text-emerald-200"
+                : "border-red-300/25 bg-red-400/[0.08] text-red-200"
+            }`}
+          >
+            {state.message}
+          </p>
+        )}
       </form>
 
       <RestTimer />
