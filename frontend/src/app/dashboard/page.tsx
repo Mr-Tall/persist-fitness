@@ -12,6 +12,7 @@ import { getTopExercisePersonalRecords } from "@/lib/personal-records";
 import Link from "next/link";
 import { StartWorkoutButton } from "./start-workout-button";
 import { requireUserSession } from "@/lib/auth/require-user";
+import { PremiumPreviewCard } from "@/components/premium/premium-preview-card";
 
 function formatVolume(volume: number) {
   return `${Math.round(volume).toLocaleString()} lb`;
@@ -234,6 +235,8 @@ export default async function DashboardPage() {
           </div>
         </Card>
       )}
+
+      <PremiumPreviewCard />
 
       {(!hasProfile || !hasWorkouts || !hasRoutines) && (
         <Card variant="emerald" className="mt-6 p-5 sm:p-6">
