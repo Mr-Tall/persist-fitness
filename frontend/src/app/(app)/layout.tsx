@@ -34,12 +34,6 @@ export default function AppLayout({
             <Link href="/settings" className="transition hover:text-white">
               Settings
             </Link>
-            <Link
-              href="/login"
-              className="rounded-xl bg-emerald-400 px-4 py-2 font-bold text-black transition hover:bg-emerald-300"
-            >
-              Sign in
-            </Link>
           </div>
         </nav>
       </header>
