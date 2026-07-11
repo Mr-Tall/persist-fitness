@@ -47,6 +47,9 @@ export default function RootLayout({
               <Link href="/dashboard" className="transition hover:text-white">
                 Dashboard
               </Link>
+              <Link href="/progress" className="transition hover:text-white">
+                Progress
+              </Link>
               <Link href="/workouts" className="transition hover:text-white">
                 Workouts
               </Link>

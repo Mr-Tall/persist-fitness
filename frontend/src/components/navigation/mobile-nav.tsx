@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-type IconName = "home" | "workouts" | "log" | "routines" | "profile";
+type IconName = "home" | "progress" | "log" | "routines" | "profile";
 
 const navItems: {
   href: string;
@@ -18,12 +18,11 @@ const navItems: {
     isActive: (pathname) => pathname === "/dashboard",
   },
   {
-    href: "/workouts",
-    label: "Workouts",
-    icon: "workouts",
+    href: "/progress",
+    label: "Progress",
+    icon: "progress",
     isActive: (pathname) =>
-      pathname === "/workouts" ||
-      (pathname.startsWith("/workouts/") && pathname !== "/workouts/new"),
+      pathname === "/progress" || pathname.startsWith("/progress/"),
   },
   {
     href: "/workouts/new",
@@ -68,10 +67,11 @@ function NavIcon({ name }: { name: IconName }) {
     );
   }
 
-  if (name === "workouts") {
+  if (name === "progress") {
     return (
       <svg {...commonProps}>
-        <path d="M6 7v10M18 7v10M3 9v6M21 9v6M6 12h12" />
+        <path d="m3 17 6-6 4 4 8-8" />
+        <path d="M14 7h7v7" />
       </svg>
     );
   }
