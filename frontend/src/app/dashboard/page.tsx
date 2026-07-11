@@ -136,6 +136,9 @@ export default async function DashboardPage() {
   const firstName = getFirstName(session.user.name);
   const trainingStatus = getTrainingStatus(analytics.workoutsThisWeek);
   const latestWorkout = analytics.recentWorkouts[0];
+  const mobileLatestWorkout = analytics.recentWorkouts.find(
+    (workout) => workout.id !== activeWorkout?.id
+  );
   const topRecord = personalRecords[0];
 
   const activeWorkoutSets = activeWorkout
@@ -146,7 +149,146 @@ export default async function DashboardPage() {
     : 0;
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
+    <main className="mx-auto max-w-6xl px-4 py-4 sm:px-6 sm:py-10">
+      <div className="md:hidden">
+        <header className="flex items-end justify-between gap-4 px-1 pb-4 pt-1">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-300">
+              Today
+            </p>
+            <h1 className="mt-1 text-3xl font-black tracking-tight text-white">
+              Hey, {firstName}.
+            </h1>
+          </div>
+
+          <MetricBadge variant="emerald">{trainingStatus.label}</MetricBadge>
+        </header>
+
+        <Card
+          variant={activeWorkout ? "emerald" : "glass"}
+          className="relative overflow-hidden rounded-[1.75rem] p-5"
+        >
+          <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,rgba(52,211,153,0.2),transparent_44%)]" />
+
+          {activeWorkout ? (
+            <>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-300">
+                Workout in progress
+              </p>
+              <h2 className="mt-2 text-2xl font-black tracking-tight text-white">
+                {activeWorkout.title}
+              </h2>
+              <p className="mt-2 text-sm text-neutral-300">
+                Started {formatStartedTime(activeWorkout.startedAt)} &middot;{" "}
+                {activeWorkoutSets} sets &middot;{" "}
+                {activeWorkout.exercises.length} exercises
+              </p>
+
+              <Button
+                href={`/workouts/${activeWorkout.id}`}
+                fullWidth
+                className="mt-5 min-h-12"
+              >
+                Resume workout
+              </Button>
+            </>
+          ) : (
+            <>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-300">
+                Next up
+              </p>
+              <h2 className="mt-2 text-2xl font-black tracking-tight text-white">
+                Ready for today&apos;s session?
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-neutral-400">
+                {trainingStatus.message}
+              </p>
+
+              <div className="mt-5 [&_button]:min-h-12 [&_button]:w-full [&_form]:w-full">
+                <StartWorkoutButton />
+              </div>
+            </>
+          )}
+
+          <Button
+            href="/routines"
+            variant="secondary"
+            fullWidth
+            className="mt-2 min-h-12"
+          >
+            Start from routine
+          </Button>
+        </Card>
+
+        <section aria-labelledby="weekly-momentum" className="mt-4">
+          <div className="mb-2 flex items-center justify-between px-1">
+            <h2
+              id="weekly-momentum"
+              className="text-sm font-black text-white"
+            >
+              Weekly momentum
+            </h2>
+            <span className="text-xs font-bold text-neutral-500">
+              Keep showing up
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3">
+              <p className="text-2xl font-black text-white">
+                {analytics.workoutsThisWeek}
+              </p>
+              <p className="mt-0.5 text-xs font-bold text-neutral-400">
+                Workouts this week
+              </p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3">
+              <p className="text-2xl font-black text-white">
+                {analytics.currentStreak}
+              </p>
+              <p className="mt-0.5 text-xs font-bold text-neutral-400">
+                Day streak
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {mobileLatestWorkout && (
+          <section aria-labelledby="latest-workout" className="mt-5">
+            <div className="mb-2 flex items-center justify-between px-1">
+              <h2 id="latest-workout" className="text-sm font-black text-white">
+                Latest workout
+              </h2>
+              <Link
+                href="/workouts"
+                className="text-xs font-bold text-emerald-300"
+              >
+                View all
+              </Link>
+            </div>
+
+            <Link
+              href={`/workouts/${mobileLatestWorkout.id}`}
+              className="flex min-h-16 items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 transition active:scale-[0.99]"
+            >
+              <div className="min-w-0">
+                <p className="truncate font-black text-white">
+                  {mobileLatestWorkout.title}
+                </p>
+                <p className="mt-0.5 truncate text-xs text-neutral-400">
+                  {formatWorkoutDate(mobileLatestWorkout.date)} &middot;{" "}
+                  {mobileLatestWorkout.goal || "No goal set"}
+                </p>
+              </div>
+              <span aria-hidden="true" className="text-xl text-neutral-500">
+                &rsaquo;
+              </span>
+            </Link>
+          </section>
+        )}
+      </div>
+
+      <div className="hidden md:block">
       <Card className="relative overflow-hidden p-5 sm:p-8">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,rgba(52,211,153,0.24),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(132,204,22,0.12),transparent_34%)]" />
 
@@ -535,6 +677,7 @@ export default async function DashboardPage() {
           </div>
         )}
       </Section>
+      </div>
     </main>
   );
 }

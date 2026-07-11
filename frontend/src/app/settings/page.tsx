@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { saveProfile } from "@/app/actions/profile";
+import { LogoutButton } from "@/components/auth/logout-button";
 
 const equipmentOptions = [
   "Barbell",
@@ -134,6 +135,19 @@ export default async function SettingsPage() {
           Save profile
         </button>
       </form>
+
+      <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.05] p-5 sm:flex sm:items-center sm:justify-between sm:gap-6 sm:p-6">
+        <div>
+          <h2 className="text-lg font-bold text-white">Account</h2>
+          <p className="mt-1 text-sm leading-6 text-neutral-400">
+            Manage your session and account access.
+          </p>
+        </div>
+
+        <div className="mt-4 [&_button]:min-h-12 [&_button]:w-full [&_button]:border-white/15 [&_button]:bg-white/[0.04] [&_button]:text-neutral-200 [&_button]:hover:bg-white/10 sm:mt-0 sm:[&_button]:w-auto">
+          <LogoutButton />
+        </div>
+      </section>
     </main>
   );
 }
