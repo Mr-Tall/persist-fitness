@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function HomePage() {
   return (
     <main className="bg-neutral-950 text-white">
-      <section className="mx-auto flex min-h-[calc(100vh-129px)] max-w-6xl flex-col justify-center px-5 py-12 sm:min-h-[calc(100vh-73px)] sm:px-6 sm:py-20">
+      <section className="mx-auto flex min-h-[calc(100vh-73px)] max-w-6xl flex-col justify-center px-5 py-12 sm:px-6 sm:py-20">
         <p className="mb-4 text-xs font-semibold uppercase tracking-[0.3em] text-emerald-400 sm:text-sm">
           Persist Fitness
         </p>

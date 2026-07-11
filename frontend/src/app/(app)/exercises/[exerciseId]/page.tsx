@@ -1,4 +1,4 @@
-import { FavoriteExerciseButton } from "@/app/exercises/favorite-exercise-button";
+import { FavoriteExerciseButton } from "../favorite-exercise-button";
 import { auth } from "@/auth";
 import { ExerciseProgressChart } from "@/components/charts/exercise-progress-chart";
 import { PageHeader } from "@/components/ui/page-header";

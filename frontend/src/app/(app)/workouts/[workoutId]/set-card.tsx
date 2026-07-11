@@ -1,5 +1,5 @@
 import { deleteSetFromExercise } from "@/app/actions/workout-exercises";
-import { DeleteInlineButton } from "@/app/workouts/[workoutId]/delete-inline-button";
+import { DeleteInlineButton } from "./delete-inline-button";
 import { Card } from "@/components/ui/card";
 import { MetricBadge } from "@/components/ui/metric-badge";
 import { EditSetForm } from "./edit-set-form";

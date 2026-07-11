@@ -2,7 +2,7 @@
 import {
   deleteExerciseFromWorkout,
 } from "@/app/actions/workout-exercises";
-import { DeleteInlineButton } from "@/app/workouts/[workoutId]/delete-inline-button";
+import { DeleteInlineButton } from "./delete-inline-button";
 import { requireUserId } from "@/lib/auth/require-user";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";

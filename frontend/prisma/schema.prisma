@@ -9,11 +9,11 @@ datasource db {
 }
 
 model User {
-  id                String             @id @default(cuid())
-  name              String?
-  email             String?            @unique
-  emailVerified     DateTime?
-  image             String?
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
 
   accounts          Account[]
   sessions          Session[]
@@ -22,8 +22,8 @@ model User {
   templates         WorkoutTemplate[]
   favoriteExercises FavoriteExercise[]
 
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Account {
@@ -63,8 +63,8 @@ model VerificationToken {
 }
 
 model Profile {
-  id             String   @id @default(cuid())
-  userId         String   @unique
+  id     String @id @default(cuid())
+  userId String @unique
 
   height         Int?
   weight         Int?
@@ -75,15 +75,15 @@ model Profile {
   equipment      String[]
   preferredSplit String?
 
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Exercise {
   id               String   @id @default(cuid())
-  name             String   
+  name             String
   force            String?
   level            String?
   mechanic         String?
@@ -94,25 +94,25 @@ model Exercise {
   category         String?
   images           String[]
 
-  workoutExercises WorkoutExercise[]
+  workoutExercises  WorkoutExercise[]
   templateExercises TemplateExercise[]
   favoritedBy       FavoriteExercise[]
 
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([name])
 }
 
 model FavoriteExercise {
-  id         String   @id @default(cuid())
+  id         String @id @default(cuid())
   userId     String
   exerciseId String
 
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
 
-  createdAt  DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@unique([userId, exerciseId])
 }
@@ -130,30 +130,30 @@ model Workout {
   startedAt  DateTime  @default(now())
   finishedAt DateTime?
 
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  exercises  WorkoutExercise[]
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercises WorkoutExercise[]
 
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model WorkoutExercise {
-  id         String   @id @default(cuid())
+  id         String  @id @default(cuid())
   workoutId  String
   exerciseId String?
   name       String
-  order      Int      @default(0)
+  order      Int     @default(0)
 
-  workout    Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
-  exercise   Exercise? @relation(fields: [exerciseId], references: [id])
-  sets       WorkoutSet[]
+  workout  Workout      @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  exercise Exercise?    @relation(fields: [exerciseId], references: [id])
+  sets     WorkoutSet[]
 
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model WorkoutSet {
-  id                String   @id @default(cuid())
+  id                String  @id @default(cuid())
   workoutExerciseId String
   setNumber         Int
   reps              Int?
@@ -162,40 +162,40 @@ model WorkoutSet {
   tempo             String?
   notes             String?
 
-  workoutExercise   WorkoutExercise @relation(fields: [workoutExerciseId], references: [id], onDelete: Cascade)
+  workoutExercise WorkoutExercise @relation(fields: [workoutExerciseId], references: [id], onDelete: Cascade)
 
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model WorkoutTemplate {
-  id          String   @id @default(cuid())
+  id          String  @id @default(cuid())
   userId      String
   title       String
   goal        String?
   description String?
-  source      String   @default("manual")
+  source      String  @default("manual")
 
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  exercises   TemplateExercise[]
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercises TemplateExercise[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model TemplateExercise {
-  id         String   @id @default(cuid())
+  id         String  @id @default(cuid())
   templateId String
   exerciseId String?
   name       String
   sets       Int?
   reps       String?
   notes      String?
-  order      Int      @default(0)
+  order      Int     @default(0)
 
-  template   WorkoutTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  exercise   Exercise?       @relation(fields: [exerciseId], references: [id])
+  template WorkoutTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  exercise Exercise?       @relation(fields: [exerciseId], references: [id])
 
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

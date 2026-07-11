@@ -9,10 +9,10 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
-  },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "test:coverage": "vitest run --coverage",
+    "db:validate": "prisma validate",
+    "db:migrate:status": "prisma migrate status",
+    "db:migrate:deploy": "prisma migrate deploy"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",
