@@ -121,10 +121,12 @@ export function MobileNav() {
               aria-current={active ? "page" : undefined}
               className={`flex min-h-[52px] flex-col items-center justify-center gap-1 rounded-2xl px-1 text-[11px] font-bold transition active:scale-95 ${
                 isLog
-                  ? "bg-emerald-400 text-black shadow-[0_8px_28px_rgba(52,211,153,0.24)] hover:bg-emerald-300"
+                  ? active
+                    ? "bg-emerald-300 text-black shadow-[0_8px_28px_rgba(52,211,153,0.28)] ring-2 ring-emerald-100/70"
+                    : "border border-emerald-300/40 bg-emerald-400/10 text-emerald-200 shadow-[0_8px_24px_rgba(52,211,153,0.12)] hover:bg-emerald-400/15"
                   : active
                     ? "bg-white/10 text-emerald-300"
-                    : "text-neutral-500 hover:bg-white/[0.06] hover:text-neutral-200"
+                    : "text-neutral-400 hover:bg-white/[0.06] hover:text-white"
               }`}
             >
               <NavIcon name={item.icon} />
