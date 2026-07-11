@@ -1,0 +1,76 @@
+name: Persist Fitness CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  quality:
+    name: Quality and migration checks
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: persist_fitness_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d persist_fitness_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/persist_fitness_ci
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/persist_fitness_ci
+      AUTH_SECRET: persist-fitness-ci-only-placeholder-secret
+      AUTH_GOOGLE_ID: ci-placeholder-google-id
+      AUTH_GOOGLE_SECRET: ci-placeholder-google-secret
+      AUTH_URL: http://localhost:3000
+      NEXTAUTH_URL: http://localhost:3000
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate Prisma schema
+        run: npm run db:validate
+
+      - name: Apply migrations to disposable database
+        run: npm run db:migrate:deploy
+
+      - name: Verify migration history matches Prisma schema
+        run: |
+          npx prisma migrate diff \
+            --from-url "$DIRECT_URL" \
+            --to-schema-datamodel prisma/schema.prisma \
+            --exit-code
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm run test
+
+      - name: Build production application
+        run: npm run build
