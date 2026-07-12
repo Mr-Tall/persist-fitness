@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { MobileNav } from "@/components/navigation/mobile-nav";
+import { requireUserSession } from "@/lib/auth/require-user";
 
-export default function AppLayout({
+export default async function AppLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  await requireUserSession();
+
   return (
     <>
       <header className="sticky top-0 z-40 border-b border-white/10 bg-black/55 backdrop-blur-xl">
