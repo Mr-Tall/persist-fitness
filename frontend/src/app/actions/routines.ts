@@ -1,6 +1,6 @@
 "use server";
 
-import { auth } from "@/auth";
+import { requireUserId } from "@/lib/auth/require-user";
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -48,16 +48,6 @@ const deleteTemplateExerciseSchema = z.object({
 const startRoutineSchema = z.object({
   routineId: z.string().min(1),
 });
-
-async function requireUserId() {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    redirect("/login");
-  }
-
-  return session.user.id;
-}
 
 async function verifyRoutineOwner(routineId: string, userId: string) {
   const routine = await db.workoutTemplate.findFirst({

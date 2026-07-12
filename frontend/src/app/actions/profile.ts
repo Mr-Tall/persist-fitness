@@ -1,6 +1,6 @@
 "use server";
 
-import { auth } from "@/auth";
+import { requireUserId } from "@/lib/auth/require-user";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -15,11 +15,7 @@ const profileSchema = z.object({
 });
 
 export async function saveProfile(formData: FormData) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    redirect("/login");
-  }
+  const userId = await requireUserId();
 
   const equipment = formData.getAll("equipment").map(String);
 
@@ -34,12 +30,12 @@ export async function saveProfile(formData: FormData) {
 
   await db.profile.upsert({
     where: {
-      userId: session.user.id,
+      userId,
     },
     update: parsed,
     create: {
       ...parsed,
-      userId: session.user.id,
+      userId,
     },
   });
 

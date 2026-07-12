@@ -1,24 +1,13 @@
 "use server";
 
-import { auth } from "@/auth";
+import { requireUserId } from "@/lib/auth/require-user";
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { z } from "zod";
 
 const favoriteExerciseSchema = z.object({
   exerciseId: z.string().min(1),
 });
-
-async function requireUserId() {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    redirect("/login");
-  }
-
-  return session.user.id;
-}
 
 export async function toggleFavoriteExercise(formData: FormData) {
   const userId = await requireUserId();
