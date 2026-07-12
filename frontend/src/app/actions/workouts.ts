@@ -4,7 +4,6 @@ import { requireUserId } from "@/lib/auth/require-user";
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { z } from "zod";
 import { verifyWorkoutOwner } from "@/lib/auth/workout-access";
 import {
   createActionErrorState,
@@ -12,27 +11,13 @@ import {
   type ActionFormState,
 } from "@/lib/actions/action-result";
 import { ActionError, toActionErrorState } from "@/lib/actions/action-error";
+import {
+  createWorkoutSchema,
+  updateWorkoutSchema,
+  workoutIdSchema,
+} from "@/lib/validation/workout";
 
 export type UpdateWorkoutFormState = ActionFormState;
-
-const createWorkoutSchema = z.object({
-  title: z.string().min(1, "Workout title is required"),
-  goal: z.string().optional(),
-  notes: z.string().optional(),
-  date: z.string().min(1, "Date is required"),
-});
-
-const updateWorkoutSchema = z.object({
-  workoutId: z.string().min(1, "Workout ID is required"),
-  title: z.string().min(1, "Workout title is required"),
-  goal: z.string().optional(),
-  notes: z.string().optional(),
-  date: z.string().min(1, "Date is required"),
-});
-
-const workoutIdSchema = z.object({
-  workoutId: z.string().min(1, "Workout ID is required"),
-});
 
 function calendarDateToUtcNoon(dateString: string) {
   return new Date(`${dateString}T12:00:00.000Z`);
@@ -47,20 +32,10 @@ async function updateWorkoutFromFormData(userId: string, formData: FormData) {
   const parsed = updateWorkoutSchema.parse({
     workoutId: formData.get("workoutId"),
     title: formData.get("title"),
-    goal: formData.get("goal") || undefined,
-    notes: formData.get("notes") || undefined,
+    goal: formData.get("goal"),
+    notes: formData.get("notes"),
     date: formData.get("date"),
   });
-
-  const title = parsed.title.trim();
-
-  if (!title) {
-    return {
-      status: "error" as const,
-      message: "Workout title is required.",
-      workoutId: parsed.workoutId,
-    };
-  }
 
   const updatedWorkout = await db.workout.updateMany({
     where: {
@@ -68,9 +43,9 @@ async function updateWorkoutFromFormData(userId: string, formData: FormData) {
       userId,
     },
     data: {
-      title,
-      goal: parsed.goal?.trim() || null,
-      notes: parsed.notes?.trim() || null,
+      title: parsed.title,
+      goal: parsed.goal ?? null,
+      notes: parsed.notes ?? null,
       date: calendarDateToUtcNoon(parsed.date),
     },
   });
@@ -98,17 +73,17 @@ export async function createWorkout(formData: FormData) {
 
   const parsed = createWorkoutSchema.parse({
     title: formData.get("title"),
-    goal: formData.get("goal") || undefined,
-    notes: formData.get("notes") || undefined,
+    goal: formData.get("goal"),
+    notes: formData.get("notes"),
     date: formData.get("date"),
   });
 
   const workout = await db.workout.create({
     data: {
       userId,
-      title: parsed.title.trim(),
-      goal: parsed.goal?.trim() || null,
-      notes: parsed.notes?.trim() || null,
+      title: parsed.title,
+      goal: parsed.goal ?? null,
+      notes: parsed.notes ?? null,
       date: calendarDateToUtcNoon(parsed.date),
       status: "active",
       startedAt: new Date(),
@@ -228,11 +203,9 @@ export async function reopenWorkout(formData: FormData) {
 export async function deleteWorkout(formData: FormData) {
   const userId = await requireUserId();
 
-  const workoutId = String(formData.get("workoutId") ?? "");
-
-  if (!workoutId) {
-    throw new Error("Workout ID is required");
-  }
+  const { workoutId } = workoutIdSchema.parse({
+    workoutId: formData.get("workoutId"),
+  });
 
   await verifyWorkoutOwner(workoutId, userId);
 
@@ -248,11 +221,9 @@ export async function deleteWorkout(formData: FormData) {
 export async function repeatWorkout(formData: FormData) {
   const userId = await requireUserId();
 
-  const workoutId = String(formData.get("workoutId") ?? "");
-
-  if (!workoutId) {
-    throw new Error("Workout ID is required");
-  }
+  const { workoutId } = workoutIdSchema.parse({
+    workoutId: formData.get("workoutId"),
+  });
 
   const originalWorkout = await db.workout.findFirst({
     where: {

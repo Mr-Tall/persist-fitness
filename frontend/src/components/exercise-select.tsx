@@ -159,6 +159,7 @@ export function ExerciseSelect({
         </label>
         <input
           name="name"
+          maxLength={100}
           value={customName}
           onChange={(event) => updateCustomName(event.target.value)}
           placeholder="Use this if exercise is not in library"

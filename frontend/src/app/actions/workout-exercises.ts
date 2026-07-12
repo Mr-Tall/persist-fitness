@@ -3,7 +3,6 @@
 import { requireUserId } from "@/lib/auth/require-user";
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
 import { verifyWorkoutOwner } from "@/lib/auth/workout-access";
 import {
   createActionErrorState,
@@ -11,46 +10,17 @@ import {
   type ActionFormState,
 } from "@/lib/actions/action-result";
 import { ActionError, toActionErrorState } from "@/lib/actions/action-error";
+import {
+  addExerciseSchema,
+  addSetSchema,
+  deleteExerciseSchema,
+  deleteSetSchema,
+  updateSetSchema,
+} from "@/lib/validation/workout";
 
 export type AddExerciseFormState = ActionFormState;
 export type AddSetFormState = ActionFormState;
 export type UpdateSetFormState = ActionFormState;
-
-const addExerciseSchema = z.object({
-  workoutId: z.string().min(1),
-  exerciseId: z.string().optional(),
-  name: z.string().optional(),
-});
-
-const addSetSchema = z.object({
-  workoutId: z.string().min(1),
-  workoutExerciseId: z.string().min(1),
-  reps: z.coerce.number().int().min(0).optional(),
-  weight: z.coerce.number().min(0).optional(),
-  rir: z.coerce.number().int().min(0).max(10).optional(),
-  tempo: z.string().optional(),
-  notes: z.string().optional(),
-});
-
-const deleteExerciseSchema = z.object({
-  workoutId: z.string().min(1),
-  workoutExerciseId: z.string().min(1),
-});
-
-const deleteSetSchema = z.object({
-  workoutId: z.string().min(1),
-  workoutSetId: z.string().min(1),
-});
-
-const updateSetSchema = z.object({
-  workoutId: z.string().min(1),
-  workoutSetId: z.string().min(1),
-  reps: z.coerce.number().int().min(0).optional(),
-  weight: z.coerce.number().min(0).optional(),
-  rir: z.coerce.number().int().min(0).max(10).optional(),
-  tempo: z.string().optional(),
-  notes: z.string().optional(),
-});
 
 async function createWorkoutExerciseFromFormData(
   userId: string,
@@ -58,14 +28,14 @@ async function createWorkoutExerciseFromFormData(
 ) {
   const parsed = addExerciseSchema.parse({
     workoutId: formData.get("workoutId"),
-    exerciseId: formData.get("exerciseId") || undefined,
-    name: formData.get("name") || undefined,
+    exerciseId: formData.get("exerciseId"),
+    name: formData.get("name"),
   });
 
   await verifyWorkoutOwner(parsed.workoutId, userId);
 
-  let exerciseName = parsed.name?.trim() || "";
-  let exerciseId = parsed.exerciseId || null;
+  let exerciseName = parsed.name ?? "";
+  let exerciseId = parsed.exerciseId ?? null;
 
   if (exerciseId) {
     const libraryExercise = await db.exercise.findUnique({
@@ -127,11 +97,11 @@ async function createWorkoutSetFromFormData(userId: string, formData: FormData) 
   const parsed = addSetSchema.parse({
     workoutId: formData.get("workoutId"),
     workoutExerciseId: formData.get("workoutExerciseId"),
-    reps: formData.get("reps") || undefined,
-    weight: formData.get("weight") || undefined,
-    rir: formData.get("rir") || undefined,
-    tempo: formData.get("tempo") || undefined,
-    notes: formData.get("notes") || undefined,
+    reps: formData.get("reps"),
+    weight: formData.get("weight"),
+    rir: formData.get("rir"),
+    tempo: formData.get("tempo"),
+    notes: formData.get("notes"),
   });
 
   await verifyWorkoutOwner(parsed.workoutId, userId);
@@ -140,8 +110,8 @@ async function createWorkoutSetFromFormData(userId: string, formData: FormData) 
     parsed.reps !== undefined ||
     parsed.weight !== undefined ||
     parsed.rir !== undefined ||
-    Boolean(parsed.tempo?.trim()) ||
-    Boolean(parsed.notes?.trim());
+    parsed.tempo !== undefined ||
+    parsed.notes !== undefined;
 
   if (!hasSetData) {
     return {
@@ -178,8 +148,8 @@ async function createWorkoutSetFromFormData(userId: string, formData: FormData) 
       reps: parsed.reps,
       weight: parsed.weight,
       rir: parsed.rir,
-      tempo: parsed.tempo?.trim() || undefined,
-      notes: parsed.notes?.trim() || undefined,
+      tempo: parsed.tempo,
+      notes: parsed.notes,
     },
   });
 
@@ -197,11 +167,11 @@ async function updateWorkoutSetFromFormData(userId: string, formData: FormData) 
   const parsed = updateSetSchema.parse({
     workoutId: formData.get("workoutId"),
     workoutSetId: formData.get("workoutSetId"),
-    reps: formData.get("reps") || undefined,
-    weight: formData.get("weight") || undefined,
-    rir: formData.get("rir") || undefined,
-    tempo: formData.get("tempo") || undefined,
-    notes: formData.get("notes") || undefined,
+    reps: formData.get("reps"),
+    weight: formData.get("weight"),
+    rir: formData.get("rir"),
+    tempo: formData.get("tempo"),
+    notes: formData.get("notes"),
   });
 
   await verifyWorkoutOwner(parsed.workoutId, userId);
@@ -210,8 +180,8 @@ async function updateWorkoutSetFromFormData(userId: string, formData: FormData) 
     parsed.reps !== undefined ||
     parsed.weight !== undefined ||
     parsed.rir !== undefined ||
-    Boolean(parsed.tempo?.trim()) ||
-    Boolean(parsed.notes?.trim());
+    parsed.tempo !== undefined ||
+    parsed.notes !== undefined;
 
   if (!hasSetData) {
     return {
@@ -250,8 +220,8 @@ async function updateWorkoutSetFromFormData(userId: string, formData: FormData) 
       reps: parsed.reps,
       weight: parsed.weight,
       rir: parsed.rir,
-      tempo: parsed.tempo?.trim() || null,
-      notes: parsed.notes?.trim() || null,
+      tempo: parsed.tempo ?? null,
+      notes: parsed.notes ?? null,
     },
   });
 

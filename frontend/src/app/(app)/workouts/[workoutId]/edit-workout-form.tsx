@@ -114,6 +114,7 @@ export function EditWorkoutForm({ workout }: EditWorkoutFormProps) {
           <input
             id="title"
             name="title"
+            maxLength={100}
             defaultValue={workout.title}
             className="mt-2 w-full rounded-xl border border-neutral-300 px-3 py-3 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
             required
@@ -160,6 +161,7 @@ export function EditWorkoutForm({ workout }: EditWorkoutFormProps) {
           <textarea
             id="notes"
             name="notes"
+            maxLength={2000}
             rows={4}
             defaultValue={workout.notes ?? ""}
             placeholder="How did the session feel? Any pain, fatigue, or changes?"

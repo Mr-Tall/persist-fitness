@@ -71,6 +71,8 @@ export function AddSetForm({ workoutId, workoutExerciseId }: AddSetFormProps) {
               name="reps"
               type="number"
               min="0"
+              max="10000"
+              step="1"
               inputMode="numeric"
               placeholder="8"
               className="mt-1 w-full rounded-xl border border-neutral-300 px-3 py-3 text-lg font-bold"
@@ -85,6 +87,7 @@ export function AddSetForm({ workoutId, workoutExerciseId }: AddSetFormProps) {
               name="weight"
               type="number"
               min="0"
+              max="10000"
               step="0.5"
               inputMode="decimal"
               placeholder="225"
@@ -101,6 +104,7 @@ export function AddSetForm({ workoutId, workoutExerciseId }: AddSetFormProps) {
               type="number"
               min="0"
               max="10"
+              step="1"
               inputMode="numeric"
               placeholder="2"
               className="mt-1 w-full rounded-xl border border-neutral-300 px-3 py-3 text-lg font-bold"
@@ -113,6 +117,7 @@ export function AddSetForm({ workoutId, workoutExerciseId }: AddSetFormProps) {
             </label>
             <input
               name="tempo"
+              maxLength={30}
               placeholder="3-1-1"
               className="mt-1 w-full rounded-xl border border-neutral-300 px-3 py-3"
             />
@@ -124,6 +129,7 @@ export function AddSetForm({ workoutId, workoutExerciseId }: AddSetFormProps) {
             </label>
             <input
               name="notes"
+              maxLength={2000}
               placeholder="Optional"
               className="mt-1 w-full rounded-xl border border-neutral-300 px-3 py-3"
             />

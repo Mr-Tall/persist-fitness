@@ -128,6 +128,8 @@ export function EditSetForm({ workoutId, set }: EditSetFormProps) {
               name="reps"
               type="number"
               min="0"
+              max="10000"
+              step="1"
               inputMode="numeric"
               defaultValue={set.reps ?? ""}
               className="mt-1 w-full rounded-xl border border-neutral-300 px-3 py-3"
@@ -142,6 +144,7 @@ export function EditSetForm({ workoutId, set }: EditSetFormProps) {
               name="weight"
               type="number"
               min="0"
+              max="10000"
               step="0.5"
               inputMode="decimal"
               defaultValue={set.weight ?? ""}
@@ -158,6 +161,7 @@ export function EditSetForm({ workoutId, set }: EditSetFormProps) {
               type="number"
               min="0"
               max="10"
+              step="1"
               inputMode="numeric"
               defaultValue={set.rir ?? ""}
               className="mt-1 w-full rounded-xl border border-neutral-300 px-3 py-3"
@@ -170,6 +174,7 @@ export function EditSetForm({ workoutId, set }: EditSetFormProps) {
             </label>
             <input
               name="tempo"
+              maxLength={30}
               defaultValue={set.tempo ?? ""}
               placeholder="3-1-1"
               className="mt-1 w-full rounded-xl border border-neutral-300 px-3 py-3"
@@ -182,6 +187,7 @@ export function EditSetForm({ workoutId, set }: EditSetFormProps) {
             </label>
             <input
               name="notes"
+              maxLength={2000}
               defaultValue={set.notes ?? ""}
               placeholder="Optional"
               className="mt-1 w-full rounded-xl border border-neutral-300 px-3 py-3"

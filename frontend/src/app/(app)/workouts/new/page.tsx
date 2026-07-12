@@ -31,6 +31,7 @@ export default async function NewWorkoutPage() {
           <input
             id="title"
             name="title"
+            maxLength={100}
             placeholder="Example: Push Day, Upper Strength, Leg Day"
             className="mt-2 w-full rounded-xl border border-neutral-300 px-3 py-2 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
             required
@@ -77,6 +78,7 @@ export default async function NewWorkoutPage() {
           <textarea
             id="notes"
             name="notes"
+            maxLength={2000}
             rows={4}
             placeholder="How did the session feel? Any soreness, form notes, or goals?"
             className="mt-2 w-full rounded-xl border border-neutral-300 px-3 py-2 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
