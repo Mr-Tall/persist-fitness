@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   addExerciseToWorkoutWithState,
+  addSetToExerciseWithState,
   deleteSetFromExercise,
 } from "@/app/actions/workout-exercises";
 
@@ -14,6 +15,9 @@ const mocks = vi.hoisted(() => ({
   findSet: vi.fn(),
   deleteSet: vi.fn(),
   updateSets: vi.fn(),
+  findWorkoutExercise: vi.fn(),
+  aggregateSets: vi.fn(),
+  createSet: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/require-user", () => ({
@@ -82,6 +86,41 @@ function setFormData(workoutSetId: string, workoutId = "workout_1") {
   return formData;
 }
 
+function addSetFormData(
+  workoutExerciseId = "exercise_1",
+  workoutId = "workout_1"
+) {
+  const formData = new FormData();
+  formData.set("workoutId", workoutId);
+  formData.set("workoutExerciseId", workoutExerciseId);
+  formData.set("reps", "8");
+  return formData;
+}
+
+function transactionClient() {
+  return {
+    workoutExercise: {
+      aggregate: mocks.aggregate,
+      create: mocks.create,
+      findFirst: mocks.findWorkoutExercise,
+    },
+    workoutSet: {
+      findFirst: mocks.findSet,
+      aggregate: mocks.aggregateSets,
+      create: mocks.createSet,
+      delete: mocks.deleteSet,
+      updateMany: mocks.updateSets,
+    },
+  };
+}
+
+function useDefaultTransaction() {
+  mocks.transaction.mockImplementation(
+    async (callback: (transaction: unknown) => Promise<unknown>) =>
+      callback(transactionClient())
+  );
+}
+
 function useStoredSets(sets: StoredSet[]) {
   mocks.findSet.mockImplementation(
     async ({ where }: { where: { id: string; workoutExercise: { workoutId: string } } }) =>
@@ -126,25 +165,63 @@ function useStoredSets(sets: StoredSet[]) {
   );
 }
 
+function useSetAllocation(
+  sets: StoredSet[],
+  exercises = [{ id: "exercise_1", workoutId: "workout_1" }]
+) {
+  mocks.findWorkoutExercise.mockImplementation(
+    async ({ where }: { where: { id: string; workoutId: string } }) =>
+      exercises.find(
+        (exercise) =>
+          exercise.id === where.id && exercise.workoutId === where.workoutId
+      ) ?? null
+  );
+  mocks.aggregateSets.mockImplementation(
+    async ({ where }: { where: { workoutExerciseId: string } }) => {
+      const matchingSets = sets.filter(
+        (set) => set.workoutExerciseId === where.workoutExerciseId
+      );
+
+      return {
+        _max: {
+          setNumber:
+            matchingSets.length === 0
+              ? null
+              : Math.max(...matchingSets.map((set) => set.setNumber)),
+        },
+      };
+    }
+  );
+  mocks.createSet.mockImplementation(
+    async ({
+      data,
+    }: {
+      data: {
+        workoutExerciseId: string;
+        setNumber: number;
+      };
+    }) => {
+      const exercise = exercises.find(
+        (candidate) => candidate.id === data.workoutExerciseId
+      );
+      const set = {
+        id: `set_${sets.length + 1}`,
+        workoutId: exercise?.workoutId ?? "unknown_workout",
+        workoutExerciseId: data.workoutExerciseId,
+        setNumber: data.setNumber,
+      };
+      sets.push(set);
+      return set;
+    }
+  );
+}
+
 describe("workout exercise ordering", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.requireUserId.mockResolvedValue("user_1");
     mocks.verifyWorkoutOwner.mockResolvedValue({ id: "workout_1" });
-    mocks.transaction.mockImplementation(
-      async (callback: (transaction: unknown) => Promise<unknown>) =>
-        callback({
-          workoutExercise: {
-            aggregate: mocks.aggregate,
-            create: mocks.create,
-          },
-          workoutSet: {
-            findFirst: mocks.findSet,
-            delete: mocks.deleteSet,
-            updateMany: mocks.updateSets,
-          },
-        })
-    );
+    useDefaultTransaction();
   });
 
   it("starts an empty workout at order zero", async () => {
@@ -217,25 +294,232 @@ describe("workout exercise ordering", () => {
   });
 });
 
+describe("workout set allocation", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.requireUserId.mockResolvedValue("user_1");
+    mocks.verifyWorkoutOwner.mockResolvedValue({ id: "workout_1" });
+    useDefaultTransaction();
+  });
+
+  it("allocates set one for an empty exercise", async () => {
+    const sets: StoredSet[] = [];
+    useSetAllocation(sets);
+
+    const result = await addSetToExerciseWithState(
+      initialState,
+      addSetFormData()
+    );
+
+    expect(result).toMatchObject({
+      status: "success",
+      message: "Saved set 1.",
+    });
+    expect(sets.map((set) => set.setNumber)).toEqual([1]);
+    expect(mocks.transaction).toHaveBeenCalledWith(expect.any(Function), {
+      isolationLevel: "Serializable",
+    });
+  });
+
+  it("allocates after the maximum existing set number", async () => {
+    const sets: StoredSet[] = [
+      {
+        id: "set_1",
+        workoutId: "workout_1",
+        workoutExerciseId: "exercise_1",
+        setNumber: 1,
+      },
+      {
+        id: "set_2",
+        workoutId: "workout_1",
+        workoutExerciseId: "exercise_1",
+        setNumber: 2,
+      },
+    ];
+    useSetAllocation(sets);
+
+    const result = await addSetToExerciseWithState(
+      initialState,
+      addSetFormData()
+    );
+
+    expect(result).toMatchObject({ message: "Saved set 3." });
+    expect(sets.map((set) => set.setNumber)).toEqual([1, 2, 3]);
+  });
+
+  it("preserves gaps and allocates from the maximum rather than count", async () => {
+    const sets: StoredSet[] = [
+      {
+        id: "set_1",
+        workoutId: "workout_1",
+        workoutExerciseId: "exercise_1",
+        setNumber: 1,
+      },
+      {
+        id: "set_4",
+        workoutId: "workout_1",
+        workoutExerciseId: "exercise_1",
+        setNumber: 4,
+      },
+    ];
+    useSetAllocation(sets);
+
+    await addSetToExerciseWithState(initialState, addSetFormData());
+
+    expect(sets.map((set) => set.setNumber)).toEqual([1, 4, 5]);
+  });
+
+  it("allocates increasing numbers across sequential additions", async () => {
+    const sets: StoredSet[] = [];
+    useSetAllocation(sets);
+
+    await addSetToExerciseWithState(initialState, addSetFormData());
+    await addSetToExerciseWithState(initialState, addSetFormData());
+    await addSetToExerciseWithState(initialState, addSetFormData());
+
+    expect(sets.map((set) => set.setNumber)).toEqual([1, 2, 3]);
+  });
+
+  it("returns safe not-found for a missing exercise", async () => {
+    const sets: StoredSet[] = [];
+    useSetAllocation(sets, []);
+
+    const result = await addSetToExerciseWithState(
+      initialState,
+      addSetFormData("missing_exercise")
+    );
+
+    expect(result).toMatchObject({
+      status: "error",
+      code: "NOT_FOUND",
+      message: "The requested workout item could not be found.",
+    });
+    expect(mocks.aggregateSets).not.toHaveBeenCalled();
+    expect(mocks.createSet).not.toHaveBeenCalled();
+  });
+
+  it("returns safe not-found for an exercise from another workout", async () => {
+    const sets: StoredSet[] = [];
+    useSetAllocation(sets, [
+      { id: "forged_exercise", workoutId: "workout_2" },
+    ]);
+
+    const result = await addSetToExerciseWithState(
+      initialState,
+      addSetFormData("forged_exercise", "workout_1")
+    );
+
+    expect(result).toMatchObject({
+      status: "error",
+      code: "NOT_FOUND",
+      message: "The requested workout item could not be found.",
+    });
+    expect(mocks.aggregateSets).not.toHaveBeenCalled();
+    expect(mocks.createSet).not.toHaveBeenCalled();
+  });
+
+  it("retries a recognized transaction conflict and then succeeds", async () => {
+    const sets: StoredSet[] = [];
+    useSetAllocation(sets);
+    mocks.transaction.mockRejectedValueOnce({ code: "P2034" });
+
+    const result = await addSetToExerciseWithState(
+      initialState,
+      addSetFormData()
+    );
+
+    expect(result).toMatchObject({
+      status: "success",
+      message: "Saved set 1.",
+    });
+    expect(mocks.transaction).toHaveBeenCalledTimes(2);
+  });
+
+  it("returns a safe error after exhausting transaction retries", async () => {
+    useSetAllocation([]);
+    mocks.transaction.mockRejectedValue({
+      code: "P2034",
+      message: "internal transaction details",
+    });
+
+    const result = await addSetToExerciseWithState(
+      initialState,
+      addSetFormData()
+    );
+
+    expect(result).toMatchObject({
+      status: "error",
+      code: "INTERNAL_ERROR",
+      message: "Something went wrong. Please try again.",
+    });
+    expect(result.message).not.toContain("internal transaction details");
+    expect(mocks.transaction).toHaveBeenCalledTimes(3);
+  });
+
+  it("does not retry non-retryable errors", async () => {
+    useSetAllocation([]);
+    mocks.transaction.mockRejectedValueOnce(
+      Object.assign(new Error("database unavailable"), { code: "P1001" })
+    );
+
+    const result = await addSetToExerciseWithState(
+      initialState,
+      addSetFormData()
+    );
+
+    expect(result).toMatchObject({
+      status: "error",
+      code: "INTERNAL_ERROR",
+      message: "Something went wrong. Please try again.",
+    });
+    expect(mocks.transaction).toHaveBeenCalledOnce();
+  });
+
+  it("queries and modifies only the selected exercise", async () => {
+    const sets: StoredSet[] = [
+      {
+        id: "other_set",
+        workoutId: "workout_1",
+        workoutExerciseId: "exercise_2",
+        setNumber: 6,
+      },
+    ];
+    useSetAllocation(sets, [
+      { id: "exercise_1", workoutId: "workout_1" },
+      { id: "exercise_2", workoutId: "workout_1" },
+    ]);
+
+    await addSetToExerciseWithState(initialState, addSetFormData("exercise_1"));
+
+    expect(mocks.findWorkoutExercise).toHaveBeenCalledWith({
+      where: {
+        id: "exercise_1",
+        workoutId: "workout_1",
+      },
+      select: {
+        id: true,
+      },
+    });
+    expect(mocks.aggregateSets).toHaveBeenCalledWith({
+      where: {
+        workoutExerciseId: "exercise_1",
+      },
+      _max: {
+        setNumber: true,
+      },
+    });
+    expect(
+      sets.find((set) => set.workoutExerciseId === "exercise_2")
+    ).toMatchObject({ setNumber: 6 });
+  });
+});
+
 describe("workout set deletion", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.requireUserId.mockResolvedValue("user_1");
     mocks.verifyWorkoutOwner.mockResolvedValue({ id: "workout_1" });
-    mocks.transaction.mockImplementation(
-      async (callback: (transaction: unknown) => Promise<unknown>) =>
-        callback({
-          workoutExercise: {
-            aggregate: mocks.aggregate,
-            create: mocks.create,
-          },
-          workoutSet: {
-            findFirst: mocks.findSet,
-            delete: mocks.deleteSet,
-            updateMany: mocks.updateSets,
-          },
-        })
-    );
+    useDefaultTransaction();
   });
 
   it("deletes a middle set and decrements only later set numbers", async () => {

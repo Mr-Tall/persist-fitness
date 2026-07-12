@@ -10,6 +10,7 @@ import {
   type ActionFormState,
 } from "@/lib/actions/action-result";
 import { ActionError, toActionErrorState } from "@/lib/actions/action-error";
+import type { Prisma } from "@prisma/client";
 import {
   addExerciseSchema,
   addSetSchema,
@@ -21,6 +22,38 @@ import {
 export type AddExerciseFormState = ActionFormState;
 export type AddSetFormState = ActionFormState;
 export type UpdateSetFormState = ActionFormState;
+
+const MAX_TRANSACTION_ATTEMPTS = 3;
+
+function isRetryableTransactionError(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "P2034"
+  );
+}
+
+async function runSerializableTransaction<T>(
+  operation: (transaction: Prisma.TransactionClient) => Promise<T>
+) {
+  for (let attempt = 1; attempt <= MAX_TRANSACTION_ATTEMPTS; attempt += 1) {
+    try {
+      return await db.$transaction(operation, {
+        isolationLevel: "Serializable",
+      });
+    } catch (error) {
+      if (
+        !isRetryableTransactionError(error) ||
+        attempt === MAX_TRANSACTION_ATTEMPTS
+      ) {
+        throw error;
+      }
+    }
+  }
+
+  throw new Error("Transaction retry loop exited unexpectedly.");
+}
 
 async function createWorkoutExerciseFromFormData(
   userId: string,
@@ -127,35 +160,47 @@ async function createWorkoutSetFromFormData(userId: string, formData: FormData) 
     };
   }
 
-  const workoutExercise = await db.workoutExercise.findFirst({
-    where: {
-      id: parsed.workoutExerciseId,
-      workoutId: parsed.workoutId,
-    },
-    include: {
-      sets: true,
-    },
-  });
-
-  if (!workoutExercise) {
-    throw new ActionError({
-      code: "NOT_FOUND",
-      message: "The requested workout item could not be found.",
+  const setNumber = await runSerializableTransaction(async (transaction) => {
+    const workoutExercise = await transaction.workoutExercise.findFirst({
+      where: {
+        id: parsed.workoutExerciseId,
+        workoutId: parsed.workoutId,
+      },
+      select: {
+        id: true,
+      },
     });
-  }
 
-  const setNumber = workoutExercise.sets.length + 1;
+    if (!workoutExercise) {
+      throw new ActionError({
+        code: "NOT_FOUND",
+        message: "The requested workout item could not be found.",
+      });
+    }
 
-  await db.workoutSet.create({
-    data: {
-      workoutExerciseId: parsed.workoutExerciseId,
-      setNumber,
-      reps: parsed.reps,
-      weight: parsed.weight,
-      rir: parsed.rir,
-      tempo: parsed.tempo,
-      notes: parsed.notes,
-    },
+    const existingSetNumber = await transaction.workoutSet.aggregate({
+      where: {
+        workoutExerciseId: workoutExercise.id,
+      },
+      _max: {
+        setNumber: true,
+      },
+    });
+    const nextSetNumber = (existingSetNumber._max.setNumber ?? 0) + 1;
+
+    await transaction.workoutSet.create({
+      data: {
+        workoutExerciseId: workoutExercise.id,
+        setNumber: nextSetNumber,
+        reps: parsed.reps,
+        weight: parsed.weight,
+        rir: parsed.rir,
+        tempo: parsed.tempo,
+        notes: parsed.notes,
+      },
+    });
+
+    return nextSetNumber;
   });
 
   revalidatePath(`/workouts/${parsed.workoutId}`);
