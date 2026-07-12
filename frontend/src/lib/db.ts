@@ -1,4 +1,8 @@
 import { PrismaClient } from "@prisma/client";
+import { getRuntimeEnv } from "@/lib/env";
+
+// Prisma reads DATABASE_URL from schema.prisma; validate it before creating a client.
+getRuntimeEnv();
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
