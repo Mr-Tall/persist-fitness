@@ -326,53 +326,48 @@ export async function deleteSetFromExercise(formData: FormData) {
 
   await verifyWorkoutOwner(parsed.workoutId, userId);
 
-  const set = await db.workoutSet.findFirst({
-    where: {
-      id: parsed.workoutSetId,
-      workoutExercise: {
-        workoutId: parsed.workoutId,
+  await db.$transaction(async (transaction) => {
+    const set = await transaction.workoutSet.findFirst({
+      where: {
+        id: parsed.workoutSetId,
+        workoutExercise: {
+          workoutId: parsed.workoutId,
+        },
       },
-    },
-    select: {
-      id: true,
-      workoutExerciseId: true,
-    },
-  });
-
-  if (!set) {
-    throw new ActionError({
-      code: "NOT_FOUND",
-      message: "The requested workout item could not be found.",
+      select: {
+        id: true,
+        workoutExerciseId: true,
+        setNumber: true,
+      },
     });
-  }
 
-  await db.workoutSet.delete({
-    where: {
-      id: set.id,
-    },
-  });
+    if (!set) {
+      throw new ActionError({
+        code: "NOT_FOUND",
+        message: "The requested workout item could not be found.",
+      });
+    }
 
-  const remainingSets = await db.workoutSet.findMany({
-    where: {
-      workoutExerciseId: set.workoutExerciseId,
-    },
-    orderBy: {
-      setNumber: "asc",
-    },
-  });
+    await transaction.workoutSet.delete({
+      where: {
+        id: set.id,
+      },
+    });
 
-  await Promise.all(
-    remainingSets.map((remainingSet, index) =>
-      db.workoutSet.update({
-        where: {
-          id: remainingSet.id,
+    await transaction.workoutSet.updateMany({
+      where: {
+        workoutExerciseId: set.workoutExerciseId,
+        setNumber: {
+          gt: set.setNumber,
         },
-        data: {
-          setNumber: index + 1,
+      },
+      data: {
+        setNumber: {
+          decrement: 1,
         },
-      })
-    )
-  );
+      },
+    });
+  });
 
   revalidatePath(`/workouts/${parsed.workoutId}`);
 }
