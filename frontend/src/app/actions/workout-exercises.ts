@@ -68,19 +68,24 @@ async function createWorkoutExerciseFromFormData(
     };
   }
 
-  const exerciseCount = await db.workoutExercise.count({
-    where: {
-      workoutId: parsed.workoutId,
-    },
-  });
+  await db.$transaction(async (transaction) => {
+    const existingOrder = await transaction.workoutExercise.aggregate({
+      where: {
+        workoutId: parsed.workoutId,
+      },
+      _max: {
+        order: true,
+      },
+    });
 
-  await db.workoutExercise.create({
-    data: {
-      workoutId: parsed.workoutId,
-      exerciseId,
-      name: exerciseName,
-      order: exerciseCount,
-    },
+    await transaction.workoutExercise.create({
+      data: {
+        workoutId: parsed.workoutId,
+        exerciseId,
+        name: exerciseName,
+        order: (existingOrder._max.order ?? -1) + 1,
+      },
+    });
   });
 
   revalidatePath(`/workouts/${parsed.workoutId}`);
