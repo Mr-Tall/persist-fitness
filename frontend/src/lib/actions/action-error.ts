@@ -10,6 +10,11 @@ import {
 const DEFAULT_ERROR_MESSAGE = "Something went wrong. Please try again.";
 const DEFAULT_VALIDATION_MESSAGE = "Please check the form and try again.";
 
+type ActionErrorContext = {
+  actionName: string;
+  validationMessage?: string;
+};
+
 export class ActionError extends Error {
   readonly code: ActionErrorCode;
   readonly publicMessage: string;
@@ -42,13 +47,7 @@ function getFieldErrors(error: z.ZodError): Record<string, string[]> {
 
 export function toActionErrorState(
   error: unknown,
-  {
-    actionName,
-    validationMessage,
-  }: {
-    actionName: string;
-    validationMessage?: string;
-  }
+  { actionName, validationMessage }: ActionErrorContext
 ): ActionFormState {
   unstable_rethrow(error);
 
@@ -86,4 +85,30 @@ export function toActionErrorState(
     message: DEFAULT_ERROR_MESSAGE,
     requestId,
   });
+}
+
+export function throwSafeActionError(
+  error: unknown,
+  context: ActionErrorContext
+): never {
+  const state = toActionErrorState(error, context);
+
+  throw new ActionError({
+    code: state.code ?? "INTERNAL_ERROR",
+    message: state.message,
+    retryAfterSeconds: state.retryAfterSeconds,
+  });
+}
+
+export async function runActionWithSafeErrors<T>(
+  context: ActionErrorContext & {
+    mapError?: (error: unknown) => unknown;
+  },
+  action: () => Promise<T>
+): Promise<T> {
+  try {
+    return await action();
+  } catch (error) {
+    throwSafeActionError(context.mapError?.(error) ?? error, context);
+  }
 }

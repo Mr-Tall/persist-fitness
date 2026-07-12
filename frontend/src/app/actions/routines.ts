@@ -5,6 +5,10 @@ import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import {
+  ActionError,
+  runActionWithSafeErrors,
+} from "@/lib/actions/action-error";
 
 const createRoutineSchema = z.object({
   title: z.string().min(1, "Routine title is required"),
@@ -61,7 +65,10 @@ async function verifyRoutineOwner(routineId: string, userId: string) {
   });
 
   if (!routine) {
-    throw new Error("Routine not found");
+    throw new ActionError({
+      code: "NOT_FOUND",
+      message: "The requested routine item could not be found.",
+    });
   }
 
   return routine;
@@ -72,7 +79,7 @@ function todayAtUtcNoon() {
   return new Date(`${today}T12:00:00.000Z`);
 }
 
-export async function createRoutine(formData: FormData) {
+async function createRoutineUnsafe(formData: FormData) {
   const userId = await requireUserId();
 
   const parsed = createRoutineSchema.parse({
@@ -94,7 +101,7 @@ export async function createRoutine(formData: FormData) {
   redirect(`/routines/${routine.id}`);
 }
 
-export async function updateRoutine(formData: FormData) {
+async function updateRoutineUnsafe(formData: FormData) {
   const userId = await requireUserId();
 
   const parsed = updateRoutineSchema.parse({
@@ -121,7 +128,7 @@ export async function updateRoutine(formData: FormData) {
   revalidatePath("/routines");
 }
 
-export async function deleteRoutine(formData: FormData) {
+async function deleteRoutineUnsafe(formData: FormData) {
   const userId = await requireUserId();
 
   const parsed = deleteRoutineSchema.parse({
@@ -139,7 +146,7 @@ export async function deleteRoutine(formData: FormData) {
   redirect("/routines");
 }
 
-export async function addExerciseToRoutine(formData: FormData) {
+async function addExerciseToRoutineUnsafe(formData: FormData) {
   const userId = await requireUserId();
 
   const parsed = addTemplateExerciseSchema.parse({
@@ -168,7 +175,10 @@ export async function addExerciseToRoutine(formData: FormData) {
     });
 
     if (!libraryExercise) {
-      throw new Error("Selected exercise not found");
+      throw new ActionError({
+        code: "NOT_FOUND",
+        message: "The selected exercise could not be found.",
+      });
     }
 
     exerciseName = libraryExercise.name;
@@ -176,7 +186,10 @@ export async function addExerciseToRoutine(formData: FormData) {
   }
 
   if (!exerciseName) {
-    throw new Error("Exercise name is required");
+    throw new ActionError({
+      code: "VALIDATION_ERROR",
+      message: "Exercise name is required.",
+    });
   }
 
   const exerciseCount = await db.templateExercise.count({
@@ -200,7 +213,7 @@ export async function addExerciseToRoutine(formData: FormData) {
   revalidatePath(`/routines/${parsed.routineId}`);
 }
 
-export async function updateExerciseInRoutine(formData: FormData) {
+async function updateExerciseInRoutineUnsafe(formData: FormData) {
   const userId = await requireUserId();
 
   const parsed = updateTemplateExerciseSchema.parse({
@@ -229,13 +242,16 @@ export async function updateExerciseInRoutine(formData: FormData) {
   });
 
   if (updatedExercise.count === 0) {
-    throw new Error("Routine exercise not found");
+    throw new ActionError({
+      code: "NOT_FOUND",
+      message: "The requested routine item could not be found.",
+    });
   }
 
   revalidatePath(`/routines/${parsed.routineId}`);
 }
 
-export async function deleteExerciseFromRoutine(formData: FormData) {
+async function deleteExerciseFromRoutineUnsafe(formData: FormData) {
   const userId = await requireUserId();
 
   const parsed = deleteTemplateExerciseSchema.parse({
@@ -255,7 +271,7 @@ export async function deleteExerciseFromRoutine(formData: FormData) {
   revalidatePath(`/routines/${parsed.routineId}`);
 }
 
-export async function startRoutine(formData: FormData) {
+async function startRoutineUnsafe(formData: FormData) {
   const userId = await requireUserId();
 
   const parsed = startRoutineSchema.parse({
@@ -277,7 +293,10 @@ export async function startRoutine(formData: FormData) {
   });
 
   if (!routine) {
-    throw new Error("Routine not found");
+    throw new ActionError({
+      code: "NOT_FOUND",
+      message: "The requested routine item could not be found.",
+    });
   }
 
   const workout = await db.workout.create({
@@ -298,4 +317,49 @@ export async function startRoutine(formData: FormData) {
   });
 
   redirect(`/workouts/${workout.id}`);
+}
+
+export async function createRoutine(formData: FormData) {
+  return runActionWithSafeErrors({ actionName: "createRoutine" }, () =>
+    createRoutineUnsafe(formData)
+  );
+}
+
+export async function updateRoutine(formData: FormData) {
+  return runActionWithSafeErrors({ actionName: "updateRoutine" }, () =>
+    updateRoutineUnsafe(formData)
+  );
+}
+
+export async function deleteRoutine(formData: FormData) {
+  return runActionWithSafeErrors({ actionName: "deleteRoutine" }, () =>
+    deleteRoutineUnsafe(formData)
+  );
+}
+
+export async function addExerciseToRoutine(formData: FormData) {
+  return runActionWithSafeErrors(
+    { actionName: "addExerciseToRoutine" },
+    () => addExerciseToRoutineUnsafe(formData)
+  );
+}
+
+export async function updateExerciseInRoutine(formData: FormData) {
+  return runActionWithSafeErrors(
+    { actionName: "updateExerciseInRoutine" },
+    () => updateExerciseInRoutineUnsafe(formData)
+  );
+}
+
+export async function deleteExerciseFromRoutine(formData: FormData) {
+  return runActionWithSafeErrors(
+    { actionName: "deleteExerciseFromRoutine" },
+    () => deleteExerciseFromRoutineUnsafe(formData)
+  );
+}
+
+export async function startRoutine(formData: FormData) {
+  return runActionWithSafeErrors({ actionName: "startRoutine" }, () =>
+    startRoutineUnsafe(formData)
+  );
 }

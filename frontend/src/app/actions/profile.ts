@@ -4,6 +4,7 @@ import { requireUserId } from "@/lib/auth/require-user";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { runActionWithSafeErrors } from "@/lib/actions/action-error";
 
 const profileSchema = z.object({
   primaryGoal: z.string().min(1, "Primary goal is required"),
@@ -14,7 +15,7 @@ const profileSchema = z.object({
   equipment: z.array(z.string()).default([]),
 });
 
-export async function saveProfile(formData: FormData) {
+async function saveProfileUnsafe(formData: FormData) {
   const userId = await requireUserId();
 
   const equipment = formData.getAll("equipment").map(String);
@@ -40,4 +41,10 @@ export async function saveProfile(formData: FormData) {
   });
 
   redirect("/dashboard");
+}
+
+export async function saveProfile(formData: FormData) {
+  return runActionWithSafeErrors({ actionName: "saveProfile" }, () =>
+    saveProfileUnsafe(formData)
+  );
 }
