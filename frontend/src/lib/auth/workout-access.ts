@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { ActionError } from "@/lib/actions/action-error";
 
 export async function verifyWorkoutOwner(workoutId: string, userId: string) {
   const workout = await db.workout.findFirst({
@@ -12,7 +13,10 @@ export async function verifyWorkoutOwner(workoutId: string, userId: string) {
   });
 
   if (!workout) {
-    throw new Error("Workout not found");
+    throw new ActionError({
+      code: "NOT_FOUND",
+      message: "The requested workout item could not be found.",
+    });
   }
 
   return workout;

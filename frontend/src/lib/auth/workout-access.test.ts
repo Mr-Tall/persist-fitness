@@ -43,8 +43,12 @@ describe("verifyWorkoutOwner", () => {
   it("throws when the workout does not belong to the user", async () => {
     mocks.findFirst.mockResolvedValue(null);
 
-    await expect(verifyWorkoutOwner("workout_1", "other_user")).rejects.toThrow(
-      "Workout not found"
-    );
+    await expect(
+      verifyWorkoutOwner("workout_1", "other_user")
+    ).rejects.toMatchObject({
+      name: "ActionError",
+      code: "NOT_FOUND",
+      message: "The requested workout item could not be found.",
+    });
   });
 });

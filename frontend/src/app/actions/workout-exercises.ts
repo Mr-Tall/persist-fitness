@@ -5,24 +5,16 @@ import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { verifyWorkoutOwner } from "@/lib/auth/workout-access";
+import {
+  createActionErrorState,
+  createActionSuccessState,
+  type ActionFormState,
+} from "@/lib/actions/action-result";
+import { ActionError, toActionErrorState } from "@/lib/actions/action-error";
 
-export type AddExerciseFormState = {
-  status: "idle" | "success" | "error";
-  message: string;
-  submittedAt: number | null;
-};
-
-export type AddSetFormState = {
-  status: "idle" | "success" | "error";
-  message: string;
-  submittedAt: number | null;
-};
-
-export type UpdateSetFormState = {
-  status: "idle" | "success" | "error";
-  message: string;
-  submittedAt: number | null;
-};
+export type AddExerciseFormState = ActionFormState;
+export type AddSetFormState = ActionFormState;
+export type UpdateSetFormState = ActionFormState;
 
 const addExerciseSchema = z.object({
   workoutId: z.string().min(1),
@@ -60,18 +52,6 @@ const updateSetSchema = z.object({
   notes: z.string().optional(),
 });
 
-function getSafeActionMessage(error: unknown) {
-  if (error instanceof z.ZodError) {
-    return "Please check the form and try again.";
-  }
-
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return "Something went wrong. Please try again.";
-}
-
 async function createWorkoutExerciseFromFormData(
   userId: string,
   formData: FormData
@@ -99,7 +79,10 @@ async function createWorkoutExerciseFromFormData(
     });
 
     if (!libraryExercise) {
-      throw new Error("Selected exercise not found");
+      throw new ActionError({
+        code: "NOT_FOUND",
+        message: "The selected exercise could not be found.",
+      });
     }
 
     exerciseName = libraryExercise.name;
@@ -180,7 +163,10 @@ async function createWorkoutSetFromFormData(userId: string, formData: FormData) 
   });
 
   if (!workoutExercise) {
-    throw new Error("Exercise not found in workout");
+    throw new ActionError({
+      code: "NOT_FOUND",
+      message: "The requested workout item could not be found.",
+    });
   }
 
   const setNumber = workoutExercise.sets.length + 1;
@@ -250,7 +236,10 @@ async function updateWorkoutSetFromFormData(userId: string, formData: FormData) 
   });
 
   if (!set) {
-    throw new Error("Set not found");
+    throw new ActionError({
+      code: "NOT_FOUND",
+      message: "The requested workout item could not be found.",
+    });
   }
 
   await db.workoutSet.update({
@@ -290,17 +279,17 @@ export async function addExerciseToWorkoutWithState(
   try {
     const result = await createWorkoutExerciseFromFormData(userId, formData);
 
-    return {
-      status: result.status,
-      message: result.message,
-      submittedAt: Date.now(),
-    };
+    return result.status === "success"
+      ? createActionSuccessState(result.message)
+      : createActionErrorState({
+          code: "VALIDATION_ERROR",
+          message: result.message,
+        });
   } catch (error) {
-    return {
-      status: "error",
-      message: getSafeActionMessage(error),
-      submittedAt: Date.now(),
-    };
+    return toActionErrorState(error, {
+      actionName: "addExerciseToWorkoutWithState",
+      validationMessage: "Please check the form and try again.",
+    });
   }
 }
 
@@ -318,17 +307,17 @@ export async function addSetToExerciseWithState(
   try {
     const result = await createWorkoutSetFromFormData(userId, formData);
 
-    return {
-      status: result.status,
-      message: result.message,
-      submittedAt: Date.now(),
-    };
+    return result.status === "success"
+      ? createActionSuccessState(result.message)
+      : createActionErrorState({
+          code: "VALIDATION_ERROR",
+          message: result.message,
+        });
   } catch (error) {
-    return {
-      status: "error",
-      message: getSafeActionMessage(error),
-      submittedAt: Date.now(),
-    };
+    return toActionErrorState(error, {
+      actionName: "addSetToExerciseWithState",
+      validationMessage: "Please check the form and try again.",
+    });
   }
 }
 
@@ -376,7 +365,10 @@ export async function deleteSetFromExercise(formData: FormData) {
   });
 
   if (!set) {
-    throw new Error("Set not found");
+    throw new ActionError({
+      code: "NOT_FOUND",
+      message: "The requested workout item could not be found.",
+    });
   }
 
   await db.workoutSet.delete({
@@ -424,16 +416,16 @@ export async function updateSetInExerciseWithState(
   try {
     const result = await updateWorkoutSetFromFormData(userId, formData);
 
-    return {
-      status: result.status,
-      message: result.message,
-      submittedAt: Date.now(),
-    };
+    return result.status === "success"
+      ? createActionSuccessState(result.message)
+      : createActionErrorState({
+          code: "VALIDATION_ERROR",
+          message: result.message,
+        });
   } catch (error) {
-    return {
-      status: "error",
-      message: getSafeActionMessage(error),
-      submittedAt: Date.now(),
-    };
+    return toActionErrorState(error, {
+      actionName: "updateSetInExerciseWithState",
+      validationMessage: "Please check the form and try again.",
+    });
   }
 }

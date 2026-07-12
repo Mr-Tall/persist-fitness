@@ -6,12 +6,14 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { verifyWorkoutOwner } from "@/lib/auth/workout-access";
+import {
+  createActionErrorState,
+  createActionSuccessState,
+  type ActionFormState,
+} from "@/lib/actions/action-result";
+import { ActionError, toActionErrorState } from "@/lib/actions/action-error";
 
-export type UpdateWorkoutFormState = {
-  status: "idle" | "success" | "error";
-  message: string;
-  submittedAt: number | null;
-};
+export type UpdateWorkoutFormState = ActionFormState;
 
 const createWorkoutSchema = z.object({
   title: z.string().min(1, "Workout title is required"),
@@ -39,18 +41,6 @@ function calendarDateToUtcNoon(dateString: string) {
 function todayAtUtcNoon() {
   const today = new Date().toISOString().split("T")[0];
   return new Date(`${today}T12:00:00.000Z`);
-}
-
-function getSafeWorkoutActionMessage(error: unknown) {
-  if (error instanceof z.ZodError) {
-    return error.issues[0]?.message || "Please check the form and try again.";
-  }
-
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return "Something went wrong. Please try again.";
 }
 
 async function updateWorkoutFromFormData(userId: string, formData: FormData) {
@@ -86,7 +76,10 @@ async function updateWorkoutFromFormData(userId: string, formData: FormData) {
   });
 
   if (updatedWorkout.count === 0) {
-    throw new Error("Workout not found");
+    throw new ActionError({
+      code: "NOT_FOUND",
+      message: "The requested workout item could not be found.",
+    });
   }
 
   revalidatePath(`/workouts/${parsed.workoutId}`);
@@ -159,17 +152,16 @@ export async function updateWorkoutWithState(
   try {
     const result = await updateWorkoutFromFormData(userId, formData);
 
-    return {
-      status: result.status,
-      message: result.message,
-      submittedAt: Date.now(),
-    };
+    return result.status === "success"
+      ? createActionSuccessState(result.message)
+      : createActionErrorState({
+          code: "VALIDATION_ERROR",
+          message: result.message,
+        });
   } catch (error) {
-    return {
-      status: "error",
-      message: getSafeWorkoutActionMessage(error),
-      submittedAt: Date.now(),
-    };
+    return toActionErrorState(error, {
+      actionName: "updateWorkoutWithState",
+    });
   }
 }
 
@@ -192,7 +184,10 @@ export async function finishWorkout(formData: FormData) {
   });
 
   if (updatedWorkout.count === 0) {
-    throw new Error("Workout not found");
+    throw new ActionError({
+      code: "NOT_FOUND",
+      message: "The requested workout item could not be found.",
+    });
   }
 
   revalidatePath(`/workouts/${parsed.workoutId}`);
@@ -219,7 +214,10 @@ export async function reopenWorkout(formData: FormData) {
   });
 
   if (updatedWorkout.count === 0) {
-    throw new Error("Workout not found");
+    throw new ActionError({
+      code: "NOT_FOUND",
+      message: "The requested workout item could not be found.",
+    });
   }
 
   revalidatePath(`/workouts/${parsed.workoutId}`);
@@ -271,7 +269,10 @@ export async function repeatWorkout(formData: FormData) {
   });
 
   if (!originalWorkout) {
-    throw new Error("Workout not found");
+    throw new ActionError({
+      code: "NOT_FOUND",
+      message: "The requested workout item could not be found.",
+    });
   }
 
   const newWorkout = await db.workout.create({
