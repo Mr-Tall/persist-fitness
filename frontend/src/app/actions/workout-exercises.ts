@@ -9,7 +9,11 @@ import {
   createActionSuccessState,
   type ActionFormState,
 } from "@/lib/actions/action-result";
-import { ActionError, toActionErrorState } from "@/lib/actions/action-error";
+import {
+  ActionError,
+  runActionWithSafeErrors,
+  toActionErrorState,
+} from "@/lib/actions/action-error";
 import type { Prisma } from "@prisma/client";
 import {
   addExerciseSchema,
@@ -361,7 +365,7 @@ export async function deleteExerciseFromWorkout(formData: FormData) {
   revalidatePath(`/workouts/${parsed.workoutId}`);
 }
 
-export async function deleteSetFromExercise(formData: FormData) {
+async function deleteSetFromExerciseUnsafe(formData: FormData) {
   const userId = await requireUserId();
 
   const parsed = deleteSetSchema.parse({
@@ -371,7 +375,7 @@ export async function deleteSetFromExercise(formData: FormData) {
 
   await verifyWorkoutOwner(parsed.workoutId, userId);
 
-  await db.$transaction(async (transaction) => {
+  await runSerializableTransaction(async (transaction) => {
     const set = await transaction.workoutSet.findFirst({
       where: {
         id: parsed.workoutSetId,
@@ -393,28 +397,54 @@ export async function deleteSetFromExercise(formData: FormData) {
       });
     }
 
-    await transaction.workoutSet.delete({
-      where: {
-        id: set.id,
-      },
-    });
-
-    await transaction.workoutSet.updateMany({
+    const laterSets = await transaction.workoutSet.findMany({
       where: {
         workoutExerciseId: set.workoutExerciseId,
         setNumber: {
           gt: set.setNumber,
         },
       },
-      data: {
-        setNumber: {
-          decrement: 1,
-        },
+      select: {
+        id: true,
+        setNumber: true,
+      },
+      orderBy: {
+        setNumber: "asc",
       },
     });
+
+    await transaction.workoutSet.delete({
+      where: {
+        id: set.id,
+      },
+    });
+
+    for (const laterSet of laterSets) {
+      const updatedSet = await transaction.workoutSet.updateMany({
+        where: {
+          id: laterSet.id,
+          workoutExerciseId: set.workoutExerciseId,
+          setNumber: laterSet.setNumber,
+        },
+        data: {
+          setNumber: laterSet.setNumber - 1,
+        },
+      });
+
+      if (updatedSet.count !== 1) {
+        throw new Error("A set changed while it was being renumbered.");
+      }
+    }
   });
 
   revalidatePath(`/workouts/${parsed.workoutId}`);
+}
+
+export async function deleteSetFromExercise(formData: FormData) {
+  return runActionWithSafeErrors(
+    { actionName: "deleteSetFromExercise" },
+    () => deleteSetFromExerciseUnsafe(formData)
+  );
 }
 
 export async function updateSetInExercise(formData: FormData) {

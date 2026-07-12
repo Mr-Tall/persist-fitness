@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   transaction: vi.fn(),
   findUnique: vi.fn(),
   findSet: vi.fn(),
+  findLaterSets: vi.fn(),
   deleteSet: vi.fn(),
   updateSets: vi.fn(),
   findWorkoutExercise: vi.fn(),
@@ -109,6 +110,7 @@ function transactionClient() {
       aggregate: mocks.aggregateSets,
       create: mocks.createSet,
       delete: mocks.deleteSet,
+      findMany: mocks.findLaterSets,
       updateMany: mocks.updateSets,
     },
   };
@@ -137,30 +139,62 @@ function useStoredSets(sets: StoredSet[]) {
       return deletedSet;
     }
   );
+  mocks.findLaterSets.mockImplementation(
+    async ({
+      where,
+    }: {
+      where: {
+        workoutExerciseId: string;
+        setNumber: { gt: number };
+      };
+    }) =>
+      sets
+        .filter(
+          (set) =>
+            set.workoutExerciseId === where.workoutExerciseId &&
+            set.setNumber > where.setNumber.gt
+        )
+        .sort((left, right) => left.setNumber - right.setNumber)
+        .map(({ id, setNumber }) => ({ id, setNumber }))
+  );
   mocks.updateSets.mockImplementation(
     async ({
       where,
       data,
     }: {
       where: {
+        id: string;
         workoutExerciseId: string;
-        setNumber: { gt: number };
+        setNumber: number;
       };
-      data: { setNumber: { decrement: number } };
+      data: { setNumber: number };
     }) => {
-      let count = 0;
+      const set = sets.find(
+        (candidate) =>
+          candidate.id === where.id &&
+          candidate.workoutExerciseId === where.workoutExerciseId &&
+          candidate.setNumber === where.setNumber
+      );
 
-      for (const set of sets) {
-        if (
-          set.workoutExerciseId === where.workoutExerciseId &&
-          set.setNumber > where.setNumber.gt
-        ) {
-          set.setNumber -= data.setNumber.decrement;
-          count += 1;
-        }
+      if (!set) {
+        return { count: 0 };
       }
 
-      return { count };
+      const conflictsWithSibling = sets.some(
+        (candidate) =>
+          candidate.id !== set.id &&
+          candidate.workoutExerciseId === set.workoutExerciseId &&
+          candidate.setNumber === data.setNumber
+      );
+
+      if (conflictsWithSibling) {
+        throw Object.assign(new Error("unique constraint violation"), {
+          code: "P2002",
+        });
+      }
+
+      set.setNumber = data.setNumber;
+      return { count: 1 };
     }
   );
 }
@@ -603,13 +637,111 @@ describe("workout set deletion", () => {
     expect(sets).toHaveLength(1);
   });
 
-  it("rolls deletion back when renumbering fails", async () => {
+  it("renumbers ascending without temporary duplicate set numbers", async () => {
+    const sets: StoredSet[] = [
+      { id: "set_1", workoutId: "workout_1", workoutExerciseId: "exercise_1", setNumber: 1 },
+      { id: "set_2", workoutId: "workout_1", workoutExerciseId: "exercise_1", setNumber: 2 },
+      { id: "set_3", workoutId: "workout_1", workoutExerciseId: "exercise_1", setNumber: 3 },
+      { id: "set_4", workoutId: "workout_1", workoutExerciseId: "exercise_1", setNumber: 4 },
+    ];
+    useStoredSets(sets);
+
+    await deleteSetFromExercise(setFormData("set_1"));
+
+    expect(mocks.updateSets.mock.calls).toEqual([
+      [
+        {
+          where: {
+            id: "set_2",
+            workoutExerciseId: "exercise_1",
+            setNumber: 2,
+          },
+          data: { setNumber: 1 },
+        },
+      ],
+      [
+        {
+          where: {
+            id: "set_3",
+            workoutExerciseId: "exercise_1",
+            setNumber: 3,
+          },
+          data: { setNumber: 2 },
+        },
+      ],
+      [
+        {
+          where: {
+            id: "set_4",
+            workoutExerciseId: "exercise_1",
+            setNumber: 4,
+          },
+          data: { setNumber: 3 },
+        },
+      ],
+    ]);
+    expect(sets.map((set) => set.setNumber)).toEqual([1, 2, 3]);
+  });
+
+  it("retries a P2034 conflict and then deletes successfully", async () => {
     const sets: StoredSet[] = [
       { id: "set_1", workoutId: "workout_1", workoutExerciseId: "exercise_1", setNumber: 1 },
       { id: "set_2", workoutId: "workout_1", workoutExerciseId: "exercise_1", setNumber: 2 },
     ];
     useStoredSets(sets);
-    mocks.updateSets.mockRejectedValueOnce(new Error("simulated failure"));
+    mocks.transaction.mockRejectedValueOnce({ code: "P2034" });
+
+    await deleteSetFromExercise(setFormData("set_1"));
+
+    expect(mocks.transaction).toHaveBeenCalledTimes(2);
+    expect(mocks.transaction).toHaveBeenLastCalledWith(expect.any(Function), {
+      isolationLevel: "Serializable",
+    });
+    expect(sets.map((set) => set.setNumber)).toEqual([1]);
+  });
+
+  it("returns a safe error when P2034 retries are exhausted", async () => {
+    useStoredSets([]);
+    mocks.transaction.mockRejectedValue({
+      code: "P2034",
+      message: "internal transaction details",
+    });
+
+    await expect(
+      deleteSetFromExercise(setFormData("set_1"))
+    ).rejects.toMatchObject({
+      code: "INTERNAL_ERROR",
+      message: "Something went wrong. Please try again.",
+    });
+    expect(mocks.transaction).toHaveBeenCalledTimes(3);
+  });
+
+  it("does not retry non-retryable deletion errors", async () => {
+    useStoredSets([]);
+    mocks.transaction.mockRejectedValueOnce(
+      Object.assign(new Error("database unavailable"), { code: "P1001" })
+    );
+
+    await expect(
+      deleteSetFromExercise(setFormData("set_1"))
+    ).rejects.toMatchObject({
+      code: "INTERNAL_ERROR",
+      message: "Something went wrong. Please try again.",
+    });
+    expect(mocks.transaction).toHaveBeenCalledOnce();
+  });
+
+  it("rolls deletion back when renumbering fails", async () => {
+    const sets: StoredSet[] = [
+      { id: "set_1", workoutId: "workout_1", workoutExerciseId: "exercise_1", setNumber: 1 },
+      { id: "set_2", workoutId: "workout_1", workoutExerciseId: "exercise_1", setNumber: 2 },
+      { id: "set_3", workoutId: "workout_1", workoutExerciseId: "exercise_1", setNumber: 3 },
+    ];
+    useStoredSets(sets);
+    const updateSet = mocks.updateSets.getMockImplementation();
+    mocks.updateSets
+      .mockImplementationOnce(updateSet!)
+      .mockRejectedValueOnce(new Error("simulated failure"));
     mocks.transaction.mockImplementationOnce(
       async (callback: (transaction: unknown) => Promise<unknown>) => {
         const snapshot = sets.map((set) => ({ ...set }));
@@ -618,6 +750,7 @@ describe("workout set deletion", () => {
           return await callback({
             workoutSet: {
               findFirst: mocks.findSet,
+              findMany: mocks.findLaterSets,
               delete: mocks.deleteSet,
               updateMany: mocks.updateSets,
             },
@@ -631,8 +764,11 @@ describe("workout set deletion", () => {
 
     await expect(
       deleteSetFromExercise(setFormData("set_1"))
-    ).rejects.toThrow("simulated failure");
-    expect(sets.map((set) => set.setNumber)).toEqual([1, 2]);
+    ).rejects.toMatchObject({
+      code: "INTERNAL_ERROR",
+      message: "Something went wrong. Please try again.",
+    });
+    expect(sets.map((set) => set.setNumber)).toEqual([1, 2, 3]);
   });
 
   it("does not renumber sets from another exercise", async () => {
@@ -651,17 +787,19 @@ describe("workout set deletion", () => {
         .filter((set) => set.workoutExerciseId === "exercise_2")
         .map((set) => set.setNumber)
     ).toEqual([1, 2]);
-    expect(mocks.updateSets).toHaveBeenCalledWith({
+    expect(mocks.findLaterSets).toHaveBeenCalledWith({
       where: {
         workoutExerciseId: "exercise_1",
         setNumber: {
           gt: 1,
         },
       },
-      data: {
-        setNumber: {
-          decrement: 1,
-        },
+      select: {
+        id: true,
+        setNumber: true,
+      },
+      orderBy: {
+        setNumber: "asc",
       },
     });
   });
