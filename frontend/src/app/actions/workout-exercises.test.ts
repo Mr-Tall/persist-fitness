@@ -348,6 +348,7 @@ describe("workout set allocation", () => {
     expect(result).toMatchObject({
       status: "success",
       message: "Saved set 1.",
+      savedSetNumber: 1,
     });
     expect(sets.map((set) => set.setNumber)).toEqual([1]);
     expect(mocks.transaction).toHaveBeenCalledWith(expect.any(Function), {

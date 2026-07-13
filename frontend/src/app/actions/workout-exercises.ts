@@ -24,7 +24,9 @@ import {
 } from "@/lib/validation/workout";
 
 export type AddExerciseFormState = ActionFormState;
-export type AddSetFormState = ActionFormState;
+export type AddSetFormState = ActionFormState & {
+  savedSetNumber?: number;
+};
 export type UpdateSetFormState = ActionFormState;
 
 const MAX_TRANSACTION_ATTEMPTS = 3;
@@ -383,7 +385,10 @@ export async function addSetToExerciseWithState(
     const result = await createWorkoutSetFromFormData(userId, formData);
 
     return result.status === "success"
-      ? createActionSuccessState(result.message)
+      ? {
+          ...createActionSuccessState(result.message),
+          savedSetNumber: result.setNumber,
+        }
       : createActionErrorState({
           code: "VALIDATION_ERROR",
           message: result.message,

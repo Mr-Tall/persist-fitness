@@ -1,7 +1,10 @@
+"use client";
+
 import { deleteSetFromExercise } from "@/app/actions/workout-exercises";
 import { DeleteInlineButton } from "./delete-inline-button";
 import { EditSetForm } from "./edit-set-form";
 import type { WorkoutSetForPage } from "./workout-page-types";
+import { useSavedSetFeedback } from "./saved-set-feedback";
 
 type SetPrStatus = {
   isPersonalRecord: boolean;
@@ -15,6 +18,8 @@ type SetCardProps = {
 };
 
 export function SetCard({ workoutId, set, prStatus }: SetCardProps) {
+  const { savedSetNumber } = useSavedSetFeedback();
+  const isRecentlySaved = savedSetNumber === set.setNumber;
   const weightLabel =
     set.weight !== null ? `${set.weight} pounds` : "Weight not logged";
   const repsLabel = set.reps !== null ? `${set.reps} reps` : "Reps not logged";
@@ -27,8 +32,22 @@ export function SetCard({ workoutId, set, prStatus }: SetCardProps) {
   return (
     <article
       aria-labelledby={`set-${set.id}-title`}
-      className="rounded-2xl border border-white/10 bg-white/[0.05] p-3 sm:p-4"
+      className={`rounded-2xl border p-3 transition-colors duration-300 motion-reduce:transition-none sm:p-4 ${
+        isRecentlySaved
+          ? "border-emerald-300/70 bg-emerald-400/[0.12]"
+          : "border-white/10 bg-white/[0.05]"
+      }`}
     >
+      <p
+        role="status"
+        aria-label={isRecentlySaved ? `Set ${set.setNumber} saved` : undefined}
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {isRecentlySaved ? `Set ${set.setNumber} saved` : ""}
+      </p>
+
       <div className="flex min-w-0 items-center gap-3">
         <div
           aria-hidden="true"
@@ -54,6 +73,15 @@ export function SetCard({ workoutId, set, prStatus }: SetCardProps) {
             </span>
           </p>
         </div>
+
+        {isRecentlySaved && (
+          <span
+            aria-hidden="true"
+            className="shrink-0 rounded-full border border-emerald-300/30 bg-emerald-400/15 px-2.5 py-1 text-xs font-black text-emerald-200"
+          >
+            Saved
+          </span>
+        )}
       </div>
 
       {hasMetadata && (

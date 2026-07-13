@@ -17,6 +17,7 @@ import { getLatestSetPrefill } from "./add-set-prefill";
 import { AddSetForm } from "./add-set-form";
 import { CompletionSummary } from "./completion-summary";
 import { PreviousPerformanceCard } from "./previous-performance-card";
+import { SavedSetFeedbackProvider } from "./saved-set-feedback";
 import { WorkoutHeader } from "./workout-header";
 import { WorkoutMobileBar } from "./workout-mobile-bar";
 import { SetCard } from "./set-card";
@@ -275,31 +276,33 @@ export default async function WorkoutDetailPage({
                   </div>
 
                   <div className="p-5">
-                    {exercise.sets.length === 0 ? (
-                      <EmptyState
-                        title="No sets logged yet"
-                        description="Add your first set below when you finish the lift."
-                      />
-                    ) : (
-                      <div className="space-y-3">
-                        {exercise.sets.map((set) => {
-                          return (
-                            <SetCard
-                              key={set.id}
-                              workoutId={workout.id}
-                              set={set}
-                              prStatus={prStatuses.get(set.id)}
-                            />
-                          );
-                        })}
-                      </div>
-                    )}
+                    <SavedSetFeedbackProvider>
+                      {exercise.sets.length === 0 ? (
+                        <EmptyState
+                          title="No sets logged yet"
+                          description="Add your first set below when you finish the lift."
+                        />
+                      ) : (
+                        <div className="space-y-3">
+                          {exercise.sets.map((set) => {
+                            return (
+                              <SetCard
+                                key={set.id}
+                                workoutId={workout.id}
+                                set={set}
+                                prStatus={prStatuses.get(set.id)}
+                              />
+                            );
+                          })}
+                        </div>
+                      )}
 
-                    <AddSetForm
-                      workoutId={workout.id}
-                      workoutExerciseId={exercise.id}
-                      prefill={latestSetPrefill}
-                    />
+                      <AddSetForm
+                        workoutId={workout.id}
+                        workoutExerciseId={exercise.id}
+                        prefill={latestSetPrefill}
+                      />
+                    </SavedSetFeedbackProvider>
                   </div>
                 </Card>
               );

@@ -7,12 +7,14 @@ import { getLatestSetPrefill } from "./add-set-prefill";
 import { AddSetForm } from "./add-set-form";
 
 const addSetActionMock = vi.hoisted(() => vi.fn());
+const confirmSavedSetMock = vi.hoisted(() => vi.fn());
 
 const mocks = vi.hoisted(() => ({
   actionState: {
     status: "idle" as "idle" | "success" | "error",
     message: "",
     submittedAt: null as number | null,
+    savedSetNumber: undefined as number | undefined,
   },
   pending: false,
   formAction: vi.fn(),
@@ -56,6 +58,13 @@ vi.mock("sonner", () => ({
   },
 }));
 
+vi.mock("./saved-set-feedback", () => ({
+  useSavedSetFeedback: () => ({
+    savedSetNumber: null,
+    confirmSavedSet: confirmSavedSetMock,
+  }),
+}));
+
 const defaultProps: ComponentProps<typeof AddSetForm> = {
   workoutId: "workout-1",
   workoutExerciseId: "workout-exercise-1",
@@ -70,8 +79,10 @@ describe("AddSetForm", () => {
     mocks.actionState.status = "idle";
     mocks.actionState.message = "";
     mocks.actionState.submittedAt = null;
+    mocks.actionState.savedSetNumber = undefined;
     mocks.pending = false;
     mocks.formAction.mockClear();
+    confirmSavedSetMock.mockClear();
     vi.mocked(toast.success).mockClear();
     vi.mocked(toast.error).mockClear();
   });
@@ -311,6 +322,7 @@ describe("AddSetForm", () => {
     mocks.actionState.status = "success";
     mocks.actionState.message = "Set added.";
     mocks.actionState.submittedAt = Date.now();
+    mocks.actionState.savedSetNumber = 4;
     rerender(
       <AddSetForm
         {...defaultProps}
@@ -324,6 +336,7 @@ describe("AddSetForm", () => {
     expect(screen.getByLabelText("Reps")).toHaveValue(null);
     expect(screen.getByLabelText("Notes")).toHaveValue("");
     expect(screen.getByLabelText("Reps")).toHaveFocus();
+    expect(confirmSavedSetMock).toHaveBeenCalledWith(4);
     expect(toast.success).toHaveBeenCalledWith("Set added.");
   });
 
@@ -353,6 +366,7 @@ describe("AddSetForm", () => {
     expect(toast.error).toHaveBeenCalledWith(
       "Please check the form and try again."
     );
+    expect(confirmSavedSetMock).not.toHaveBeenCalled();
   });
 
   it("moves from Tempo to Notes and keeps Notes Enter as text input", async () => {
@@ -381,6 +395,7 @@ describe("AddSetForm", () => {
     rerender(<AddSetForm {...defaultProps} />);
 
     expect(screen.getByRole("button", { name: "Saving..." })).toBeDisabled();
+    expect(confirmSavedSetMock).not.toHaveBeenCalled();
   });
 
   it("renders action feedback as an accessible message", () => {

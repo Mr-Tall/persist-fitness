@@ -15,6 +15,7 @@ import {
 import { toast } from "sonner";
 import type { AddSetPrefill } from "./add-set-prefill";
 import { RestTimer } from "./rest-timer";
+import { useSavedSetFeedback } from "./saved-set-feedback";
 
 type AddSetFormProps = {
   workoutId: string;
@@ -95,6 +96,7 @@ export function AddSetForm({
     addSetToExerciseWithState,
     initialState
   );
+  const { confirmSavedSet } = useSavedSetFeedback();
   const messageId = `${fieldId}-message`;
   const hasMessage = state.status !== "idle" && Boolean(state.message);
 
@@ -123,6 +125,9 @@ export function AddSetForm({
       });
       const repsInput = form.elements.namedItem("reps") as HTMLInputElement;
       repsInput.focus({ preventScroll: true });
+      if (state.savedSetNumber !== undefined) {
+        confirmSavedSet(state.savedSetNumber);
+      }
       submittedValuesRef.current = null;
       return;
     }
@@ -136,7 +141,13 @@ export function AddSetForm({
         submittedValuesRef.current = null;
       }
     }
-  }, [state.message, state.status, state.submittedAt]);
+  }, [
+    confirmSavedSet,
+    state.message,
+    state.savedSetNumber,
+    state.status,
+    state.submittedAt,
+  ]);
 
   return (
     <>

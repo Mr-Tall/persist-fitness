@@ -1,8 +1,13 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { SetCard } from "./set-card";
 import type { WorkoutSetForPage } from "./workout-page-types";
+import {
+  SAVED_SET_FEEDBACK_DURATION_MS,
+  SavedSetFeedbackProvider,
+  useSavedSetFeedback,
+} from "./saved-set-feedback";
 
 vi.mock("@/app/actions/workout-exercises", () => ({
   deleteSetFromExercise: vi.fn(),
@@ -25,6 +30,16 @@ const completeSet: WorkoutSetForPage = {
   tempo: "3-1-1",
   notes: "Controlled eccentric with a long pause before the final rep.",
 };
+
+function SavedSetTestTrigger({ setNumber }: { setNumber: number }) {
+  const { confirmSavedSet } = useSavedSetFeedback();
+
+  return (
+    <button type="button" onClick={() => confirmSavedSet(setNumber)}>
+      Confirm set {setNumber}
+    </button>
+  );
+}
 
 describe("SetCard", () => {
   it("renders a semantic, scan-friendly set row with all metadata", () => {
@@ -124,5 +139,46 @@ describe("SetCard", () => {
     expect(
       screen.getByRole("button", { name: "Cancel delete set 3" })
     ).toBeVisible();
+  });
+
+  it("briefly confirms only the matching server-rendered set", () => {
+    vi.useFakeTimers();
+
+    try {
+      render(
+        <SavedSetFeedbackProvider>
+          <SetCard
+            workoutId="workout-1"
+            set={{ ...completeSet, id: "set-2", setNumber: 2 }}
+          />
+          <SetCard workoutId="workout-1" set={completeSet} />
+          <SavedSetTestTrigger setNumber={3} />
+        </SavedSetFeedbackProvider>
+      );
+
+      const setTwo = screen.getByRole("article", { name: "Set 2" });
+      const setThree = screen.getByRole("article", { name: "Set 3" });
+
+      expect(within(setThree).queryByText("Saved")).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Confirm set 3" }));
+
+      expect(within(setThree).getByText("Saved")).toBeVisible();
+      expect(
+        within(setThree).getByRole("status", { name: "Set 3 saved" })
+      ).toBeInTheDocument();
+      expect(within(setTwo).queryByText("Saved")).not.toBeInTheDocument();
+      expect(setTwo).toHaveClass("border-white/10");
+      expect(setThree).toHaveClass("border-emerald-300/70");
+      expect(setThree).toHaveClass("motion-reduce:transition-none");
+
+      act(() => {
+        vi.advanceTimersByTime(SAVED_SET_FEEDBACK_DURATION_MS);
+      });
+
+      expect(within(setThree).queryByText("Saved")).not.toBeInTheDocument();
+      expect(setThree).toHaveClass("border-white/10");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
