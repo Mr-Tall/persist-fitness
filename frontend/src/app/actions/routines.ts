@@ -9,6 +9,7 @@ import {
   ActionError,
   runActionWithSafeErrors,
 } from "@/lib/actions/action-error";
+import { coordinateActiveWorkout } from "@/lib/workouts/active-workout-coordinator";
 
 const createRoutineSchema = z.object({
   title: z.string().min(1, "Routine title is required"),
@@ -299,24 +300,28 @@ async function startRoutineUnsafe(formData: FormData) {
     });
   }
 
-  const workout = await db.workout.create({
-    data: {
-      userId,
-      title: routine.title,
-      goal: routine.goal,
-      notes: null,
-      date: todayAtUtcNoon(),
-      exercises: {
-        create: routine.exercises.map((exercise) => ({
-          exerciseId: exercise.exerciseId,
-          name: exercise.name,
-          order: exercise.order,
-        })),
-      },
-    },
+  const { workoutId } = await coordinateActiveWorkout({
+    userId,
+    createWorkout: (transaction) =>
+      transaction.workout.create({
+        data: {
+          userId,
+          title: routine.title,
+          goal: routine.goal,
+          notes: null,
+          date: todayAtUtcNoon(),
+          exercises: {
+            create: routine.exercises.map((exercise) => ({
+              exerciseId: exercise.exerciseId,
+              name: exercise.name,
+              order: exercise.order,
+            })),
+          },
+        },
+      }),
   });
 
-  redirect(`/workouts/${workout.id}`);
+  redirect(`/workouts/${workoutId}`);
 }
 
 export async function createRoutine(formData: FormData) {

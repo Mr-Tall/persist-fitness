@@ -11,6 +11,7 @@ import {
   type ActionFormState,
 } from "@/lib/actions/action-result";
 import { ActionError, toActionErrorState } from "@/lib/actions/action-error";
+import { coordinateActiveWorkout } from "@/lib/workouts/active-workout-coordinator";
 import {
   createWorkoutSchema,
   updateWorkoutSchema,
@@ -78,39 +79,47 @@ export async function createWorkout(formData: FormData) {
     date: formData.get("date"),
   });
 
-  const workout = await db.workout.create({
-    data: {
-      userId,
-      title: parsed.title,
-      goal: parsed.goal ?? null,
-      notes: parsed.notes ?? null,
-      date: calendarDateToUtcNoon(parsed.date),
-      status: "active",
-      startedAt: new Date(),
-      finishedAt: null,
-    },
+  const { workoutId } = await coordinateActiveWorkout({
+    userId,
+    createWorkout: (transaction) =>
+      transaction.workout.create({
+        data: {
+          userId,
+          title: parsed.title,
+          goal: parsed.goal ?? null,
+          notes: parsed.notes ?? null,
+          date: calendarDateToUtcNoon(parsed.date),
+          status: "active",
+          startedAt: new Date(),
+          finishedAt: null,
+        },
+      }),
   });
 
-  redirect(`/workouts/${workout.id}`);
+  redirect(`/workouts/${workoutId}`);
 }
 
 export async function startTodaysWorkout() {
   const userId = await requireUserId();
 
-  const workout = await db.workout.create({
-    data: {
-      userId,
-      title: "Today's Workout",
-      goal: null,
-      notes: null,
-      date: todayAtUtcNoon(),
-      status: "active",
-      startedAt: new Date(),
-      finishedAt: null,
-    },
+  const { workoutId } = await coordinateActiveWorkout({
+    userId,
+    createWorkout: (transaction) =>
+      transaction.workout.create({
+        data: {
+          userId,
+          title: "Today's Workout",
+          goal: null,
+          notes: null,
+          date: todayAtUtcNoon(),
+          status: "active",
+          startedAt: new Date(),
+          finishedAt: null,
+        },
+      }),
   });
 
-  redirect(`/workouts/${workout.id}`);
+  redirect(`/workouts/${workoutId}`);
 }
 
 export async function updateWorkout(formData: FormData) {
@@ -246,25 +255,29 @@ export async function repeatWorkout(formData: FormData) {
     });
   }
 
-  const newWorkout = await db.workout.create({
-    data: {
-      userId,
-      title: originalWorkout.title,
-      goal: originalWorkout.goal,
-      notes: null,
-      date: todayAtUtcNoon(),
-      status: "active",
-      startedAt: new Date(),
-      finishedAt: null,
-      exercises: {
-        create: originalWorkout.exercises.map((exercise) => ({
-          exerciseId: exercise.exerciseId,
-          name: exercise.name,
-          order: exercise.order,
-        })),
-      },
-    },
+  const { workoutId: activeWorkoutId } = await coordinateActiveWorkout({
+    userId,
+    createWorkout: (transaction) =>
+      transaction.workout.create({
+        data: {
+          userId,
+          title: originalWorkout.title,
+          goal: originalWorkout.goal,
+          notes: null,
+          date: todayAtUtcNoon(),
+          status: "active",
+          startedAt: new Date(),
+          finishedAt: null,
+          exercises: {
+            create: originalWorkout.exercises.map((exercise) => ({
+              exerciseId: exercise.exerciseId,
+              name: exercise.name,
+              order: exercise.order,
+            })),
+          },
+        },
+      }),
   });
 
-  redirect(`/workouts/${newWorkout.id}`);
+  redirect(`/workouts/${activeWorkoutId}`);
 }
