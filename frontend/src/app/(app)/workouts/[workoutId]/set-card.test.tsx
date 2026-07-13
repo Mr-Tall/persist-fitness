@@ -102,6 +102,37 @@ describe("SetCard", () => {
     expect(status).toHaveTextContent("Est. 1RM 354 lb");
   });
 
+  it("keeps historical values and PR context without mutation controls", () => {
+    const { container } = render(
+      <SetCard
+        workoutId="workout-1"
+        set={completeSet}
+        editable={false}
+        prStatus={{
+          isPersonalRecord: true,
+          estimatedOneRepMax: 354.4,
+        }}
+      />
+    );
+
+    expect(screen.getByLabelText("315 pounds by 5 reps")).toBeVisible();
+    expect(screen.getByText(completeSet.notes!)).toBeVisible();
+    expect(
+      screen.getByRole("status", {
+        name: "New personal record. Estimated one rep max 354 pounds.",
+      })
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: "Edit set 3" })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Delete set 3" })
+    ).not.toBeInTheDocument();
+    expect(
+      container.querySelector('input[name="workoutSetId"]')
+    ).not.toBeInTheDocument();
+  });
+
   it("keeps edit and delete actions accessible and wired to the set", async () => {
     const user = userEvent.setup();
     render(<SetCard workoutId="workout-1" set={completeSet} />);

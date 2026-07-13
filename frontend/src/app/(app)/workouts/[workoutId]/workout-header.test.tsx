@@ -115,6 +115,12 @@ describe("WorkoutHeader", () => {
     expect(
       screen.getByRole("button", { name: "Reopen workout" })
     ).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: "Finish workout" })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Edit workout" })
+    ).not.toBeInTheDocument();
   });
 
   it("preserves all actions for a long workout title and large volume", () => {

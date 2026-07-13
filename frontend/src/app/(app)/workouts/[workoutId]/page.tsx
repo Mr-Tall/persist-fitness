@@ -193,28 +193,49 @@ export default async function WorkoutDetailPage({
       />
 
       {isCompleted && (
-        <CompletionSummary
-          duration={duration}
-          totalSets={totalSets}
-          totalVolume={formatVolume(totalVolume)}
-          exerciseCount={workout.exercises.length}
-          personalRecordCount={personalRecordCount}
-        />
+        <>
+          <CompletionSummary
+            duration={duration}
+            totalSets={totalSets}
+            totalVolume={formatVolume(totalVolume)}
+            exerciseCount={workout.exercises.length}
+            personalRecordCount={personalRecordCount}
+          />
+
+          <p
+            role="status"
+            className="mt-4 rounded-2xl border border-emerald-300/20 bg-emerald-400/[0.06] px-4 py-3 text-sm font-bold leading-6 text-emerald-100"
+          >
+            Completed workout. Logging controls are unavailable until reopened.
+          </p>
+        </>
       )}
 
       <Section
         className="mt-6"
-        eyebrow="Build session"
+        eyebrow={isCompleted ? "Workout history" : "Build session"}
         title="Exercises"
-        description="Add movements, log working sets, and keep your previous performance in view."
+        description={
+          isCompleted
+            ? "Review the movements, sets, and performance saved with this workout."
+            : "Add movements, log working sets, and keep your previous performance in view."
+        }
       >
-        <AddExerciseForm workoutId={workout.id} exercises={libraryExercises} />
+        {!isCompleted && (
+          <AddExerciseForm workoutId={workout.id} exercises={libraryExercises} />
+        )}
 
         {workout.exercises.length === 0 ? (
           <div className="mt-8">
             <EmptyState
-              title="No exercises added yet"
-              description="Add your first exercise above, then start logging sets."
+              title={
+                isCompleted ? "No exercises recorded" : "No exercises added yet"
+              }
+              description={
+                isCompleted
+                  ? "This workout was completed without any logged exercises."
+                  : "Add your first exercise above, then start logging sets."
+              }
             />
           </div>
         ) : (
@@ -254,18 +275,24 @@ export default async function WorkoutDetailPage({
                         </div>
                       </div>
 
-                      <form action={deleteExerciseFromWorkout}>
-                        <input type="hidden" name="workoutId" value={workout.id} />
-                        <input
-                          type="hidden"
-                          name="workoutExerciseId"
-                          value={exercise.id}
-                        />
-                        <DeleteInlineButton
-                          label="Delete exercise"
-                          confirmMessage={`Delete ${exercise.name} and all of its sets?`}
-                        />
-                      </form>
+                      {!isCompleted && (
+                        <form action={deleteExerciseFromWorkout}>
+                          <input
+                            type="hidden"
+                            name="workoutId"
+                            value={workout.id}
+                          />
+                          <input
+                            type="hidden"
+                            name="workoutExerciseId"
+                            value={exercise.id}
+                          />
+                          <DeleteInlineButton
+                            label="Delete exercise"
+                            confirmMessage={`Delete ${exercise.name} and all of its sets?`}
+                          />
+                        </form>
+                      )}
                     </div>
 
                     <PreviousPerformanceCard
@@ -279,8 +306,12 @@ export default async function WorkoutDetailPage({
                     <SavedSetFeedbackProvider>
                       {exercise.sets.length === 0 ? (
                         <EmptyState
-                          title="No sets logged yet"
-                          description="Add your first set below when you finish the lift."
+                          title={isCompleted ? "No sets recorded" : "No sets logged yet"}
+                          description={
+                            isCompleted
+                              ? "No working sets were saved for this exercise."
+                              : "Add your first set below when you finish the lift."
+                          }
                         />
                       ) : (
                         <div className="space-y-3">
@@ -291,17 +322,20 @@ export default async function WorkoutDetailPage({
                                 workoutId={workout.id}
                                 set={set}
                                 prStatus={prStatuses.get(set.id)}
+                                editable={!isCompleted}
                               />
                             );
                           })}
                         </div>
                       )}
 
-                      <AddSetForm
-                        workoutId={workout.id}
-                        workoutExerciseId={exercise.id}
-                        prefill={latestSetPrefill}
-                      />
+                      {!isCompleted && (
+                        <AddSetForm
+                          workoutId={workout.id}
+                          workoutExerciseId={exercise.id}
+                          prefill={latestSetPrefill}
+                        />
+                      )}
                     </SavedSetFeedbackProvider>
                   </div>
                 </Card>
@@ -311,12 +345,14 @@ export default async function WorkoutDetailPage({
         )}
       </Section>
 
-      <WorkoutMobileBar
-        workoutId={workout.id}
-        workoutStatus={workout.status}
-        totalSets={totalSets}
-        duration={duration}
-      />
+      {!isCompleted && (
+        <WorkoutMobileBar
+          workoutId={workout.id}
+          workoutStatus={workout.status}
+          totalSets={totalSets}
+          duration={duration}
+        />
+      )}
     </main>
   );
 }

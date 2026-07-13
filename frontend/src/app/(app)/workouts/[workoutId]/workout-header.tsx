@@ -92,15 +92,17 @@ export function WorkoutHeader({
             </Button>
           </form>
 
-          <EditWorkoutForm
-            workout={{
-              id: workout.id,
-              title: workout.title,
-              goal: workout.goal,
-              notes: workout.notes,
-              date: workout.date,
-            }}
-          />
+          {!isCompleted && (
+            <EditWorkoutForm
+              workout={{
+                id: workout.id,
+                title: workout.title,
+                goal: workout.goal,
+                notes: workout.notes,
+                date: workout.date,
+              }}
+            />
+          )}
 
           <form
             action={deleteWorkout}

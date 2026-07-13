@@ -15,9 +15,15 @@ type SetCardProps = {
   workoutId: string;
   set: WorkoutSetForPage;
   prStatus?: SetPrStatus;
+  editable?: boolean;
 };
 
-export function SetCard({ workoutId, set, prStatus }: SetCardProps) {
+export function SetCard({
+  workoutId,
+  set,
+  prStatus,
+  editable = true,
+}: SetCardProps) {
   const { savedSetNumber } = useSavedSetFeedback();
   const isRecentlySaved = savedSetNumber === set.setNumber;
   const weightLabel =
@@ -125,19 +131,21 @@ export function SetCard({ workoutId, set, prStatus }: SetCardProps) {
         </p>
       )}
 
-      <div className="mt-2 flex min-h-11 flex-wrap items-center justify-end gap-2 border-t border-white/[0.08] pt-2">
-        <EditSetForm workoutId={workoutId} set={set} />
+      {editable && (
+        <div className="mt-2 flex min-h-11 flex-wrap items-center justify-end gap-2 border-t border-white/[0.08] pt-2">
+          <EditSetForm workoutId={workoutId} set={set} />
 
-        <form action={deleteSetFromExercise}>
-          <input type="hidden" name="workoutId" value={workoutId} />
-          <input type="hidden" name="workoutSetId" value={set.id} />
-          <DeleteInlineButton
-            label="Delete"
-            accessibleLabel={`Delete set ${set.setNumber}`}
-            confirmMessage={`Delete set ${set.setNumber}?`}
-          />
-        </form>
-      </div>
+          <form action={deleteSetFromExercise}>
+            <input type="hidden" name="workoutId" value={workoutId} />
+            <input type="hidden" name="workoutSetId" value={set.id} />
+            <DeleteInlineButton
+              label="Delete"
+              accessibleLabel={`Delete set ${set.setNumber}`}
+              confirmMessage={`Delete set ${set.setNumber}?`}
+            />
+          </form>
+        </div>
+      )}
     </article>
   );
 }
