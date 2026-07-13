@@ -160,6 +160,7 @@ export async function finishWorkout(formData: FormData) {
     where: {
       id: parsed.workoutId,
       userId,
+      status: "active",
     },
     data: {
       status: "completed",
@@ -168,10 +169,30 @@ export async function finishWorkout(formData: FormData) {
   });
 
   if (updatedWorkout.count === 0) {
-    throw new ActionError({
-      code: "NOT_FOUND",
-      message: "The requested workout item could not be found.",
+    const existingWorkout = await db.workout.findFirst({
+      where: {
+        id: parsed.workoutId,
+        userId,
+      },
+      select: {
+        status: true,
+        finishedAt: true,
+      },
     });
+
+    if (!existingWorkout) {
+      throw new ActionError({
+        code: "NOT_FOUND",
+        message: "The requested workout item could not be found.",
+      });
+    }
+
+    if (existingWorkout.status !== "completed") {
+      throw new ActionError({
+        code: "CONFLICT",
+        message: "The workout could not be finished from its current state.",
+      });
+    }
   }
 
   revalidatePath(`/workouts/${parsed.workoutId}`);
@@ -186,22 +207,66 @@ export async function reopenWorkout(formData: FormData) {
     workoutId: formData.get("workoutId"),
   });
 
-  const updatedWorkout = await db.workout.updateMany({
+  const targetWorkout = await db.workout.findFirst({
     where: {
       id: parsed.workoutId,
       userId,
     },
-    data: {
-      status: "active",
-      finishedAt: null,
+    select: {
+      id: true,
+      status: true,
     },
   });
 
-  if (updatedWorkout.count === 0) {
+  if (!targetWorkout) {
     throw new ActionError({
       code: "NOT_FOUND",
       message: "The requested workout item could not be found.",
     });
+  }
+
+  if (targetWorkout.status === "active") {
+    redirect(`/workouts/${targetWorkout.id}`);
+  }
+
+  if (targetWorkout.status !== "completed") {
+    throw new ActionError({
+      code: "CONFLICT",
+      message: "The workout could not be reopened from its current state.",
+    });
+  }
+
+  const {
+    workoutId: activeWorkoutId,
+    created: reopenedTarget,
+  } = await coordinateActiveWorkout({
+    userId,
+    createWorkout: async (transaction) => {
+      const reopenedWorkout = await transaction.workout.updateMany({
+        where: {
+          id: targetWorkout.id,
+          userId,
+          status: "completed",
+        },
+        data: {
+          status: "active",
+          finishedAt: null,
+        },
+      });
+
+      if (reopenedWorkout.count !== 1) {
+        throw new ActionError({
+          code: "NOT_FOUND",
+          message: "The requested workout item could not be found.",
+        });
+      }
+
+      return { id: targetWorkout.id };
+    },
+  });
+
+  if (!reopenedTarget) {
+    redirect(`/workouts/${activeWorkoutId}`);
   }
 
   revalidatePath(`/workouts/${parsed.workoutId}`);

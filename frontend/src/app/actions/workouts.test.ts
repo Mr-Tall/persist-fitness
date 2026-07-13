@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createWorkout,
+  finishWorkout,
+  reopenWorkout,
   repeatWorkout,
   startTodaysWorkout,
 } from "@/app/actions/workouts";
@@ -13,7 +15,10 @@ const mocks = vi.hoisted(() => {
     requireUserId: vi.fn(),
     coordinateActiveWorkout: vi.fn(),
     createInTransaction: vi.fn(),
+    updateWorkout: vi.fn(),
+    updateWorkoutInTransaction: vi.fn(),
     findSourceWorkout: vi.fn(),
+    revalidatePath: vi.fn(),
     redirect: vi.fn(),
     unstableRethrow: vi.fn((error: unknown) => {
       if (error === redirectError) {
@@ -35,6 +40,7 @@ vi.mock("@/lib/db", () => ({
   db: {
     workout: {
       findFirst: mocks.findSourceWorkout,
+      updateMany: mocks.updateWorkout,
     },
   },
 }));
@@ -44,7 +50,7 @@ vi.mock("@/lib/auth/workout-access", () => ({
 }));
 
 vi.mock("next/cache", () => ({
-  revalidatePath: vi.fn(),
+  revalidatePath: mocks.revalidatePath,
 }));
 
 vi.mock("next/navigation", () => ({
@@ -55,6 +61,7 @@ vi.mock("next/navigation", () => ({
 const transaction = {
   workout: {
     create: mocks.createInTransaction,
+    updateMany: mocks.updateWorkoutInTransaction,
   },
 };
 
@@ -229,5 +236,160 @@ describe("workout creation coordination", () => {
 
     expect(mocks.coordinateActiveWorkout).not.toHaveBeenCalled();
     expect(mocks.redirect).not.toHaveBeenCalled();
+  });
+});
+
+describe("workout lifecycle transitions", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.requireUserId.mockResolvedValue("user_1");
+    mocks.redirect.mockImplementation(() => {
+      throw mocks.redirectError;
+    });
+  });
+
+  it("finishes an owned active workout with a completion timestamp", async () => {
+    mocks.updateWorkout.mockResolvedValue({ count: 1 });
+
+    await finishWorkout(workoutIdFormData("workout_1"));
+
+    expect(mocks.updateWorkout).toHaveBeenCalledWith({
+      where: {
+        id: "workout_1",
+        userId: "user_1",
+        status: "active",
+      },
+      data: {
+        status: "completed",
+        finishedAt: expect.any(Date),
+      },
+    });
+    expect(mocks.revalidatePath.mock.calls).toEqual([
+      ["/workouts/workout_1"],
+      ["/workouts"],
+      ["/dashboard"],
+    ]);
+  });
+
+  it("treats a completed workout as an idempotent finish retry", async () => {
+    const originalFinishedAt = new Date("2026-07-12T20:00:00.000Z");
+    mocks.updateWorkout.mockResolvedValue({ count: 0 });
+    mocks.findSourceWorkout.mockResolvedValue({
+      status: "completed",
+      finishedAt: originalFinishedAt,
+    });
+
+    await finishWorkout(workoutIdFormData("workout_1"));
+
+    expect(mocks.updateWorkout).toHaveBeenCalledOnce();
+    expect(mocks.findSourceWorkout).toHaveBeenCalledWith({
+      where: {
+        id: "workout_1",
+        userId: "user_1",
+      },
+      select: {
+        status: true,
+        finishedAt: true,
+      },
+    });
+    expect(mocks.revalidatePath).toHaveBeenCalledTimes(3);
+  });
+
+  it("returns not-found when finishing a missing or cross-user workout", async () => {
+    mocks.updateWorkout.mockResolvedValue({ count: 0 });
+    mocks.findSourceWorkout.mockResolvedValue(null);
+
+    await expect(
+      finishWorkout(workoutIdFormData("forged_workout"))
+    ).rejects.toMatchObject({
+      code: "NOT_FOUND",
+      message: "The requested workout item could not be found.",
+    });
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("reopens an owned completed workout inside coordination", async () => {
+    mocks.findSourceWorkout.mockResolvedValue({
+      id: "workout_1",
+      status: "completed",
+    });
+    mocks.updateWorkoutInTransaction.mockResolvedValue({ count: 1 });
+    mocks.coordinateActiveWorkout.mockImplementation(
+      async ({
+        createWorkout,
+      }: {
+        createWorkout: (
+          client: typeof transaction
+        ) => Promise<{ id: string }>;
+      }) => {
+        const workout = await createWorkout(transaction);
+        return { workoutId: workout.id, created: true };
+      }
+    );
+
+    await reopenWorkout(workoutIdFormData("workout_1"));
+
+    expect(mocks.updateWorkoutInTransaction).toHaveBeenCalledWith({
+      where: {
+        id: "workout_1",
+        userId: "user_1",
+        status: "completed",
+      },
+      data: {
+        status: "active",
+        finishedAt: null,
+      },
+    });
+    expect(mocks.revalidatePath.mock.calls).toEqual([
+      ["/workouts/workout_1"],
+      ["/workouts"],
+      ["/dashboard"],
+    ]);
+  });
+
+  it("redirects an already-active reopen target without coordination", async () => {
+    mocks.findSourceWorkout.mockResolvedValue({
+      id: "workout_1",
+      status: "active",
+    });
+
+    await expect(
+      reopenWorkout(workoutIdFormData("workout_1"))
+    ).rejects.toBe(mocks.redirectError);
+
+    expect(mocks.coordinateActiveWorkout).not.toHaveBeenCalled();
+    expect(mocks.redirect).toHaveBeenCalledWith("/workouts/workout_1");
+  });
+
+  it("redirects to another active workout without reopening the target", async () => {
+    mocks.findSourceWorkout.mockResolvedValue({
+      id: "workout_completed",
+      status: "completed",
+    });
+    mocks.coordinateActiveWorkout.mockResolvedValue({
+      workoutId: "workout_active",
+      created: false,
+    });
+
+    await expect(
+      reopenWorkout(workoutIdFormData("workout_completed"))
+    ).rejects.toBe(mocks.redirectError);
+
+    expect(mocks.updateWorkoutInTransaction).not.toHaveBeenCalled();
+    expect(mocks.redirect).toHaveBeenCalledWith("/workouts/workout_active");
+  });
+
+  it("returns not-found for a missing or cross-user reopen target", async () => {
+    mocks.findSourceWorkout.mockResolvedValue(null);
+
+    await expect(
+      reopenWorkout(workoutIdFormData("forged_workout"))
+    ).rejects.toMatchObject({
+      code: "NOT_FOUND",
+      message: "The requested workout item could not be found.",
+    });
+
+    expect(mocks.coordinateActiveWorkout).not.toHaveBeenCalled();
+    expect(mocks.updateWorkoutInTransaction).not.toHaveBeenCalled();
   });
 });
