@@ -103,7 +103,30 @@ describe("MobileTodayPrimaryCard", () => {
       />
     );
 
-    expect(screen.getByText(longTitle)).toBeVisible();
+    const title = screen.getByRole("heading", { level: 2, name: longTitle });
+    expect(title).toBeVisible();
+    expect(title).toHaveClass("line-clamp-2");
     expect(screen.getByRole("link", { name: "Resume workout" })).toBeVisible();
+  });
+
+  it("keeps long supporting copy and inactive actions available", () => {
+    const longMessage =
+      "Your consistency is building steadily across a demanding training week, so choose today's session when you are ready and keep the next action focused.";
+
+    render(
+      <MobileTodayPrimaryCard
+        activeWorkout={null}
+        hasRoutines
+        trainingMessage={longMessage}
+      />
+    );
+
+    expect(screen.getByText(longMessage)).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Start today's workout" })
+    ).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: "Start from routine" })
+    ).toHaveAttribute("href", "/routines");
   });
 });

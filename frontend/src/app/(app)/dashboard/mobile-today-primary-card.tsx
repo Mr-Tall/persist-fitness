@@ -22,7 +22,7 @@ export function MobileTodayPrimaryCard({
   return (
     <Card
       variant={activeWorkout ? "emerald" : "glass"}
-      className="relative overflow-hidden rounded-[1.75rem] p-5"
+      className="relative min-w-0 overflow-hidden rounded-[1.75rem] p-5"
     >
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,rgba(52,211,153,0.2),transparent_44%)]" />
 
@@ -31,10 +31,10 @@ export function MobileTodayPrimaryCard({
           <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-300">
             Workout in progress
           </p>
-          <h2 className="mt-2 break-words text-2xl font-black tracking-tight text-white">
+          <h2 className="mt-2 line-clamp-2 break-words text-2xl font-black leading-tight tracking-tight text-white [overflow-wrap:anywhere]">
             {activeWorkout.title}
           </h2>
-          <p className="mt-2 text-sm text-neutral-300">
+          <p className="mt-2 break-words text-sm leading-5 text-neutral-300">
             Started {activeWorkout.startedTime} &middot; {activeWorkout.setCount}{" "}
             sets &middot; {activeWorkout.exerciseCount} exercises
           </p>
@@ -52,10 +52,10 @@ export function MobileTodayPrimaryCard({
           <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-300">
             Next up
           </p>
-          <h2 className="mt-2 text-2xl font-black tracking-tight text-white">
+          <h2 className="mt-2 break-words text-2xl font-black leading-tight tracking-tight text-white">
             Ready for today&apos;s session?
           </h2>
-          <p className="mt-2 text-sm leading-6 text-neutral-400">
+          <p className="mt-2 break-words text-sm leading-6 text-neutral-400 [overflow-wrap:anywhere]">
             {trainingMessage}
           </p>
 

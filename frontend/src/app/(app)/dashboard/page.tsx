@@ -14,6 +14,7 @@ import { StartWorkoutButton } from "./start-workout-button";
 import { requireUserSession } from "@/lib/auth/require-user";
 import { PremiumPreviewCard } from "@/components/premium/premium-preview-card";
 import { MobileTodayPrimaryCard } from "./mobile-today-primary-card";
+import { MobileTodayHeader } from "./mobile-today-header";
 
 function formatVolume(volume: number) {
   return `${Math.round(volume).toLocaleString()} lb`;
@@ -152,18 +153,10 @@ export default async function DashboardPage() {
   return (
     <main className="mx-auto max-w-6xl px-4 py-4 sm:px-6 sm:py-10">
       <div className="md:hidden">
-        <header className="flex items-end justify-between gap-4 px-1 pb-4 pt-1">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-300">
-              Today
-            </p>
-            <h1 className="mt-1 text-3xl font-black tracking-tight text-white">
-              Hey, {firstName}.
-            </h1>
-          </div>
-
-          <MetricBadge variant="emerald">{trainingStatus.label}</MetricBadge>
-        </header>
+        <MobileTodayHeader
+          firstName={firstName}
+          statusLabel={trainingStatus.label}
+        />
 
         <MobileTodayPrimaryCard
           activeWorkout={
