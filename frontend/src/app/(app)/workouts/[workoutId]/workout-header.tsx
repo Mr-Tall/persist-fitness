@@ -28,80 +28,102 @@ export function WorkoutHeader({
   isCompleted,
 }: WorkoutHeaderProps) {
   return (
-    <Card className="relative overflow-hidden p-5 sm:p-7">
+    <Card className="relative overflow-hidden p-3 sm:p-5 lg:p-7">
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,rgba(52,211,153,0.20),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(132,204,22,0.10),transparent_30%)]" />
 
-      <Button href="/workouts" variant="ghost" className="px-0 py-0">
+      <Button
+        href="/workouts"
+        variant="ghost"
+        className="min-h-11 rounded-xl px-2 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/40"
+      >
         ← Back to workouts
       </Button>
 
-      <div className="mt-5 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.26em] text-emerald-300">
-            Workout mode
-          </p>
-
-          <h1 className="mt-3 bg-gradient-to-r from-white via-neutral-100 to-neutral-400 bg-clip-text text-4xl font-black tracking-tight text-transparent sm:text-5xl">
+      <header className="mt-2 min-w-0">
+        <h1 className="line-clamp-2 break-words bg-gradient-to-r from-white via-neutral-100 to-neutral-400 bg-clip-text text-2xl font-black leading-tight tracking-tight text-transparent sm:text-3xl lg:text-5xl">
             {workout.title}
-          </h1>
+        </h1>
 
-          <p className="mt-3 text-sm font-medium text-neutral-400">
-            {formatWorkoutDate(workout.date)} · {workout.goal || "No goal set"}
-          </p>
+        <div
+          aria-label="Workout status and duration"
+          className="mt-2 flex min-w-0 flex-wrap items-center gap-2"
+        >
+          <MetricBadge variant={isCompleted ? "emerald" : "amber"}>
+            {isCompleted ? "Completed workout" : "Active workout"}
+          </MetricBadge>
+
+          <span
+            aria-label={`Duration: ${duration}`}
+            className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-bold text-neutral-300"
+          >
+            <span className="text-neutral-500">Duration:</span> {duration}
+          </span>
         </div>
 
+        <p className="mt-2 break-words text-xs font-medium leading-5 text-neutral-400 sm:text-sm">
+          {formatWorkoutDate(workout.date)} · {workout.goal || "No goal set"}
+        </p>
+      </header>
+
+      <div className="mt-3">
         <WorkoutStatGrid
           exerciseCount={workout.exercises.length}
           totalSets={totalSets}
           totalVolume={totalVolume}
-          isCompleted={isCompleted}
         />
       </div>
 
-      <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center">
+      <section
+        aria-label="Workout actions"
+        className="mt-3 sm:flex sm:items-start sm:gap-2"
+      >
         <FinishWorkoutButton workoutId={workout.id} status={workout.status} />
 
-        <form action={repeatWorkout}>
-          <input type="hidden" name="workoutId" value={workout.id} />
-          <Button type="submit" variant="secondary" fullWidth>
-            Repeat workout
-          </Button>
-        </form>
+        <div className="mt-2 flex flex-wrap items-start gap-2 sm:mt-0 sm:flex-1">
+          <form action={repeatWorkout} className="min-w-0 flex-1 sm:flex-none">
+            <input type="hidden" name="workoutId" value={workout.id} />
+            <Button
+              type="submit"
+              variant="secondary"
+              fullWidth
+              className="min-h-11 rounded-xl px-3 py-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/40 sm:text-sm"
+            >
+              Repeat workout
+            </Button>
+          </form>
 
-        <form action={deleteWorkout}>
-          <DeleteWorkoutButton workoutId={workout.id} />
-        </form>
-      </div>
+          <EditWorkoutForm
+            workout={{
+              id: workout.id,
+              title: workout.title,
+              goal: workout.goal,
+              notes: workout.notes,
+              date: workout.date,
+            }}
+          />
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        <MetricBadge variant={isCompleted ? "emerald" : "amber"}>
-          {isCompleted ? "Completed" : "Active session"}
-        </MetricBadge>
-
-        <MetricBadge>{duration}</MetricBadge>
-      </div>
+          <form
+            action={deleteWorkout}
+            className="min-w-0 flex-1 has-[div]:basis-full has-[div]:grow sm:flex-none"
+          >
+            <DeleteWorkoutButton workoutId={workout.id} />
+          </form>
+        </div>
+      </section>
 
       <ProgressBar
         value={workoutProgress}
         max={100}
         label="Session progress"
         helper={`${totalSets} / 12 sets logged`}
-        className="mt-5"
-      />
-
-      <EditWorkoutForm
-        workout={{
-          id: workout.id,
-          title: workout.title,
-          goal: workout.goal,
-          notes: workout.notes,
-          date: workout.date,
-        }}
+        className="mt-4 hidden md:block"
       />
 
       {workout.notes && (
-        <Card className="mt-5 rounded-2xl bg-black/25 p-4">
-          <p className="text-sm leading-6 text-neutral-300">{workout.notes}</p>
+        <Card className="mt-3 rounded-2xl bg-black/25 p-3 sm:mt-4 sm:p-4">
+          <p className="break-words text-sm leading-6 text-neutral-300">
+            {workout.notes}
+          </p>
         </Card>
       )}
     </Card>

@@ -22,7 +22,7 @@ function ConfirmDeleteWorkoutButton() {
           });
         }
       }}
-      className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-70"
+      className="min-h-11 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 disabled:cursor-not-allowed disabled:opacity-70"
     >
       {pending ? "Deleting..." : "Yes, delete"}
     </button>
@@ -37,7 +37,7 @@ export function DeleteWorkoutButton({ workoutId }: DeleteWorkoutButtonProps) {
       <button
         type="button"
         onClick={() => setConfirmed(true)}
-        className="rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50"
+        className="min-h-11 w-full rounded-xl border border-red-300/20 bg-red-400/[0.04] px-3 py-2 text-xs font-bold text-red-300 transition hover:bg-red-400/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300/50 sm:text-sm"
       >
         Delete workout
       </button>
@@ -56,7 +56,7 @@ export function DeleteWorkoutButton({ workoutId }: DeleteWorkoutButtonProps) {
         <button
           type="button"
           onClick={() => setConfirmed(false)}
-          className="rounded-xl border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold transition hover:bg-red-100"
+          className="min-h-11 rounded-xl border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold transition hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
         >
           Cancel
         </button>

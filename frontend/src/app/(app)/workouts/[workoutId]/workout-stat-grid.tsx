@@ -1,49 +1,49 @@
-import { Card } from "@/components/ui/card";
-
 type WorkoutStatGridProps = {
   exerciseCount: number;
   totalSets: number;
   totalVolume: string;
-  isCompleted: boolean;
 };
 
 export function WorkoutStatGrid({
   exerciseCount,
   totalSets,
   totalVolume,
-  isCompleted,
 }: WorkoutStatGridProps) {
   return (
-    <div className="grid grid-cols-2 gap-2 sm:min-w-[420px] sm:grid-cols-4">
-      <Card className="rounded-2xl bg-black/25 p-3">
-        <p className="text-xs font-bold uppercase tracking-[0.16em] text-neutral-500">
+    <dl
+      role="group"
+      aria-label="Workout momentum"
+      className="grid min-w-0 grid-cols-3 divide-x divide-white/10 rounded-2xl border border-white/10 bg-black/25"
+    >
+      <div className="min-w-0 px-2 py-2.5 text-center sm:px-4 sm:py-3">
+        <dt className="text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-500 sm:text-xs">
           Exercises
-        </p>
-        <p className="mt-1 text-2xl font-black text-white">{exerciseCount}</p>
-      </Card>
+        </dt>
+        <dd className="mt-0.5 text-lg font-black text-white sm:text-xl">
+          {exerciseCount}
+        </dd>
+      </div>
 
-      <Card className="rounded-2xl bg-black/25 p-3">
-        <p className="text-xs font-bold uppercase tracking-[0.16em] text-neutral-500">
+      <div className="min-w-0 px-2 py-2.5 text-center sm:px-4 sm:py-3">
+        <dt className="text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-500 sm:text-xs">
           Sets
-        </p>
-        <p className="mt-1 text-2xl font-black text-white">{totalSets}</p>
-      </Card>
+        </dt>
+        <dd className="mt-0.5 text-lg font-black text-white sm:text-xl">
+          {totalSets}
+        </dd>
+      </div>
 
-      <Card className="rounded-2xl bg-black/25 p-3">
-        <p className="text-xs font-bold uppercase tracking-[0.16em] text-neutral-500">
+      <div className="min-w-0 px-2 py-2.5 text-center sm:px-4 sm:py-3">
+        <dt className="text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-500 sm:text-xs">
           Volume
-        </p>
-        <p className="mt-1 text-xl font-black text-white">{totalVolume}</p>
-      </Card>
-
-      <Card className="rounded-2xl bg-black/25 p-3">
-        <p className="text-xs font-bold uppercase tracking-[0.16em] text-neutral-500">
-          Status
-        </p>
-        <p className="mt-1 text-xl font-black text-white">
-          {isCompleted ? "Done" : "Active"}
-        </p>
-      </Card>
-    </div>
+        </dt>
+        <dd
+          title={totalVolume}
+          className="mt-0.5 truncate text-base font-black text-white sm:text-xl"
+        >
+          {totalVolume}
+        </dd>
+      </div>
+    </dl>
   );
 }
