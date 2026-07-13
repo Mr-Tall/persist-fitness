@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import WorkoutDetailPage from "./page";
 
@@ -134,6 +135,7 @@ describe("WorkoutDetailPage lifecycle modes", () => {
   });
 
   it("renders completed workouts as accessible read-only history", async () => {
+    const user = userEvent.setup();
     const { container } = await renderWorkoutPage("completed");
 
     expect(
@@ -144,6 +146,10 @@ describe("WorkoutDetailPage lifecycle modes", () => {
     expect(
       screen.getByRole("button", { name: "Reopen workout" })
     ).toBeVisible();
+    const exerciseSummary = screen.getByText("Bench Press").closest("summary");
+    expect(exerciseSummary).not.toBeNull();
+    await user.click(exerciseSummary!);
+
     expect(screen.getByLabelText("225 pounds by 8 reps")).toBeVisible();
     expect(
       screen.getByRole("status", {
@@ -188,6 +194,9 @@ describe("WorkoutDetailPage lifecycle modes", () => {
       screen.getByRole("button", { name: "Open add exercise" })
     ).toBeVisible();
     expect(screen.getByRole("button", { name: "Save set" })).toBeVisible();
+    expect(
+      screen.getByText("No previous sets yet. This session will become your reference.")
+    ).toBeVisible();
     expect(screen.getByRole("button", { name: "Edit set 1" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Delete set 1" })).toBeVisible();
     expect(screen.getByText("Delete exercise")).toBeVisible();

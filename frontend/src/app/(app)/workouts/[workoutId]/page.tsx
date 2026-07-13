@@ -4,7 +4,6 @@ import {
 } from "@/app/actions/workout-exercises";
 import { DeleteInlineButton } from "./delete-inline-button";
 import { requireUserId } from "@/lib/auth/require-user";
-import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { MetricBadge } from "@/components/ui/metric-badge";
 import { Section } from "@/components/ui/section";
@@ -19,6 +18,7 @@ import { CompletionSummary } from "./completion-summary";
 import { PreviousPerformanceCard } from "./previous-performance-card";
 import { SavedSetFeedbackProvider } from "./saved-set-feedback";
 import { WorkoutHeader } from "./workout-header";
+import { WorkoutExerciseAccordion } from "./workout-exercise-accordion";
 import { WorkoutMobileBar } from "./workout-mobile-bar";
 import { SetCard } from "./set-card";
 
@@ -52,6 +52,15 @@ function calculateWorkoutVolume(
 
 function formatVolume(volume: number) {
   return `${Math.round(volume).toLocaleString()} lb`;
+}
+
+function formatLatestSetResult(set: {
+  weight: number | null;
+  reps: number | null;
+}) {
+  const weight = set.weight !== null ? `${set.weight} lb` : "—";
+  const reps = set.reps !== null ? set.reps : "—";
+  return `${weight} × ${reps}`;
 }
 
 function formatDuration(startedAt: Date | null, finishedAt: Date | null) {
@@ -239,84 +248,89 @@ export default async function WorkoutDetailPage({
             />
           </div>
         ) : (
-          <div className="mt-6 space-y-6">
-            {workout.exercises.map((exercise, exerciseIndex) => {
-              const prStatuses =
-                prStatusByExerciseId.get(exercise.id) ?? new Map();
+          <div className="mt-6">
+            <WorkoutExerciseAccordion
+              isCompleted={isCompleted}
+              items={workout.exercises.map((exercise) => {
+                const prStatuses =
+                  prStatusByExerciseId.get(exercise.id) ?? new Map();
+                const exerciseVolume = exercise.sets.reduce((total, set) => {
+                  if (set.weight === null || set.reps === null) {
+                    return total;
+                  }
 
-              const exerciseVolume = exercise.sets.reduce((total, set) => {
-                if (set.weight === null || set.reps === null) {
-                  return total;
-                }
+                  return total + set.weight * set.reps;
+                }, 0);
+                const latestSet = exercise.sets.reduce<
+                  (typeof exercise.sets)[number] | null
+                >(
+                  (latest, set) =>
+                    latest === null || set.setNumber > latest.setNumber
+                      ? set
+                      : latest,
+                  null
+                );
+                const latestSetPrefill = getLatestSetPrefill(exercise.sets);
 
-                return total + set.weight * set.reps;
-              }, 0);
-              const latestSetPrefill = getLatestSetPrefill(exercise.sets);
-
-              return (
-                <Card
-                  key={exercise.id}
-                  className="overflow-hidden rounded-[2rem] bg-black/20 p-0"
-                >
-                  <div className="border-b border-white/10 bg-white/[0.04] p-5">
-                    <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-                      <div>
-                        <p className="text-xs font-black uppercase tracking-[0.22em] text-neutral-500">
-                          Exercise {exerciseIndex + 1}
-                        </p>
-
-                        <h3 className="mt-2 text-2xl font-black text-white">
-                          {exercise.name}
-                        </h3>
-
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <MetricBadge>{exercise.sets.length} sets</MetricBadge>
-                          <MetricBadge>{formatVolume(exerciseVolume)}</MetricBadge>
-                        </div>
-                      </div>
-
-                      {!isCompleted && (
-                        <form action={deleteExerciseFromWorkout}>
-                          <input
-                            type="hidden"
-                            name="workoutId"
-                            value={workout.id}
-                          />
-                          <input
-                            type="hidden"
-                            name="workoutExerciseId"
-                            value={exercise.id}
-                          />
-                          <DeleteInlineButton
-                            label="Delete exercise"
-                            confirmMessage={`Delete ${exercise.name} and all of its sets?`}
-                          />
-                        </form>
-                      )}
-                    </div>
-
-                    <PreviousPerformanceCard
-                      previous={
-                        previousPerformanceByExerciseId.get(exercise.id) ?? null
-                      }
-                    />
-                  </div>
-
-                  <div className="p-5">
+                return {
+                  id: exercise.id,
+                  name: exercise.name,
+                  setCount: exercise.sets.length,
+                  latestResult: latestSet
+                    ? formatLatestSetResult(latestSet)
+                    : null,
+                  hasPersonalRecord: Array.from(prStatuses.values()).some(
+                    (status) => status.isPersonalRecord
+                  ),
+                  content: (
                     <SavedSetFeedbackProvider>
-                      {exercise.sets.length === 0 ? (
-                        <EmptyState
-                          title={isCompleted ? "No sets recorded" : "No sets logged yet"}
-                          description={
-                            isCompleted
-                              ? "No working sets were saved for this exercise."
-                              : "Add your first set below when you finish the lift."
+                      <div className="bg-white/[0.025] p-4 sm:p-5">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <MetricBadge>{formatVolume(exerciseVolume)}</MetricBadge>
+
+                          {!isCompleted && (
+                            <form action={deleteExerciseFromWorkout}>
+                              <input
+                                type="hidden"
+                                name="workoutId"
+                                value={workout.id}
+                              />
+                              <input
+                                type="hidden"
+                                name="workoutExerciseId"
+                                value={exercise.id}
+                              />
+                              <DeleteInlineButton
+                                label="Delete exercise"
+                                confirmMessage={`Delete ${exercise.name} and all of its sets?`}
+                              />
+                            </form>
+                          )}
+                        </div>
+
+                        <PreviousPerformanceCard
+                          previous={
+                            previousPerformanceByExerciseId.get(exercise.id) ??
+                            null
                           }
                         />
-                      ) : (
-                        <div className="space-y-3">
-                          {exercise.sets.map((set) => {
-                            return (
+                      </div>
+
+                      <div className="p-4 sm:p-5">
+                        {exercise.sets.length === 0 ? (
+                          <EmptyState
+                            title={
+                              isCompleted ? "No sets recorded" : "No sets logged yet"
+                            }
+                            description={
+                              isCompleted
+                                ? "No working sets were saved for this exercise."
+                                : "Add your first set below when you finish the lift."
+                            }
+                          />
+                        ) : (
+                          <div className="space-y-3">
+                            {exercise.sets.map((set) => (
                               <SetCard
                                 key={set.id}
                                 workoutId={workout.id}
@@ -324,23 +338,23 @@ export default async function WorkoutDetailPage({
                                 prStatus={prStatuses.get(set.id)}
                                 editable={!isCompleted}
                               />
-                            );
-                          })}
-                        </div>
-                      )}
+                            ))}
+                          </div>
+                        )}
 
-                      {!isCompleted && (
-                        <AddSetForm
-                          workoutId={workout.id}
-                          workoutExerciseId={exercise.id}
-                          prefill={latestSetPrefill}
-                        />
-                      )}
+                        {!isCompleted && (
+                          <AddSetForm
+                            workoutId={workout.id}
+                            workoutExerciseId={exercise.id}
+                            prefill={latestSetPrefill}
+                          />
+                        )}
+                      </div>
                     </SavedSetFeedbackProvider>
-                  </div>
-                </Card>
-              );
-            })}
+                  ),
+                };
+              })}
+            />
           </div>
         )}
       </Section>
