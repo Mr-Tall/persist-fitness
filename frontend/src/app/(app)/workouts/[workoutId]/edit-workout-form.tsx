@@ -77,7 +77,7 @@ export function EditWorkoutForm({ workout }: EditWorkoutFormProps) {
           setOpenedAt(Date.now());
           setIsOpen(true);
         }}
-        className="w-full rounded-xl border border-neutral-300 px-4 py-2 text-sm font-semibold transition hover:bg-neutral-50 sm:w-auto"
+        className="min-h-11 min-w-0 flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-bold text-neutral-300 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/40 sm:flex-none sm:text-sm"
       >
         Edit workout
       </button>
@@ -85,7 +85,7 @@ export function EditWorkoutForm({ workout }: EditWorkoutFormProps) {
   }
 
   return (
-    <section className="mt-5 rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm">
+    <section className="mt-2 w-full basis-full rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold">Edit workout</h2>
