@@ -163,7 +163,9 @@ describe("AddExerciseForm", () => {
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
     );
     await waitFor(() => expect(launcher).toHaveFocus());
-    expect(toastMock.success).toHaveBeenCalledWith("Exercise added.");
+    await waitFor(() =>
+      expect(toastMock.success).toHaveBeenCalledWith("Exercise added.")
+    );
 
     await user.click(launcher);
 
