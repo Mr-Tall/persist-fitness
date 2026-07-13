@@ -15,6 +15,7 @@ import { requireUserSession } from "@/lib/auth/require-user";
 import { PremiumPreviewCard } from "@/components/premium/premium-preview-card";
 import { MobileTodayPrimaryCard } from "./mobile-today-primary-card";
 import { MobileTodayHeader } from "./mobile-today-header";
+import { MobileProfileNudge } from "./mobile-profile-nudge";
 
 function formatVolume(volume: number) {
   return `${Math.round(volume).toLocaleString()} lb`;
@@ -240,6 +241,8 @@ export default async function DashboardPage() {
             </Link>
           </section>
         )}
+
+        <MobileProfileNudge profile={profile} />
       </div>
 
       <div className="hidden md:block">
