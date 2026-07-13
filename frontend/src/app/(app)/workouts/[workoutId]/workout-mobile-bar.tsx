@@ -1,42 +1,51 @@
-import { Card } from "@/components/ui/card";
+import { FinishWorkoutButton } from "./finish-workout-button";
 
 type WorkoutMobileBarProps = {
+  workoutId: string;
+  workoutStatus: string;
   totalSets: number;
-  totalVolume: string;
-  isCompleted: boolean;
+  duration: string;
 };
 
 export function WorkoutMobileBar({
+  workoutId,
+  workoutStatus,
   totalSets,
-  totalVolume,
-  isCompleted,
+  duration,
 }: WorkoutMobileBarProps) {
+  if (workoutStatus === "completed") {
+    return null;
+  }
+
   return (
-    <Card className="fixed bottom-20 left-4 right-4 z-40 rounded-3xl bg-black/80 p-3 shadow-[0_20px_80px_rgba(0,0,0,0.55)] md:hidden">
-      <div className="grid grid-cols-3 gap-2 text-center">
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-neutral-500">
-            Sets
+    <aside
+      aria-label="Workout controls"
+      className="fixed inset-x-3 bottom-[calc(var(--mobile-nav-height)_+_0.5rem)] z-40 rounded-2xl border border-white/10 bg-black/90 p-2.5 shadow-[0_16px_48px_rgba(0,0,0,0.55)] backdrop-blur-xl md:hidden"
+    >
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="flex items-center gap-2 text-xs font-black text-white">
+            <span
+              aria-hidden="true"
+              className="h-2 w-2 shrink-0 rounded-full bg-emerald-400"
+            />
+            Active workout
           </p>
-          <p className="mt-1 text-sm font-black text-white">{totalSets}</p>
+          <p
+            title={`${totalSets} sets · Duration ${duration}`}
+            className="mt-0.5 truncate text-xs font-medium text-neutral-400"
+          >
+            {totalSets} {totalSets === 1 ? "set" : "sets"}
+            <span aria-hidden="true"> · </span>
+            <span className="sr-only">Duration </span>
+            {duration}
+          </p>
         </div>
 
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-neutral-500">
-            Volume
-          </p>
-          <p className="mt-1 text-sm font-black text-white">{totalVolume}</p>
-        </div>
-
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-neutral-500">
-            Status
-          </p>
-          <p className="mt-1 text-sm font-black text-white">
-            {isCompleted ? "Done" : "Active"}
-          </p>
+        <div className="shrink-0 [&_button]:min-h-12 [&_button]:whitespace-nowrap [&_form]:m-0">
+          <FinishWorkoutButton workoutId={workoutId} status={workoutStatus} />
         </div>
       </div>
-    </Card>
+    </aside>
   );
 }

@@ -306,9 +306,10 @@ export default async function WorkoutDetailPage({
       </Section>
 
       <WorkoutMobileBar
+        workoutId={workout.id}
+        workoutStatus={workout.status}
         totalSets={totalSets}
-        totalVolume={formatVolume(totalVolume)}
-        isCompleted={isCompleted}
+        duration={duration}
       />
     </main>
   );

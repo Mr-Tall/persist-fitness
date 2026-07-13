@@ -41,7 +41,7 @@ export default async function AppLayout({
         </nav>
       </header>
 
-      <div className="pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0">
+      <div className="[--mobile-nav-height:calc(3.75rem_+_max(0.75rem,env(safe-area-inset-bottom)))] pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0">
         {children}
       </div>
       <MobileNav />
