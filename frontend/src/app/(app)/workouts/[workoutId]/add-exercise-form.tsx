@@ -6,7 +6,14 @@ import {
 } from "@/app/actions/workout-exercises";
 import { ExerciseSelect } from "@/components/exercise-select";
 import { ToastSubmitButton } from "@/components/ui/toast-submit-button";
-import { useActionState, useEffect, useState } from "react";
+import {
+  useActionState,
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react";
 import { toast } from "sonner";
 
 type AddExerciseFormProps = {
@@ -26,12 +33,31 @@ const initialState: AddExerciseFormState = {
   submittedAt: null,
 };
 
+const focusableElementSelector = [
+  "button:not([disabled])",
+  "input:not([disabled]):not([type='hidden'])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  "[href]",
+  "[tabindex]:not([tabindex='-1'])",
+].join(",");
+
 export function AddExerciseForm({ workoutId, exercises }: AddExerciseFormProps) {
   const [canSubmit, setCanSubmit] = useState(false);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [state, formAction] = useActionState(
     addExerciseToWorkoutWithState,
     initialState
   );
+  const launcherRef = useRef<HTMLButtonElement>(null);
+  const sheetRef = useRef<HTMLElement>(null);
+  const titleId = useId();
+  const descriptionId = useId();
+
+  const closeSheet = useCallback(() => {
+    setIsSheetOpen(false);
+    launcherRef.current?.focus();
+  }, []);
 
   useEffect(() => {
     if (!state.submittedAt || !state.message) {
@@ -48,43 +74,153 @@ export function AddExerciseForm({ workoutId, exercises }: AddExerciseFormProps) 
     }
   }, [state.message, state.status, state.submittedAt]);
 
+  useEffect(() => {
+    if (!isSheetOpen) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const focusTimer = window.setTimeout(() => {
+      sheetRef.current
+        ?.querySelector<HTMLInputElement>("input[type='search']")
+        ?.focus();
+    }, 0);
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeSheet();
+        return;
+      }
+
+      if (event.key !== "Tab" || !sheetRef.current) {
+        return;
+      }
+
+      const focusableElements = Array.from(
+        sheetRef.current.querySelectorAll<HTMLElement>(focusableElementSelector)
+      );
+
+      if (focusableElements.length === 0) {
+        event.preventDefault();
+        sheetRef.current.focus();
+        return;
+      }
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.clearTimeout(focusTimer);
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [closeSheet, isSheetOpen]);
+
   return (
-    <form
-      action={formAction}
-      className="rounded-3xl border border-white/10 bg-white/[0.06] p-5 shadow-sm backdrop-blur"
-    >
-      <input type="hidden" name="workoutId" value={workoutId} />
-
-      <h2 className="text-lg font-black text-white">Add exercise</h2>
-      <p className="mt-1 text-sm leading-6 text-neutral-400">
-        Choose from the library or add a custom movement.
-      </p>
-
-      <div className="mt-4">
-        <ExerciseSelect exercises={exercises} onValidityChange={setCanSubmit} />
-      </div>
-
-      {state.status !== "idle" && state.message && (
-        <p
-          role={state.status === "error" ? "alert" : "status"}
-          className={`mt-4 rounded-2xl border px-4 py-3 text-sm font-bold leading-6 ${
-            state.status === "success"
-              ? "border-emerald-300/25 bg-emerald-400/[0.08] text-emerald-200"
-              : "border-red-300/25 bg-red-400/[0.08] text-red-200"
-          }`}
-        >
-          {state.message}
-        </p>
-      )}
-
-      <ToastSubmitButton
-        pendingText="Adding exercise..."
-        toastMessage="Adding exercise..."
-        disabled={!canSubmit}
-        className="mt-4 w-full rounded-xl bg-emerald-400 px-5 py-3 font-black text-black transition hover:bg-emerald-300 disabled:bg-neutral-700 disabled:text-neutral-400 sm:w-auto"
+    <>
+      <button
+        ref={launcherRef}
+        type="button"
+        onClick={() => setIsSheetOpen(true)}
+        className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm font-black text-white transition hover:border-emerald-300/35 hover:bg-emerald-400/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-black md:hidden"
+        aria-label="Open add exercise"
+        aria-haspopup="dialog"
+        aria-expanded={isSheetOpen}
+        aria-hidden={isSheetOpen ? true : undefined}
+        tabIndex={isSheetOpen ? -1 : undefined}
       >
+        <span aria-hidden="true" className="text-lg leading-none">
+          +
+        </span>
         Add exercise
-      </ToastSubmitButton>
-    </form>
+      </button>
+
+      <div
+        className={
+          isSheetOpen
+            ? "fixed inset-0 z-[70] flex items-end bg-black/80 px-2 pt-3 backdrop-blur-sm md:static md:z-auto md:block md:bg-transparent md:p-0 md:backdrop-blur-none"
+            : "hidden md:block"
+        }
+        role={isSheetOpen ? "dialog" : undefined}
+        aria-modal={isSheetOpen ? true : undefined}
+        aria-labelledby={isSheetOpen ? titleId : undefined}
+        aria-describedby={isSheetOpen ? descriptionId : undefined}
+      >
+        <section
+          ref={sheetRef}
+          tabIndex={-1}
+          className="flex h-[calc(100dvh-0.75rem)] w-full flex-col overflow-hidden rounded-t-[2rem] border border-white/10 bg-neutral-950 shadow-[0_-24px_80px_-35px_rgba(16,185,129,0.55)] md:h-auto md:rounded-3xl md:bg-white/[0.06] md:shadow-sm md:backdrop-blur"
+        >
+          <div className="flex shrink-0 items-start justify-between gap-4 border-b border-white/10 px-4 py-4 md:border-b-0 md:px-5 md:pb-0 md:pt-5">
+            <div className="min-w-0">
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-300 md:hidden">
+                Build session
+              </p>
+              <h2 id={titleId} className="mt-0.5 text-lg font-black text-white md:mt-0">
+                Add exercise
+              </h2>
+              <p id={descriptionId} className="mt-1 text-sm leading-6 text-neutral-400">
+                Choose from the library or add a custom movement.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={closeSheet}
+              className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-lg font-bold text-neutral-200 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950 md:hidden"
+              aria-label="Close add exercise"
+            >
+              <span aria-hidden="true">×</span>
+            </button>
+          </div>
+
+          <form action={formAction} className="flex min-h-0 flex-1 flex-col md:block">
+            <input type="hidden" name="workoutId" value={workoutId} />
+
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 md:overflow-visible md:px-5">
+              <ExerciseSelect exercises={exercises} onValidityChange={setCanSubmit} />
+            </div>
+
+            <div className="shrink-0 border-t border-white/10 bg-neutral-950/95 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 md:border-t-0 md:bg-transparent md:px-5 md:pb-5 md:pt-0">
+              {state.status !== "idle" && state.message && (
+                <p
+                  role={state.status === "error" ? "alert" : "status"}
+                  className={`mb-3 rounded-2xl border px-4 py-3 text-sm font-bold leading-6 ${
+                    state.status === "success"
+                      ? "border-emerald-300/25 bg-emerald-400/[0.08] text-emerald-200"
+                      : "border-red-300/25 bg-red-400/[0.08] text-red-200"
+                  }`}
+                >
+                  {state.message}
+                </p>
+              )}
+
+              <ToastSubmitButton
+                pendingText="Adding exercise..."
+                toastMessage="Adding exercise..."
+                disabled={!canSubmit}
+                className="min-h-12 w-full rounded-xl bg-emerald-400 px-5 py-3 font-black text-black transition hover:bg-emerald-300 disabled:bg-neutral-700 disabled:text-neutral-400 md:w-auto"
+              >
+                Add exercise
+              </ToastSubmitButton>
+            </div>
+          </form>
+        </section>
+      </div>
+    </>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 
 type ExerciseOption = {
   id: string;
@@ -19,6 +19,8 @@ export function ExerciseSelect({
   exercises,
   onValidityChange,
 }: ExerciseSelectProps) {
+  const searchId = useId();
+  const customNameId = useId();
   const [query, setQuery] = useState("");
   const [selectedExerciseId, setSelectedExerciseId] = useState("");
   const [customName, setCustomName] = useState("");
@@ -71,22 +73,27 @@ export function ExerciseSelect({
       <input type="hidden" name="exerciseId" value={selectedExerciseId} />
 
       <div>
-        <label className="block text-xs font-black uppercase tracking-[0.16em] text-neutral-500">
+        <label
+          htmlFor={searchId}
+          className="block text-xs font-black uppercase tracking-[0.16em] text-neutral-400"
+        >
           Search exercise library
         </label>
         <input
+          id={searchId}
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Search by name, muscle, or equipment"
-          className="mt-1 w-full rounded-xl border border-neutral-300 px-3 py-3 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+          autoComplete="off"
+          className="mt-1 min-h-12 w-full rounded-xl border border-white/15 bg-black/25 px-3 py-3 text-white outline-none transition placeholder:text-neutral-500 focus-visible:border-emerald-400 focus-visible:ring-2 focus-visible:ring-emerald-400/30"
         />
       </div>
 
       {selectedExercise && (
         <div className="rounded-2xl border border-emerald-300/30 bg-emerald-400/[0.10] p-3">
           <div className="flex items-start justify-between gap-3">
-            <div>
+            <div className="min-w-0">
               <p className="text-sm font-black text-emerald-200">
                 Selected: {selectedExercise.name}
               </p>
@@ -100,7 +107,8 @@ export function ExerciseSelect({
             <button
               type="button"
               onClick={() => updateSelectedExercise("")}
-              className="rounded-lg px-2 py-1 text-xs font-bold text-emerald-200 hover:bg-emerald-300/10"
+              className="min-h-11 shrink-0 rounded-lg px-3 py-1 text-xs font-bold text-emerald-200 hover:bg-emerald-300/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
+              aria-label={`Clear selected exercise ${selectedExercise.name}`}
             >
               Clear
             </button>
@@ -122,15 +130,16 @@ export function ExerciseSelect({
                 key={exercise.id}
                 type="button"
                 onClick={() => updateSelectedExercise(exercise.id)}
-                className={`w-full rounded-xl border p-3 text-left transition ${
+                aria-pressed={isSelected}
+                className={`min-h-11 w-full rounded-xl border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 ${
                   isSelected
                     ? "border-emerald-300/40 bg-emerald-400/[0.10]"
                     : "border-transparent bg-white/[0.05] hover:border-white/10 hover:bg-white/[0.08]"
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-black text-white">
+                  <div className="min-w-0">
+                    <p className="break-words text-sm font-black text-white">
                       {exercise.isFavorite ? "★ " : ""}
                       {exercise.name}
                     </p>
@@ -154,16 +163,21 @@ export function ExerciseSelect({
       </div>
 
       <div>
-        <label className="block text-xs font-black uppercase tracking-[0.16em] text-neutral-500">
+        <label
+          htmlFor={customNameId}
+          className="block text-xs font-black uppercase tracking-[0.16em] text-neutral-400"
+        >
           Custom name
         </label>
         <input
+          id={customNameId}
           name="name"
           maxLength={100}
           value={customName}
           onChange={(event) => updateCustomName(event.target.value)}
           placeholder="Use this if exercise is not in library"
-          className="mt-1 w-full rounded-xl border border-neutral-300 px-3 py-3 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+          autoComplete="off"
+          className="mt-1 min-h-12 w-full rounded-xl border border-white/15 bg-black/25 px-3 py-3 text-white outline-none transition placeholder:text-neutral-500 focus-visible:border-emerald-400 focus-visible:ring-2 focus-visible:ring-emerald-400/30"
         />
       </div>
 
