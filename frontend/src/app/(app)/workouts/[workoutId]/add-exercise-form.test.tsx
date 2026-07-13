@@ -146,4 +146,100 @@ describe("AddExerciseForm", () => {
     expect(submittedData.get("exerciseId")).toBe("exercise-1");
     expect(submittedData.get("name")).toBe("");
   });
+
+  it("closes and resets the mobile picker after confirmed success", async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <AddExerciseForm workoutId="workout-1" exercises={exercises} />
+    );
+    const launcher = screen.getByRole("button", { name: "Open add exercise" });
+
+    await user.click(launcher);
+    await user.type(screen.getByRole("searchbox"), "Bench");
+    await user.click(screen.getByRole("button", { name: /Bench Press/ }));
+    await user.click(screen.getByRole("button", { name: "Add exercise" }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+    );
+    await waitFor(() => expect(launcher).toHaveFocus());
+    expect(toastMock.success).toHaveBeenCalledWith("Exercise added.");
+
+    await user.click(launcher);
+
+    expect(screen.getByRole("searchbox")).toHaveValue("");
+    expect(screen.getByLabelText("Custom name")).toHaveValue("");
+    expect(screen.queryByText("Selected: Bench Press")).not.toBeInTheDocument();
+    expect(container.querySelector('input[name="exerciseId"]')).toHaveValue("");
+    expect(screen.getByRole("button", { name: "Add exercise" })).toBeDisabled();
+  });
+
+  it("clears a custom exercise name after confirmed success", async () => {
+    const user = userEvent.setup();
+    render(<AddExerciseForm workoutId="workout-1" exercises={exercises} />);
+    const launcher = screen.getByRole("button", { name: "Open add exercise" });
+
+    await user.click(launcher);
+    await user.type(screen.getByLabelText("Custom name"), "Cable Y Raise");
+    await user.click(screen.getByRole("button", { name: "Add exercise" }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+    );
+    await user.click(launcher);
+
+    expect(screen.getByLabelText("Custom name")).toHaveValue("");
+    expect(screen.getByRole("button", { name: "Add exercise" })).toBeDisabled();
+  });
+
+  it("keeps library selection and search context after a failed submission", async () => {
+    addExerciseMock.mockResolvedValueOnce({
+      status: "error",
+      code: "INTERNAL_ERROR",
+      message: "Something went wrong. Please try again.",
+      submittedAt: Date.now(),
+    });
+    const user = userEvent.setup();
+    render(<AddExerciseForm workoutId="workout-1" exercises={exercises} />);
+
+    await user.click(screen.getByRole("button", { name: "Open add exercise" }));
+    await user.type(screen.getByRole("searchbox"), "Bench");
+    await user.click(screen.getByRole("button", { name: /Bench Press/ }));
+    await user.click(screen.getByRole("button", { name: "Add exercise" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Something went wrong. Please try again."
+    );
+    expect(screen.getByRole("dialog", { name: "Add exercise" })).toBeInTheDocument();
+    expect(screen.getByRole("searchbox")).toHaveValue("Bench");
+    expect(screen.getByText("Selected: Bench Press")).toBeInTheDocument();
+    expect(screen.getByRole("button", { pressed: true })).toHaveTextContent(
+      "Bench Press"
+    );
+    expect(toastMock.error).toHaveBeenCalledWith(
+      "Something went wrong. Please try again."
+    );
+  });
+
+  it("keeps a custom exercise name after a failed submission", async () => {
+    addExerciseMock.mockResolvedValueOnce({
+      status: "error",
+      code: "VALIDATION_ERROR",
+      message: "Check the exercise details and try again.",
+      submittedAt: Date.now(),
+    });
+    const user = userEvent.setup();
+    render(<AddExerciseForm workoutId="workout-1" exercises={exercises} />);
+
+    await user.click(screen.getByRole("button", { name: "Open add exercise" }));
+    await user.type(screen.getByLabelText("Custom name"), "Cable Y Raise");
+    await user.click(screen.getByRole("button", { name: "Add exercise" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Check the exercise details and try again."
+    );
+    expect(screen.getByRole("dialog", { name: "Add exercise" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Custom name")).toHaveValue("Cable Y Raise");
+    expect(screen.getByRole("button", { name: "Add exercise" })).toBeEnabled();
+  });
 });

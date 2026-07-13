@@ -45,14 +45,38 @@ const focusableElementSelector = [
 export function AddExerciseForm({ workoutId, exercises }: AddExerciseFormProps) {
   const [canSubmit, setCanSubmit] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [state, formAction] = useActionState(
-    addExerciseToWorkoutWithState,
-    initialState
-  );
+  const [selectorVersion, setSelectorVersion] = useState(0);
+  const [showActionMessage, setShowActionMessage] = useState(true);
   const launcherRef = useRef<HTMLButtonElement>(null);
   const sheetRef = useRef<HTMLElement>(null);
   const titleId = useId();
   const descriptionId = useId();
+  const [state, formAction] = useActionState(
+    async (
+      previousState: AddExerciseFormState,
+      formData: FormData
+    ): Promise<AddExerciseFormState> => {
+      const wasMobileSheetOpen = isSheetOpen;
+      const result = await addExerciseToWorkoutWithState(
+        previousState,
+        formData
+      );
+
+      if (result.status === "success") {
+        setCanSubmit(false);
+        setSelectorVersion((version) => version + 1);
+
+        if (wasMobileSheetOpen) {
+          setShowActionMessage(false);
+          setIsSheetOpen(false);
+          window.setTimeout(() => launcherRef.current?.focus(), 0);
+        }
+      }
+
+      return result;
+    },
+    initialState
+  );
 
   const closeSheet = useCallback(() => {
     setIsSheetOpen(false);
@@ -135,7 +159,10 @@ export function AddExerciseForm({ workoutId, exercises }: AddExerciseFormProps) 
       <button
         ref={launcherRef}
         type="button"
-        onClick={() => setIsSheetOpen(true)}
+        onClick={() => {
+          setShowActionMessage(false);
+          setIsSheetOpen(true);
+        }}
         className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm font-black text-white transition hover:border-emerald-300/35 hover:bg-emerald-400/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-black md:hidden"
         aria-label="Open add exercise"
         aria-haspopup="dialog"
@@ -188,15 +215,23 @@ export function AddExerciseForm({ workoutId, exercises }: AddExerciseFormProps) 
             </button>
           </div>
 
-          <form action={formAction} className="flex min-h-0 flex-1 flex-col md:block">
+          <form
+            action={formAction}
+            onSubmit={() => setShowActionMessage(true)}
+            className="flex min-h-0 flex-1 flex-col md:block"
+          >
             <input type="hidden" name="workoutId" value={workoutId} />
 
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 md:overflow-visible md:px-5">
-              <ExerciseSelect exercises={exercises} onValidityChange={setCanSubmit} />
+              <ExerciseSelect
+                key={selectorVersion}
+                exercises={exercises}
+                onValidityChange={setCanSubmit}
+              />
             </div>
 
             <div className="shrink-0 border-t border-white/10 bg-neutral-950/95 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 md:border-t-0 md:bg-transparent md:px-5 md:pb-5 md:pt-0">
-              {state.status !== "idle" && state.message && (
+              {showActionMessage && state.status !== "idle" && state.message && (
                 <p
                   role={state.status === "error" ? "alert" : "status"}
                   className={`mb-3 rounded-2xl border px-4 py-3 text-sm font-bold leading-6 ${
