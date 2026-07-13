@@ -13,6 +13,7 @@ import Link from "next/link";
 import { StartWorkoutButton } from "./start-workout-button";
 import { requireUserSession } from "@/lib/auth/require-user";
 import { PremiumPreviewCard } from "@/components/premium/premium-preview-card";
+import { MobileTodayPrimaryCard } from "./mobile-today-primary-card";
 
 function formatVolume(volume: number) {
   return `${Math.round(volume).toLocaleString()} lb`;
@@ -164,61 +165,21 @@ export default async function DashboardPage() {
           <MetricBadge variant="emerald">{trainingStatus.label}</MetricBadge>
         </header>
 
-        <Card
-          variant={activeWorkout ? "emerald" : "glass"}
-          className="relative overflow-hidden rounded-[1.75rem] p-5"
-        >
-          <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,rgba(52,211,153,0.2),transparent_44%)]" />
-
-          {activeWorkout ? (
-            <>
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-300">
-                Workout in progress
-              </p>
-              <h2 className="mt-2 text-2xl font-black tracking-tight text-white">
-                {activeWorkout.title}
-              </h2>
-              <p className="mt-2 text-sm text-neutral-300">
-                Started {formatStartedTime(activeWorkout.startedAt)} &middot;{" "}
-                {activeWorkoutSets} sets &middot;{" "}
-                {activeWorkout.exercises.length} exercises
-              </p>
-
-              <Button
-                href={`/workouts/${activeWorkout.id}`}
-                fullWidth
-                className="mt-5 min-h-12"
-              >
-                Resume workout
-              </Button>
-            </>
-          ) : (
-            <>
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-300">
-                Next up
-              </p>
-              <h2 className="mt-2 text-2xl font-black tracking-tight text-white">
-                Ready for today&apos;s session?
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-neutral-400">
-                {trainingStatus.message}
-              </p>
-
-              <div className="mt-5 [&_button]:min-h-12 [&_button]:w-full [&_form]:w-full">
-                <StartWorkoutButton />
-              </div>
-            </>
-          )}
-
-          <Button
-            href="/routines"
-            variant="secondary"
-            fullWidth
-            className="mt-2 min-h-12"
-          >
-            Start from routine
-          </Button>
-        </Card>
+        <MobileTodayPrimaryCard
+          activeWorkout={
+            activeWorkout
+              ? {
+                  id: activeWorkout.id,
+                  title: activeWorkout.title,
+                  startedTime: formatStartedTime(activeWorkout.startedAt),
+                  setCount: activeWorkoutSets,
+                  exerciseCount: activeWorkout.exercises.length,
+                }
+              : null
+          }
+          hasRoutines={hasRoutines}
+          trainingMessage={trainingStatus.message}
+        />
 
         <section aria-labelledby="weekly-momentum" className="mt-4">
           <div className="mb-2 flex items-center justify-between px-1">
