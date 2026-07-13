@@ -1,8 +1,12 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { ComponentProps } from "react";
+import { useActionState, type ComponentProps } from "react";
+import { toast } from "sonner";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { getLatestSetPrefill } from "./add-set-prefill";
 import { AddSetForm } from "./add-set-form";
+
+const addSetActionMock = vi.hoisted(() => vi.fn());
 
 const mocks = vi.hoisted(() => ({
   actionState: {
@@ -37,7 +41,7 @@ vi.mock("react-dom", async (importOriginal) => {
 });
 
 vi.mock("@/app/actions/workout-exercises", () => ({
-  addSetToExerciseWithState: vi.fn(),
+  addSetToExerciseWithState: addSetActionMock,
 }));
 
 vi.mock("sonner", () => ({
@@ -52,8 +56,8 @@ const defaultProps: ComponentProps<typeof AddSetForm> = {
   workoutExerciseId: "workout-exercise-1",
 };
 
-function renderComposer() {
-  return render(<AddSetForm {...defaultProps} />);
+function renderComposer(props: Partial<ComponentProps<typeof AddSetForm>> = {}) {
+  return render(<AddSetForm {...defaultProps} {...props} />);
 }
 
 describe("AddSetForm", () => {
@@ -62,6 +66,54 @@ describe("AddSetForm", () => {
     mocks.actionState.message = "";
     mocks.actionState.submittedAt = null;
     mocks.pending = false;
+    vi.mocked(toast.success).mockClear();
+    vi.mocked(toast.error).mockClear();
+  });
+
+  it("leaves the first set composer empty", () => {
+    const prefill = getLatestSetPrefill([]);
+    renderComposer({ prefill });
+
+    expect(prefill).toBeUndefined();
+    expect(screen.getByLabelText("Weight")).toHaveValue(null);
+    expect(screen.getByLabelText("Reps")).toHaveValue(null);
+    expect(screen.getByLabelText("RIR")).toHaveValue(null);
+    expect(screen.getByLabelText("Tempo")).toHaveValue("");
+    expect(screen.getByLabelText("Notes")).toHaveValue("");
+  });
+
+  it("selects prefill values from the highest set number", () => {
+    const prefill = getLatestSetPrefill([
+      {
+        setNumber: 4,
+        weight: 245,
+        reps: 5,
+        rir: 1,
+        tempo: "2-0-1",
+      },
+      {
+        setNumber: 2,
+        weight: 225,
+        reps: 8,
+        rir: 2,
+        tempo: null,
+      },
+      {
+        setNumber: 3,
+        weight: 235,
+        reps: 6,
+        rir: null,
+        tempo: "3-1-1",
+      },
+    ]);
+
+    renderComposer({ prefill });
+
+    expect(screen.getByLabelText("Weight")).toHaveValue(245);
+    expect(screen.getByLabelText("Reps")).toHaveValue(5);
+    expect(screen.getByLabelText("RIR")).toHaveValue(1);
+    expect(screen.getByLabelText("Tempo")).toHaveValue("2-0-1");
+    expect(screen.getByLabelText("Notes")).toHaveValue("");
   });
 
   it("renders weight and reps first with associated labels", () => {
@@ -136,6 +188,94 @@ describe("AddSetForm", () => {
     expect(screen.getByDisplayValue("workout-exercise-1")).toHaveAttribute(
       "name",
       "workoutExerciseId"
+    );
+    expect(vi.mocked(useActionState)).toHaveBeenCalledWith(
+      addSetActionMock,
+      expect.objectContaining({ status: "idle" })
+    );
+  });
+
+  it("keeps prefill state scoped to each exercise", () => {
+    const { container } = render(
+      <>
+        <AddSetForm
+          workoutId="workout-1"
+          workoutExerciseId="exercise-a"
+          prefill={{ weight: 315, reps: 3, rir: 1, tempo: null }}
+        />
+        <AddSetForm
+          workoutId="workout-1"
+          workoutExerciseId="exercise-b"
+          prefill={{ weight: 95, reps: 12, rir: 3, tempo: "2-1-2" }}
+        />
+      </>
+    );
+    const forms = container.querySelectorAll("form");
+
+    expect(within(forms[0]).getByLabelText("Weight")).toHaveValue(315);
+    expect(within(forms[0]).getByLabelText("RIR")).toHaveValue(1);
+    expect(within(forms[1]).getByLabelText("Weight")).toHaveValue(95);
+    expect(within(forms[1]).getByLabelText("RIR")).toHaveValue(3);
+  });
+
+  it("preserves repeat values and clears reps and notes after success", async () => {
+    const user = userEvent.setup();
+    const { rerender } = renderComposer({
+      prefill: { weight: 225, reps: 8, rir: 2, tempo: "3-1-1" },
+    });
+
+    await user.clear(screen.getByLabelText("Weight"));
+    await user.type(screen.getByLabelText("Weight"), "230");
+    await user.clear(screen.getByLabelText("Reps"));
+    await user.type(screen.getByLabelText("Reps"), "7");
+    await user.clear(screen.getByLabelText("RIR"));
+    await user.type(screen.getByLabelText("RIR"), "1");
+    await user.click(screen.getByText("Add details"));
+    await user.clear(screen.getByLabelText("Tempo"));
+    await user.type(screen.getByLabelText("Tempo"), "2-0-1");
+    await user.type(screen.getByLabelText("Notes"), "Smooth rep speed");
+
+    mocks.actionState.status = "success";
+    mocks.actionState.message = "Set added.";
+    mocks.actionState.submittedAt = Date.now();
+    rerender(
+      <AddSetForm
+        {...defaultProps}
+        prefill={{ weight: 225, reps: 8, rir: 2, tempo: "3-1-1" }}
+      />
+    );
+
+    expect(screen.getByLabelText("Weight")).toHaveValue(230);
+    expect(screen.getByLabelText("RIR")).toHaveValue(1);
+    expect(screen.getByLabelText("Tempo")).toHaveValue("2-0-1");
+    expect(screen.getByLabelText("Reps")).toHaveValue(null);
+    expect(screen.getByLabelText("Notes")).toHaveValue("");
+    expect(toast.success).toHaveBeenCalledWith("Set added.");
+  });
+
+  it("preserves entered values after a failed save", async () => {
+    const user = userEvent.setup();
+    const { rerender } = renderComposer();
+
+    await user.type(screen.getByLabelText("Weight"), "185");
+    await user.type(screen.getByLabelText("Reps"), "10");
+    await user.type(screen.getByLabelText("RIR"), "2");
+    await user.click(screen.getByText("Add details"));
+    await user.type(screen.getByLabelText("Tempo"), "3-0-1");
+    await user.type(screen.getByLabelText("Notes"), "Keep this attempt");
+
+    mocks.actionState.status = "error";
+    mocks.actionState.message = "Please check the form and try again.";
+    mocks.actionState.submittedAt = Date.now();
+    rerender(<AddSetForm {...defaultProps} />);
+
+    expect(screen.getByLabelText("Weight")).toHaveValue(185);
+    expect(screen.getByLabelText("Reps")).toHaveValue(10);
+    expect(screen.getByLabelText("RIR")).toHaveValue(2);
+    expect(screen.getByLabelText("Tempo")).toHaveValue("3-0-1");
+    expect(screen.getByLabelText("Notes")).toHaveValue("Keep this attempt");
+    expect(toast.error).toHaveBeenCalledWith(
+      "Please check the form and try again."
     );
   });
 

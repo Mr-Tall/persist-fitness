@@ -13,6 +13,7 @@ import { getPreviousPerformanceForExercise } from "@/lib/previous-performance";
 import { getSetPrStatuses } from "@/lib/set-pr-status";
 import { notFound } from "next/navigation";
 import { AddExerciseForm } from "./add-exercise-form";
+import { getLatestSetPrefill } from "./add-set-prefill";
 import { AddSetForm } from "./add-set-form";
 import { CompletionSummary } from "./completion-summary";
 import { PreviousPerformanceCard } from "./previous-performance-card";
@@ -228,6 +229,7 @@ export default async function WorkoutDetailPage({
 
                 return total + set.weight * set.reps;
               }, 0);
+              const latestSetPrefill = getLatestSetPrefill(exercise.sets);
 
               return (
                 <Card
@@ -296,6 +298,7 @@ export default async function WorkoutDetailPage({
                     <AddSetForm
                       workoutId={workout.id}
                       workoutExerciseId={exercise.id}
+                      prefill={latestSetPrefill}
                     />
                   </div>
                 </Card>

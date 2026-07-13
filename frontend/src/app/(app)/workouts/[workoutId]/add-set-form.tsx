@@ -7,11 +7,13 @@ import {
 import { ToastSubmitButton } from "@/components/ui/toast-submit-button";
 import { useActionState, useEffect, useId, useRef } from "react";
 import { toast } from "sonner";
+import type { AddSetPrefill } from "./add-set-prefill";
 import { RestTimer } from "./rest-timer";
 
 type AddSetFormProps = {
   workoutId: string;
   workoutExerciseId: string;
+  prefill?: AddSetPrefill;
 };
 
 const initialState: AddSetFormState = {
@@ -20,8 +22,42 @@ const initialState: AddSetFormState = {
   submittedAt: null,
 };
 
-export function AddSetForm({ workoutId, workoutExerciseId }: AddSetFormProps) {
+type SubmittedSetValues = {
+  weight: string;
+  reps: string;
+  rir: string;
+  tempo: string;
+  notes: string;
+};
+
+function getSetValues(form: HTMLFormElement): SubmittedSetValues {
+  return {
+    weight: (form.elements.namedItem("weight") as HTMLInputElement).value,
+    reps: (form.elements.namedItem("reps") as HTMLInputElement).value,
+    rir: (form.elements.namedItem("rir") as HTMLInputElement).value,
+    tempo: (form.elements.namedItem("tempo") as HTMLInputElement).value,
+    notes: (form.elements.namedItem("notes") as HTMLInputElement).value,
+  };
+}
+
+function restoreSetValues(
+  form: HTMLFormElement,
+  values: SubmittedSetValues
+) {
+  (form.elements.namedItem("weight") as HTMLInputElement).value = values.weight;
+  (form.elements.namedItem("reps") as HTMLInputElement).value = values.reps;
+  (form.elements.namedItem("rir") as HTMLInputElement).value = values.rir;
+  (form.elements.namedItem("tempo") as HTMLInputElement).value = values.tempo;
+  (form.elements.namedItem("notes") as HTMLInputElement).value = values.notes;
+}
+
+export function AddSetForm({
+  workoutId,
+  workoutExerciseId,
+  prefill,
+}: AddSetFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
+  const submittedValuesRef = useRef<SubmittedSetValues>(null);
   const fieldId = useId();
   const [state, formAction] = useActionState(
     addSetToExerciseWithState,
@@ -37,12 +73,34 @@ export function AddSetForm({ workoutId, workoutExerciseId }: AddSetFormProps) {
 
     if (state.status === "success") {
       toast.success(state.message);
-      formRef.current?.reset();
+
+      const form = formRef.current;
+      if (!form) {
+        return;
+      }
+
+      const submittedValues = submittedValuesRef.current ?? getSetValues(form);
+
+      form.reset();
+      restoreSetValues(form, {
+        weight: submittedValues.weight,
+        reps: "",
+        rir: submittedValues.rir,
+        tempo: submittedValues.tempo,
+        notes: "",
+      });
+      submittedValuesRef.current = null;
       return;
     }
 
     if (state.status === "error") {
       toast.error(state.message);
+
+      const form = formRef.current;
+      if (form && submittedValuesRef.current) {
+        restoreSetValues(form, submittedValuesRef.current);
+        submittedValuesRef.current = null;
+      }
     }
   }, [state.message, state.status, state.submittedAt]);
 
@@ -51,6 +109,9 @@ export function AddSetForm({ workoutId, workoutExerciseId }: AddSetFormProps) {
       <form
         ref={formRef}
         action={formAction}
+        onSubmit={(event) => {
+          submittedValuesRef.current = getSetValues(event.currentTarget);
+        }}
         aria-describedby={hasMessage ? messageId : undefined}
         className="mt-5 rounded-3xl border border-emerald-300/20 bg-emerald-400/[0.06] p-3 sm:p-4"
       >
@@ -83,6 +144,7 @@ export function AddSetForm({ workoutId, workoutExerciseId }: AddSetFormProps) {
               step="0.5"
               inputMode="decimal"
               autoComplete="off"
+              defaultValue={prefill?.weight ?? ""}
               placeholder="225"
               className="mt-1 min-h-12 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-3 text-lg font-black text-white outline-none transition placeholder:text-neutral-600 focus-visible:border-emerald-300/70 focus-visible:ring-2 focus-visible:ring-emerald-300/25"
             />
@@ -104,6 +166,7 @@ export function AddSetForm({ workoutId, workoutExerciseId }: AddSetFormProps) {
               step="1"
               inputMode="numeric"
               autoComplete="off"
+              defaultValue={prefill?.reps ?? ""}
               placeholder="8"
               className="mt-1 min-h-12 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-3 text-lg font-black text-white outline-none transition placeholder:text-neutral-600 focus-visible:border-emerald-300/70 focus-visible:ring-2 focus-visible:ring-emerald-300/25"
             />
@@ -127,6 +190,7 @@ export function AddSetForm({ workoutId, workoutExerciseId }: AddSetFormProps) {
               step="1"
               inputMode="numeric"
               autoComplete="off"
+              defaultValue={prefill?.rir ?? ""}
               placeholder="2"
               className="mt-1 min-h-12 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-3 text-base font-bold text-white outline-none transition placeholder:text-neutral-600 focus-visible:border-emerald-300/70 focus-visible:ring-2 focus-visible:ring-emerald-300/25"
             />
@@ -164,6 +228,7 @@ export function AddSetForm({ workoutId, workoutExerciseId }: AddSetFormProps) {
                 name="tempo"
                 maxLength={30}
                 autoComplete="off"
+                defaultValue={prefill?.tempo ?? ""}
                 placeholder="3-1-1"
                 className="mt-1 min-h-12 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-3 text-base text-white outline-none transition placeholder:text-neutral-600 focus-visible:border-emerald-300/70 focus-visible:ring-2 focus-visible:ring-emerald-300/25"
               />
