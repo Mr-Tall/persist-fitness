@@ -5,7 +5,13 @@ import {
   type AddSetFormState,
 } from "@/app/actions/workout-exercises";
 import { ToastSubmitButton } from "@/components/ui/toast-submit-button";
-import { useActionState, useEffect, useId, useRef } from "react";
+import {
+  useActionState,
+  useEffect,
+  useId,
+  useRef,
+  type KeyboardEvent,
+} from "react";
 import { toast } from "sonner";
 import type { AddSetPrefill } from "./add-set-prefill";
 import { RestTimer } from "./rest-timer";
@@ -51,6 +57,32 @@ function restoreSetValues(
   (form.elements.namedItem("notes") as HTMLInputElement).value = values.notes;
 }
 
+function moveFocusOnEnter(
+  event: KeyboardEvent<HTMLInputElement>,
+  target: "reps" | "rir" | "notes" | "submit"
+) {
+  if (
+    event.key !== "Enter" ||
+    event.nativeEvent.isComposing ||
+    event.altKey ||
+    event.ctrlKey ||
+    event.metaKey ||
+    event.shiftKey
+  ) {
+    return;
+  }
+
+  event.preventDefault();
+
+  const form = event.currentTarget.form;
+  const targetElement =
+    target === "submit"
+      ? form?.querySelector<HTMLButtonElement>('button[type="submit"]')
+      : (form?.elements.namedItem(target) as HTMLElement | null);
+
+  targetElement?.focus({ preventScroll: true });
+}
+
 export function AddSetForm({
   workoutId,
   workoutExerciseId,
@@ -89,6 +121,8 @@ export function AddSetForm({
         tempo: submittedValues.tempo,
         notes: "",
       });
+      const repsInput = form.elements.namedItem("reps") as HTMLInputElement;
+      repsInput.focus({ preventScroll: true });
       submittedValuesRef.current = null;
       return;
     }
@@ -143,8 +177,10 @@ export function AddSetForm({
               max="10000"
               step="0.5"
               inputMode="decimal"
+              enterKeyHint="next"
               autoComplete="off"
               defaultValue={prefill?.weight ?? ""}
+              onKeyDown={(event) => moveFocusOnEnter(event, "reps")}
               placeholder="225"
               className="mt-1 min-h-12 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-3 text-lg font-black text-white outline-none transition placeholder:text-neutral-600 focus-visible:border-emerald-300/70 focus-visible:ring-2 focus-visible:ring-emerald-300/25"
             />
@@ -165,8 +201,10 @@ export function AddSetForm({
               max="10000"
               step="1"
               inputMode="numeric"
+              enterKeyHint="next"
               autoComplete="off"
               defaultValue={prefill?.reps ?? ""}
+              onKeyDown={(event) => moveFocusOnEnter(event, "rir")}
               placeholder="8"
               className="mt-1 min-h-12 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-3 text-lg font-black text-white outline-none transition placeholder:text-neutral-600 focus-visible:border-emerald-300/70 focus-visible:ring-2 focus-visible:ring-emerald-300/25"
             />
@@ -189,8 +227,10 @@ export function AddSetForm({
               max="10"
               step="1"
               inputMode="numeric"
+              enterKeyHint="done"
               autoComplete="off"
               defaultValue={prefill?.rir ?? ""}
+              onKeyDown={(event) => moveFocusOnEnter(event, "submit")}
               placeholder="2"
               className="mt-1 min-h-12 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-3 text-base font-bold text-white outline-none transition placeholder:text-neutral-600 focus-visible:border-emerald-300/70 focus-visible:ring-2 focus-visible:ring-emerald-300/25"
             />
@@ -227,8 +267,11 @@ export function AddSetForm({
                 id={`${fieldId}-tempo`}
                 name="tempo"
                 maxLength={30}
+                inputMode="text"
+                enterKeyHint="next"
                 autoComplete="off"
                 defaultValue={prefill?.tempo ?? ""}
+                onKeyDown={(event) => moveFocusOnEnter(event, "notes")}
                 placeholder="3-1-1"
                 className="mt-1 min-h-12 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-3 text-base text-white outline-none transition placeholder:text-neutral-600 focus-visible:border-emerald-300/70 focus-visible:ring-2 focus-visible:ring-emerald-300/25"
               />
@@ -241,13 +284,16 @@ export function AddSetForm({
               >
                 Notes
               </label>
-              <input
+              <textarea
                 id={`${fieldId}-notes`}
                 name="notes"
                 maxLength={2000}
+                rows={2}
+                inputMode="text"
+                enterKeyHint="enter"
                 autoComplete="off"
                 placeholder="Optional"
-                className="mt-1 min-h-12 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-3 text-base text-white outline-none transition placeholder:text-neutral-600 focus-visible:border-emerald-300/70 focus-visible:ring-2 focus-visible:ring-emerald-300/25"
+                className="mt-1 min-h-12 w-full resize-y rounded-xl border border-white/10 bg-black/20 px-3 py-3 text-base text-white outline-none transition placeholder:text-neutral-600 focus-visible:border-emerald-300/70 focus-visible:ring-2 focus-visible:ring-emerald-300/25"
               />
             </div>
           </div>

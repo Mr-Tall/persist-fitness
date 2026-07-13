@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
     submittedAt: null as number | null,
   },
   pending: false,
+  formAction: vi.fn(),
 }));
 
 vi.mock("react", async (importOriginal) => {
@@ -22,7 +23,11 @@ vi.mock("react", async (importOriginal) => {
 
   return {
     ...actual,
-    useActionState: vi.fn(() => [mocks.actionState, vi.fn(), mocks.pending]),
+    useActionState: vi.fn(() => [
+      mocks.actionState,
+      mocks.formAction,
+      mocks.pending,
+    ]),
   };
 });
 
@@ -66,6 +71,7 @@ describe("AddSetForm", () => {
     mocks.actionState.message = "";
     mocks.actionState.submittedAt = null;
     mocks.pending = false;
+    mocks.formAction.mockClear();
     vi.mocked(toast.success).mockClear();
     vi.mocked(toast.error).mockClear();
   });
@@ -133,6 +139,52 @@ describe("AddSetForm", () => {
     expect(screen.getByLabelText("Notes")).toBeInTheDocument();
   });
 
+  it("keeps DOM order aligned with the mobile composer hierarchy", () => {
+    renderComposer();
+
+    const form = screen.getByText("Log next set").closest("form");
+    const orderedControls = Array.from(
+      form!.querySelectorAll(
+        "input:not([type='hidden']), summary, textarea, button[type='submit']"
+      )
+    );
+
+    expect(orderedControls).toEqual([
+      screen.getByLabelText("Weight"),
+      screen.getByLabelText("Reps"),
+      screen.getByLabelText("RIR"),
+      screen.getByText("Add details").closest("summary"),
+      screen.getByLabelText("Tempo"),
+      screen.getByLabelText("Notes"),
+      screen.getByRole("button", { name: "Save set" }),
+    ]);
+  });
+
+  it("moves focus from Weight to Reps without submitting", async () => {
+    const user = userEvent.setup();
+    renderComposer();
+
+    const weight = screen.getByLabelText("Weight");
+    await user.click(weight);
+    await user.keyboard("{Enter}");
+
+    expect(screen.getByLabelText("Reps")).toHaveFocus();
+    expect(mocks.formAction).not.toHaveBeenCalled();
+  });
+
+  it("moves focus from Reps to RIR and from RIR to Save without submitting", async () => {
+    const user = userEvent.setup();
+    renderComposer();
+
+    await user.click(screen.getByLabelText("Reps"));
+    await user.keyboard("{Enter}");
+    expect(screen.getByLabelText("RIR")).toHaveFocus();
+
+    await user.keyboard("{Enter}");
+    expect(screen.getByRole("button", { name: "Save set" })).toHaveFocus();
+    expect(mocks.formAction).not.toHaveBeenCalled();
+  });
+
   it("keeps optional detail fields inside an accessible native disclosure", async () => {
     const user = userEvent.setup();
     renderComposer();
@@ -164,6 +216,10 @@ describe("AddSetForm", () => {
       "inputmode",
       "decimal"
     );
+    expect(screen.getByLabelText("Weight")).toHaveAttribute(
+      "enterkeyhint",
+      "next"
+    );
 
     expect(screen.getByLabelText("Reps")).toHaveAttribute("name", "reps");
     expect(screen.getByLabelText("Reps")).toHaveAttribute("min", "0");
@@ -173,13 +229,29 @@ describe("AddSetForm", () => {
       "inputmode",
       "numeric"
     );
+    expect(screen.getByLabelText("Reps")).toHaveAttribute(
+      "enterkeyhint",
+      "next"
+    );
 
     expect(screen.getByLabelText("RIR")).toHaveAttribute("name", "rir");
     expect(screen.getByLabelText("RIR")).toHaveAttribute("min", "0");
     expect(screen.getByLabelText("RIR")).toHaveAttribute("max", "10");
     expect(screen.getByLabelText("RIR")).toHaveAttribute("step", "1");
+    expect(screen.getByLabelText("RIR")).toHaveAttribute(
+      "enterkeyhint",
+      "done"
+    );
     expect(screen.getByLabelText("Tempo")).toHaveAttribute("name", "tempo");
     expect(screen.getByLabelText("Notes")).toHaveAttribute("name", "notes");
+    expect(screen.getByLabelText("Tempo")).toHaveAttribute(
+      "enterkeyhint",
+      "next"
+    );
+    expect(screen.getByLabelText("Notes")).toHaveAttribute(
+      "enterkeyhint",
+      "enter"
+    );
 
     expect(screen.getByDisplayValue("workout-1")).toHaveAttribute(
       "name",
@@ -216,6 +288,7 @@ describe("AddSetForm", () => {
     expect(within(forms[0]).getByLabelText("RIR")).toHaveValue(1);
     expect(within(forms[1]).getByLabelText("Weight")).toHaveValue(95);
     expect(within(forms[1]).getByLabelText("RIR")).toHaveValue(3);
+    expect(document.activeElement).toBe(document.body);
   });
 
   it("preserves repeat values and clears reps and notes after success", async () => {
@@ -250,6 +323,7 @@ describe("AddSetForm", () => {
     expect(screen.getByLabelText("Tempo")).toHaveValue("2-0-1");
     expect(screen.getByLabelText("Reps")).toHaveValue(null);
     expect(screen.getByLabelText("Notes")).toHaveValue("");
+    expect(screen.getByLabelText("Reps")).toHaveFocus();
     expect(toast.success).toHaveBeenCalledWith("Set added.");
   });
 
@@ -263,6 +337,7 @@ describe("AddSetForm", () => {
     await user.click(screen.getByText("Add details"));
     await user.type(screen.getByLabelText("Tempo"), "3-0-1");
     await user.type(screen.getByLabelText("Notes"), "Keep this attempt");
+    screen.getByLabelText("RIR").focus();
 
     mocks.actionState.status = "error";
     mocks.actionState.message = "Please check the form and try again.";
@@ -274,9 +349,27 @@ describe("AddSetForm", () => {
     expect(screen.getByLabelText("RIR")).toHaveValue(2);
     expect(screen.getByLabelText("Tempo")).toHaveValue("3-0-1");
     expect(screen.getByLabelText("Notes")).toHaveValue("Keep this attempt");
+    expect(screen.getByLabelText("RIR")).toHaveFocus();
     expect(toast.error).toHaveBeenCalledWith(
       "Please check the form and try again."
     );
+  });
+
+  it("moves from Tempo to Notes and keeps Notes Enter as text input", async () => {
+    const user = userEvent.setup();
+    renderComposer();
+
+    await user.click(screen.getByText("Add details"));
+    await user.click(screen.getByLabelText("Tempo"));
+    await user.keyboard("{Enter}");
+
+    const notes = screen.getByLabelText("Notes");
+    expect(notes).toHaveFocus();
+    await user.keyboard("First line{Enter}Second line");
+
+    expect(notes).toHaveValue("First line\nSecond line");
+    expect(notes).toHaveFocus();
+    expect(mocks.formAction).not.toHaveBeenCalled();
   });
 
   it("preserves the save button and pending presentation", () => {
