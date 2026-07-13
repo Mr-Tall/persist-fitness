@@ -6,16 +6,24 @@ import { toast } from "sonner";
 
 type DeleteInlineButtonProps = {
   label?: string;
+  accessibleLabel?: string;
   confirmMessage: string;
 };
 
-function ConfirmedDeleteButton({ label }: { label: string }) {
+function ConfirmedDeleteButton({
+  label,
+  accessibleLabel,
+}: {
+  label: string;
+  accessibleLabel: string;
+}) {
   const { pending } = useFormStatus();
 
   return (
     <button
       type="submit"
       disabled={pending}
+      aria-label={accessibleLabel}
       onClick={() => {
         if (!pending) {
           toast("Deleting...", {
@@ -23,7 +31,7 @@ function ConfirmedDeleteButton({ label }: { label: string }) {
           });
         }
       }}
-      className="rounded-lg bg-red-600 px-2 py-1 text-xs font-black text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-70"
+      className="min-h-11 rounded-xl bg-red-600 px-3 py-2 text-xs font-black text-white transition hover:bg-red-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300/60 disabled:cursor-not-allowed disabled:opacity-70"
     >
       {pending ? "Deleting..." : label}
     </button>
@@ -32,6 +40,7 @@ function ConfirmedDeleteButton({ label }: { label: string }) {
 
 export function DeleteInlineButton({
   label = "Delete",
+  accessibleLabel = label,
   confirmMessage,
 }: DeleteInlineButtonProps) {
   const [isConfirming, setIsConfirming] = useState(false);
@@ -40,8 +49,9 @@ export function DeleteInlineButton({
     return (
       <button
         type="button"
+        aria-label={accessibleLabel}
         onClick={() => setIsConfirming(true)}
-        className="rounded-lg px-2 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50"
+        className="min-h-11 rounded-xl px-3 py-2 text-xs font-bold text-red-300 transition hover:bg-red-400/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300/50"
       >
         {label}
       </button>
@@ -49,17 +59,21 @@ export function DeleteInlineButton({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-2 py-2">
-      <span className="text-xs font-semibold text-red-700">
+    <div className="flex flex-wrap items-center justify-end gap-2 rounded-xl border border-red-300/20 bg-red-400/[0.08] p-2">
+      <span className="basis-full text-right text-xs font-semibold text-red-200 sm:basis-auto">
         {confirmMessage}
       </span>
 
-      <ConfirmedDeleteButton label="Confirm" />
+      <ConfirmedDeleteButton
+        label="Confirm"
+        accessibleLabel={`Confirm ${accessibleLabel.toLowerCase()}`}
+      />
 
       <button
         type="button"
+        aria-label={`Cancel ${accessibleLabel.toLowerCase()}`}
         onClick={() => setIsConfirming(false)}
-        className="rounded-lg border border-red-200 bg-white px-2 py-1 text-xs font-bold text-red-700 transition hover:bg-red-100"
+        className="min-h-11 rounded-xl border border-white/10 px-3 py-2 text-xs font-bold text-neutral-200 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
       >
         Cancel
       </button>
