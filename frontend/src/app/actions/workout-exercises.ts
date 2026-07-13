@@ -28,18 +28,66 @@ export type AddSetFormState = ActionFormState;
 export type UpdateSetFormState = ActionFormState;
 
 const MAX_TRANSACTION_ATTEMPTS = 3;
+const WORKOUT_SET_NUMBER_CONSTRAINT =
+  "WorkoutSet_workoutExerciseId_setNumber_key";
 
-function isRetryableTransactionError(error: unknown) {
+type TransactionRetryOptions = {
+  retryWorkoutSetNumberConflict?: boolean;
+};
+
+function isWorkoutSetNumberConflict(error: unknown) {
+  if (
+    typeof error !== "object" ||
+    error === null ||
+    !("code" in error) ||
+    error.code !== "P2002" ||
+    !("meta" in error) ||
+    typeof error.meta !== "object" ||
+    error.meta === null
+  ) {
+    return false;
+  }
+
+  const meta = error.meta as {
+    modelName?: unknown;
+    target?: unknown;
+  };
+
+  if (meta.modelName !== undefined && meta.modelName !== "WorkoutSet") {
+    return false;
+  }
+
+  if (meta.target === WORKOUT_SET_NUMBER_CONSTRAINT) {
+    return true;
+  }
+
   return (
+    Array.isArray(meta.target) &&
+    meta.target.length === 2 &&
+    meta.target.includes("workoutExerciseId") &&
+    meta.target.includes("setNumber")
+  );
+}
+
+function isRetryableTransactionError(
+  error: unknown,
+  { retryWorkoutSetNumberConflict = false }: TransactionRetryOptions
+) {
+  const isWriteConflict =
     typeof error === "object" &&
     error !== null &&
     "code" in error &&
-    error.code === "P2034"
+    error.code === "P2034";
+
+  return (
+    isWriteConflict ||
+    (retryWorkoutSetNumberConflict && isWorkoutSetNumberConflict(error))
   );
 }
 
 async function runSerializableTransaction<T>(
-  operation: (transaction: Prisma.TransactionClient) => Promise<T>
+  operation: (transaction: Prisma.TransactionClient) => Promise<T>,
+  retryOptions: TransactionRetryOptions = {}
 ) {
   for (let attempt = 1; attempt <= MAX_TRANSACTION_ATTEMPTS; attempt += 1) {
     try {
@@ -48,7 +96,7 @@ async function runSerializableTransaction<T>(
       });
     } catch (error) {
       if (
-        !isRetryableTransactionError(error) ||
+        !isRetryableTransactionError(error, retryOptions) ||
         attempt === MAX_TRANSACTION_ATTEMPTS
       ) {
         throw error;
@@ -164,48 +212,51 @@ async function createWorkoutSetFromFormData(userId: string, formData: FormData) 
     };
   }
 
-  const setNumber = await runSerializableTransaction(async (transaction) => {
-    const workoutExercise = await transaction.workoutExercise.findFirst({
-      where: {
-        id: parsed.workoutExerciseId,
-        workoutId: parsed.workoutId,
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (!workoutExercise) {
-      throw new ActionError({
-        code: "NOT_FOUND",
-        message: "The requested workout item could not be found.",
+  const setNumber = await runSerializableTransaction(
+    async (transaction) => {
+      const workoutExercise = await transaction.workoutExercise.findFirst({
+        where: {
+          id: parsed.workoutExerciseId,
+          workoutId: parsed.workoutId,
+        },
+        select: {
+          id: true,
+        },
       });
-    }
 
-    const existingSetNumber = await transaction.workoutSet.aggregate({
-      where: {
-        workoutExerciseId: workoutExercise.id,
-      },
-      _max: {
-        setNumber: true,
-      },
-    });
-    const nextSetNumber = (existingSetNumber._max.setNumber ?? 0) + 1;
+      if (!workoutExercise) {
+        throw new ActionError({
+          code: "NOT_FOUND",
+          message: "The requested workout item could not be found.",
+        });
+      }
 
-    await transaction.workoutSet.create({
-      data: {
-        workoutExerciseId: workoutExercise.id,
-        setNumber: nextSetNumber,
-        reps: parsed.reps,
-        weight: parsed.weight,
-        rir: parsed.rir,
-        tempo: parsed.tempo,
-        notes: parsed.notes,
-      },
-    });
+      const existingSetNumber = await transaction.workoutSet.aggregate({
+        where: {
+          workoutExerciseId: workoutExercise.id,
+        },
+        _max: {
+          setNumber: true,
+        },
+      });
+      const nextSetNumber = (existingSetNumber._max.setNumber ?? 0) + 1;
 
-    return nextSetNumber;
-  });
+      await transaction.workoutSet.create({
+        data: {
+          workoutExerciseId: workoutExercise.id,
+          setNumber: nextSetNumber,
+          reps: parsed.reps,
+          weight: parsed.weight,
+          rir: parsed.rir,
+          tempo: parsed.tempo,
+          notes: parsed.notes,
+        },
+      });
+
+      return nextSetNumber;
+    },
+    { retryWorkoutSetNumberConflict: true }
+  );
 
   revalidatePath(`/workouts/${parsed.workoutId}`);
 

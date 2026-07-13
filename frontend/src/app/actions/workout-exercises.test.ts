@@ -452,6 +452,77 @@ describe("workout set allocation", () => {
     expect(mocks.createSet).not.toHaveBeenCalled();
   });
 
+  it("retries the targeted set-number P2002 and then succeeds", async () => {
+    const sets: StoredSet[] = [];
+    useSetAllocation(sets);
+    mocks.transaction.mockRejectedValueOnce({
+      code: "P2002",
+      meta: {
+        modelName: "WorkoutSet",
+        target: ["workoutExerciseId", "setNumber"],
+      },
+    });
+
+    const result = await addSetToExerciseWithState(
+      initialState,
+      addSetFormData()
+    );
+
+    expect(result).toMatchObject({
+      status: "success",
+      message: "Saved set 1.",
+    });
+    expect(mocks.transaction).toHaveBeenCalledTimes(2);
+  });
+
+  it("sanitizes targeted P2002 retry exhaustion", async () => {
+    useSetAllocation([]);
+    mocks.transaction.mockRejectedValue({
+      code: "P2002",
+      message: "internal unique constraint details",
+      meta: {
+        modelName: "WorkoutSet",
+        target: "WorkoutSet_workoutExerciseId_setNumber_key",
+      },
+    });
+
+    const result = await addSetToExerciseWithState(
+      initialState,
+      addSetFormData()
+    );
+
+    expect(result).toMatchObject({
+      status: "error",
+      code: "INTERNAL_ERROR",
+      message: "Something went wrong. Please try again.",
+    });
+    expect(result.message).not.toContain("internal unique constraint details");
+    expect(mocks.transaction).toHaveBeenCalledTimes(3);
+  });
+
+  it("does not retry an unrelated P2002", async () => {
+    useSetAllocation([]);
+    mocks.transaction.mockRejectedValueOnce({
+      code: "P2002",
+      meta: {
+        modelName: "User",
+        target: ["email"],
+      },
+    });
+
+    const result = await addSetToExerciseWithState(
+      initialState,
+      addSetFormData()
+    );
+
+    expect(result).toMatchObject({
+      status: "error",
+      code: "INTERNAL_ERROR",
+      message: "Something went wrong. Please try again.",
+    });
+    expect(mocks.transaction).toHaveBeenCalledOnce();
+  });
+
   it("retries a recognized transaction conflict and then succeeds", async () => {
     const sets: StoredSet[] = [];
     useSetAllocation(sets);
