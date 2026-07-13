@@ -285,7 +285,57 @@ export default async function WorkoutDetailPage({
                   content: (
                     <SavedSetFeedbackProvider>
                       <div className="bg-white/[0.025] p-4 sm:p-5">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
+                        <PreviousPerformanceCard
+                          previous={
+                            previousPerformanceByExerciseId.get(exercise.id) ??
+                            null
+                          }
+                        />
+                      </div>
+
+                      <div className="p-4 sm:p-5">
+                        {!isCompleted && (
+                          <AddSetForm
+                            workoutId={workout.id}
+                            workoutExerciseId={exercise.id}
+                            prefill={latestSetPrefill}
+                          />
+                        )}
+
+                        {exercise.sets.length === 0 ? (
+                          <div className={isCompleted ? "" : "mt-5"}>
+                            <EmptyState
+                              title={
+                                isCompleted
+                                  ? "No sets recorded"
+                                  : "No sets logged yet"
+                              }
+                              description={
+                                isCompleted
+                                  ? "No working sets were saved for this exercise."
+                                  : "Add your first set above when you finish the lift."
+                              }
+                            />
+                          </div>
+                        ) : (
+                          <div
+                            className={`space-y-3 ${
+                              isCompleted ? "" : "mt-5"
+                            }`}
+                          >
+                            {exercise.sets.map((set) => (
+                              <SetCard
+                                key={set.id}
+                                workoutId={workout.id}
+                                set={set}
+                                prStatus={prStatuses.get(set.id)}
+                                editable={!isCompleted}
+                              />
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                           <MetricBadge>{formatVolume(exerciseVolume)}</MetricBadge>
 
                           {!isCompleted && (
@@ -307,48 +357,6 @@ export default async function WorkoutDetailPage({
                             </form>
                           )}
                         </div>
-
-                        <PreviousPerformanceCard
-                          previous={
-                            previousPerformanceByExerciseId.get(exercise.id) ??
-                            null
-                          }
-                        />
-                      </div>
-
-                      <div className="p-4 sm:p-5">
-                        {exercise.sets.length === 0 ? (
-                          <EmptyState
-                            title={
-                              isCompleted ? "No sets recorded" : "No sets logged yet"
-                            }
-                            description={
-                              isCompleted
-                                ? "No working sets were saved for this exercise."
-                                : "Add your first set below when you finish the lift."
-                            }
-                          />
-                        ) : (
-                          <div className="space-y-3">
-                            {exercise.sets.map((set) => (
-                              <SetCard
-                                key={set.id}
-                                workoutId={workout.id}
-                                set={set}
-                                prStatus={prStatuses.get(set.id)}
-                                editable={!isCompleted}
-                              />
-                            ))}
-                          </div>
-                        )}
-
-                        {!isCompleted && (
-                          <AddSetForm
-                            workoutId={workout.id}
-                            workoutExerciseId={exercise.id}
-                            prefill={latestSetPrefill}
-                          />
-                        )}
                       </div>
                     </SavedSetFeedbackProvider>
                   ),

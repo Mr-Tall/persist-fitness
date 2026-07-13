@@ -210,4 +210,33 @@ describe("WorkoutDetailPage lifecycle modes", () => {
       screen.queryByRole("button", { name: "Reopen workout" })
     ).not.toBeInTheDocument();
   });
+
+  it("places previous context and the composer before saved-set history", async () => {
+    await renderWorkoutPage("active");
+
+    const previousContext = screen.getByText(
+      "No previous sets yet. This session will become your reference."
+    );
+    const composer = screen
+      .getByRole("button", { name: "Save set" })
+      .closest("form");
+    const savedSet = screen.getByRole("article", { name: "Set 1" });
+    const deleteExercise = screen.getByRole("button", {
+      name: "Delete exercise",
+    });
+
+    expect(composer).not.toBeNull();
+    expect(
+      previousContext.compareDocumentPosition(composer!) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).not.toBe(0);
+    expect(
+      composer!.compareDocumentPosition(savedSet) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).not.toBe(0);
+    expect(
+      savedSet.compareDocumentPosition(deleteExercise) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).not.toBe(0);
+  });
 });
