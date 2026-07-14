@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -97,6 +97,9 @@ describe("DashboardPage mobile profile nudge", () => {
 
     expect(weekly).not.toBeNull();
     expect(latest).not.toBeNull();
+    const viewAll = within(latest!).getByRole("link", { name: "View all" });
+    expect(viewAll).toHaveAttribute("href", "/workouts");
+    expect(viewAll).toHaveClass("min-h-11", "focus-visible:ring-2");
     expect(
       weekly!.compareDocumentPosition(nudge) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();

@@ -11,9 +11,12 @@ export default async function AppLayout({
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-black/55 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 hidden border-b border-white/10 bg-black/55 backdrop-blur-xl md:block">
         <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-6">
-          <Link href="/" className="text-lg font-black tracking-tight">
+          <Link
+            href="/dashboard"
+            className="rounded-lg text-lg font-black tracking-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+          >
             <span className="text-white">Persist</span>{" "}
             <span className="text-emerald-400">Fitness</span>
           </Link>

@@ -216,7 +216,7 @@ export default async function DashboardPage() {
               </h2>
               <Link
                 href="/workouts"
-                className="text-xs font-bold text-emerald-300"
+                className="inline-flex min-h-11 items-center rounded-xl px-3 text-xs font-bold text-emerald-300 transition hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950"
               >
                 View all
               </Link>
