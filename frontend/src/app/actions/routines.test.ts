@@ -4,6 +4,7 @@ import {
   addExerciseToRoutineWithState,
   createRoutine,
   startRoutine,
+  updateRoutineWithState,
 } from "@/app/actions/routines";
 
 const mocks = vi.hoisted(() => {
@@ -13,6 +14,7 @@ const mocks = vi.hoisted(() => {
     redirectError,
     requireUserId: vi.fn(),
     create: vi.fn(),
+    updateRoutineRecord: vi.fn(),
     findRoutine: vi.fn(),
     findExercise: vi.fn(),
     transaction: vi.fn(),
@@ -21,6 +23,7 @@ const mocks = vi.hoisted(() => {
     coordinateActiveWorkout: vi.fn(),
     createWorkoutInTransaction: vi.fn(),
     redirect: vi.fn(),
+    revalidatePath: vi.fn(),
     unstableRethrow: vi.fn((error: unknown) => {
       if (error === redirectError) {
         throw error;
@@ -42,6 +45,7 @@ vi.mock("@/lib/db", () => ({
     workoutTemplate: {
       create: mocks.create,
       findFirst: mocks.findRoutine,
+      update: mocks.updateRoutineRecord,
     },
   },
 }));
@@ -51,7 +55,7 @@ vi.mock("@/lib/workouts/active-workout-coordinator", () => ({
 }));
 
 vi.mock("next/cache", () => ({
-  revalidatePath: vi.fn(),
+  revalidatePath: mocks.revalidatePath,
 }));
 
 vi.mock("next/navigation", () => ({
@@ -88,6 +92,65 @@ describe("routine action error handling", () => {
 
     await expect(createRoutine(formData)).rejects.toBe(mocks.redirectError);
     expect(mocks.redirect).toHaveBeenCalledWith("/routines/routine_1");
+  });
+});
+
+describe("routine update form state", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.requireUserId.mockResolvedValue("user_1");
+    mocks.findRoutine.mockResolvedValue({ id: "routine_1" });
+    mocks.updateRoutineRecord.mockResolvedValue({ id: "routine_1" });
+  });
+
+  function updateRoutineFormData(title = "Upper body") {
+    const formData = new FormData();
+    formData.set("routineId", "routine_1");
+    formData.set("title", title);
+    formData.set("goal", "Strength");
+    formData.set("description", "Focus on controlled compound lifts.");
+    return formData;
+  }
+
+  it("returns success while preserving the existing update and revalidation", async () => {
+    const result = await updateRoutineWithState(
+      { status: "idle", message: "", submittedAt: null },
+      updateRoutineFormData(),
+    );
+
+    expect(result).toMatchObject({
+      status: "success",
+      message: "Routine updated.",
+    });
+    expect(mocks.findRoutine).toHaveBeenCalledWith({
+      where: { id: "routine_1", userId: "user_1" },
+      select: { id: true },
+    });
+    expect(mocks.updateRoutineRecord).toHaveBeenCalledWith({
+      where: { id: "routine_1" },
+      data: {
+        title: "Upper body",
+        goal: "Strength",
+        description: "Focus on controlled compound lifts.",
+      },
+    });
+    expect(mocks.revalidatePath).toHaveBeenNthCalledWith(1, "/routines/routine_1");
+    expect(mocks.revalidatePath).toHaveBeenNthCalledWith(2, "/routines");
+  });
+
+  it("returns a safe validation state without mutating the routine", async () => {
+    const result = await updateRoutineWithState(
+      { status: "idle", message: "", submittedAt: null },
+      updateRoutineFormData(""),
+    );
+
+    expect(result).toMatchObject({
+      status: "error",
+      code: "VALIDATION_ERROR",
+      message: "Please check the routine details and try again.",
+    });
+    expect(mocks.updateRoutineRecord).not.toHaveBeenCalled();
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
   });
 });
 

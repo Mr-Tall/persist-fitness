@@ -346,6 +346,23 @@ export async function updateRoutine(formData: FormData) {
   );
 }
 
+export type UpdateRoutineFormState = ActionFormState;
+
+export async function updateRoutineWithState(
+  _previousState: UpdateRoutineFormState,
+  formData: FormData,
+): Promise<UpdateRoutineFormState> {
+  try {
+    await updateRoutineUnsafe(formData);
+    return createActionSuccessState("Routine updated.");
+  } catch (error) {
+    return toActionErrorState(error, {
+      actionName: "updateRoutineWithState",
+      validationMessage: "Please check the routine details and try again.",
+    });
+  }
+}
+
 export async function deleteRoutine(formData: FormData) {
   return runActionWithSafeErrors({ actionName: "deleteRoutine" }, () =>
     deleteRoutineUnsafe(formData)

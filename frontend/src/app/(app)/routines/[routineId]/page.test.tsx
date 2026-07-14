@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   findExercises: vi.fn(),
   startRoutine: vi.fn(),
   updateRoutine: vi.fn(),
+  updateRoutineWithState: vi.fn(),
   deleteRoutine: vi.fn(),
   addExerciseToRoutine: vi.fn(),
   addExerciseToRoutineWithState: vi.fn(),
@@ -34,6 +35,7 @@ vi.mock("@/lib/db", () => ({
 vi.mock("@/app/actions/routines", () => ({
   startRoutine: mocks.startRoutine,
   updateRoutine: mocks.updateRoutine,
+  updateRoutineWithState: mocks.updateRoutineWithState,
   deleteRoutine: mocks.deleteRoutine,
   addExerciseToRoutine: mocks.addExerciseToRoutine,
   addExerciseToRoutineWithState: mocks.addExerciseToRoutineWithState,
@@ -94,6 +96,11 @@ describe("RoutineDetailPage", () => {
     mocks.findExercises.mockResolvedValue([]);
     mocks.startRoutine.mockResolvedValue(undefined);
     mocks.updateRoutine.mockResolvedValue(undefined);
+    mocks.updateRoutineWithState.mockResolvedValue({
+      status: "success",
+      message: "Routine updated.",
+      submittedAt: 1,
+    });
     mocks.deleteRoutine.mockResolvedValue(undefined);
     mocks.addExerciseToRoutine.mockResolvedValue(undefined);
     mocks.addExerciseToRoutineWithState.mockResolvedValue({
