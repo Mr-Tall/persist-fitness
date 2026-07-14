@@ -193,22 +193,27 @@ async function addExerciseToRoutineUnsafe(formData: FormData) {
     });
   }
 
-  const exerciseCount = await db.templateExercise.count({
-    where: {
-      templateId: parsed.routineId,
-    },
-  });
+  await db.$transaction(async (transaction) => {
+    const highestOrder = await transaction.templateExercise.aggregate({
+      where: {
+        templateId: parsed.routineId,
+      },
+      _max: {
+        order: true,
+      },
+    });
 
-  await db.templateExercise.create({
-    data: {
-      templateId: parsed.routineId,
-      exerciseId,
-      name: exerciseName,
-      sets: parsed.sets,
-      reps: parsed.reps?.trim() || undefined,
-      notes: parsed.notes?.trim() || undefined,
-      order: exerciseCount,
-    },
+    await transaction.templateExercise.create({
+      data: {
+        templateId: parsed.routineId,
+        exerciseId,
+        name: exerciseName,
+        sets: parsed.sets,
+        reps: parsed.reps?.trim() || undefined,
+        notes: parsed.notes?.trim() || undefined,
+        order: (highestOrder._max.order ?? -1) + 1,
+      },
+    });
   });
 
   revalidatePath(`/routines/${parsed.routineId}`);

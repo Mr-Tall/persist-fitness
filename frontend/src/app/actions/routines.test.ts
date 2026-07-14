@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createRoutine, startRoutine } from "@/app/actions/routines";
+import {
+  addExerciseToRoutine,
+  createRoutine,
+  startRoutine,
+} from "@/app/actions/routines";
 
 const mocks = vi.hoisted(() => {
   const redirectError = new Error("redirect control flow");
@@ -9,6 +13,10 @@ const mocks = vi.hoisted(() => {
     requireUserId: vi.fn(),
     create: vi.fn(),
     findRoutine: vi.fn(),
+    findExercise: vi.fn(),
+    transaction: vi.fn(),
+    aggregateTemplateExercises: vi.fn(),
+    createTemplateExercise: vi.fn(),
     coordinateActiveWorkout: vi.fn(),
     createWorkoutInTransaction: vi.fn(),
     redirect: vi.fn(),
@@ -26,6 +34,10 @@ vi.mock("@/lib/auth/require-user", () => ({
 
 vi.mock("@/lib/db", () => ({
   db: {
+    $transaction: mocks.transaction,
+    exercise: {
+      findUnique: mocks.findExercise,
+    },
     workoutTemplate: {
       create: mocks.create,
       findFirst: mocks.findRoutine,
@@ -75,6 +87,183 @@ describe("routine action error handling", () => {
 
     await expect(createRoutine(formData)).rejects.toBe(mocks.redirectError);
     expect(mocks.redirect).toHaveBeenCalledWith("/routines/routine_1");
+  });
+});
+
+const routineExerciseTransaction = {
+  templateExercise: {
+    aggregate: mocks.aggregateTemplateExercises,
+    create: mocks.createTemplateExercise,
+  },
+};
+
+function addExerciseFormData(routineId = "routine_1") {
+  const formData = new FormData();
+  formData.set("routineId", routineId);
+  formData.set("name", "Bench Press");
+  formData.set("sets", "3");
+  formData.set("reps", "8-10");
+  formData.set("notes", "Controlled tempo");
+  return formData;
+}
+
+describe("routine exercise ordering allocation", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.requireUserId.mockResolvedValue("user_1");
+    mocks.findRoutine.mockResolvedValue({ id: "routine_1" });
+    mocks.createTemplateExercise.mockResolvedValue({ id: "template_exercise_1" });
+    mocks.transaction.mockImplementation(
+      async (
+        callback: (
+          transaction: typeof routineExerciseTransaction,
+        ) => Promise<unknown>,
+      ) => callback(routineExerciseTransaction),
+    );
+  });
+
+  async function addWithHighestOrder(highestOrder: number | null) {
+    mocks.aggregateTemplateExercises.mockResolvedValue({
+      _max: {
+        order: highestOrder,
+      },
+    });
+
+    await addExerciseToRoutine(addExerciseFormData());
+  }
+
+  it("starts an empty routine at order zero", async () => {
+    await addWithHighestOrder(null);
+
+    expect(mocks.createTemplateExercise).toHaveBeenCalledWith({
+      data: {
+        templateId: "routine_1",
+        exerciseId: null,
+        name: "Bench Press",
+        sets: 3,
+        reps: "8-10",
+        notes: "Controlled tempo",
+        order: 0,
+      },
+    });
+  });
+
+  it("allocates one position after the current maximum", async () => {
+    await addWithHighestOrder(4);
+
+    expect(mocks.createTemplateExercise).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        templateId: "routine_1",
+        order: 5,
+      }),
+    });
+  });
+
+  it("does not reuse an occupied order after a middle exercise is deleted", async () => {
+    await addWithHighestOrder(2);
+
+    expect(mocks.createTemplateExercise).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        order: 3,
+      }),
+    });
+  });
+
+  it("uses max plus one after the last exercise is deleted", async () => {
+    await addWithHighestOrder(1);
+
+    expect(mocks.createTemplateExercise).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        order: 2,
+      }),
+    });
+  });
+
+  it("preserves existing gaps instead of renumbering", async () => {
+    await addWithHighestOrder(8);
+
+    expect(mocks.createTemplateExercise).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        order: 9,
+      }),
+    });
+  });
+
+  it("keeps multiple sequential additions ordered", async () => {
+    mocks.aggregateTemplateExercises
+      .mockResolvedValueOnce({ _max: { order: null } })
+      .mockResolvedValueOnce({ _max: { order: 0 } })
+      .mockResolvedValueOnce({ _max: { order: 1 } });
+
+    await addExerciseToRoutine(addExerciseFormData());
+    await addExerciseToRoutine(addExerciseFormData());
+    await addExerciseToRoutine(addExerciseFormData());
+
+    expect(mocks.createTemplateExercise.mock.calls).toHaveLength(3);
+    expect(
+      mocks.createTemplateExercise.mock.calls.map(
+        ([call]) => call.data.order,
+      ),
+    ).toEqual([0, 1, 2]);
+  });
+
+  it("keeps allocation and creation inside one transaction", async () => {
+    await addWithHighestOrder(3);
+
+    expect(mocks.transaction).toHaveBeenCalledWith(expect.any(Function));
+    expect(mocks.aggregateTemplateExercises).toHaveBeenCalledWith({
+      where: {
+        templateId: "routine_1",
+      },
+      _max: {
+        order: true,
+      },
+    });
+    expect(mocks.aggregateTemplateExercises.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.createTemplateExercise.mock.invocationCallOrder[0],
+    );
+  });
+
+  it("rejects a forged routine before querying or modifying exercise order", async () => {
+    mocks.findRoutine.mockResolvedValue(null);
+
+    await expect(
+      addExerciseToRoutine(addExerciseFormData("forged_routine")),
+    ).rejects.toMatchObject({
+      code: "NOT_FOUND",
+      message: "The requested routine item could not be found.",
+    });
+
+    expect(mocks.transaction).not.toHaveBeenCalled();
+    expect(mocks.aggregateTemplateExercises).not.toHaveBeenCalled();
+    expect(mocks.createTemplateExercise).not.toHaveBeenCalled();
+  });
+
+  it("scopes allocation and creation to only the owned routine", async () => {
+    await addWithHighestOrder(2);
+
+    expect(mocks.findRoutine).toHaveBeenCalledWith({
+      where: {
+        id: "routine_1",
+        userId: "user_1",
+      },
+      select: {
+        id: true,
+      },
+    });
+    expect(mocks.aggregateTemplateExercises).toHaveBeenCalledWith({
+      where: {
+        templateId: "routine_1",
+      },
+      _max: {
+        order: true,
+      },
+    });
+    expect(mocks.createTemplateExercise).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        templateId: "routine_1",
+      }),
+    });
   });
 });
 
