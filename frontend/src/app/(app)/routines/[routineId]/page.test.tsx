@@ -71,7 +71,7 @@ const populatedRoutine = {
       id: "template-exercise-2",
       name: "Cable Row",
       sets: 4,
-      reps: "10",
+      reps: null,
       notes: null,
       order: 1,
     },
@@ -161,8 +161,109 @@ describe("RoutineDetailPage", () => {
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
 
-    expect(screen.getByText("1. Bench Press")).toBeVisible();
-    expect(screen.getByText("2. Cable Row")).toBeVisible();
+    const plan = screen.getByRole("list", { name: "Planned exercises" });
+    const rows = within(plan).getAllByRole("listitem");
+    expect(rows).toHaveLength(2);
+    expect(within(rows[0]).getByRole("heading", { name: "Bench Press" })).toBeVisible();
+    expect(within(rows[1]).getByRole("heading", { name: "Cable Row" })).toBeVisible();
+  });
+
+  it("renders compact prescriptions, optional notes, order, and specific actions", async () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    await renderPage();
+
+    const rows = within(
+      screen.getByRole("list", { name: "Planned exercises" }),
+    ).getAllByRole("listitem");
+    const benchRow = rows[0];
+    const cableRow = rows[1];
+
+    expect(within(benchRow).getByText("1")).toBeInTheDocument();
+    expect(within(cableRow).getByText("2")).toBeInTheDocument();
+    expect(within(benchRow).getByText("3 sets × 8-10")).toBeVisible();
+    expect(within(cableRow).getByText("4 sets")).toBeVisible();
+    expect(within(cableRow).queryByText("Notes")).not.toBeInTheDocument();
+
+    const notesSummary = within(benchRow).getByText("Notes");
+    expect(notesSummary.closest("details")).toHaveTextContent("Controlled tempo");
+
+    const editButton = within(benchRow).getByRole("button", {
+      name: "Edit Bench Press plan",
+    });
+    const removeButton = within(benchRow).getByRole("button", {
+      name: "Remove Bench Press from routine",
+    });
+    expect(editButton).toHaveClass("min-h-11", "focus-visible:ring-2");
+    expect(removeButton).toHaveClass("min-h-11", "focus-visible:ring-2");
+
+    fireEvent.click(editButton);
+    const editForm = within(benchRow)
+      .getByRole("button", { name: "Save exercise" })
+      .closest("form");
+    expect(editForm?.querySelector('input[name="routineId"]')).toHaveValue(
+      "routine-1",
+    );
+    expect(
+      editForm?.querySelector('input[name="templateExerciseId"]'),
+    ).toHaveValue("template-exercise-1");
+    expect(editForm?.querySelector('input[name="sets"]')).toHaveValue(3);
+    expect(editForm?.querySelector('input[name="reps"]')).toHaveValue("8-10");
+    expect(editForm?.querySelector('textarea[name="notes"]')).toHaveValue(
+      "Controlled tempo",
+    );
+
+    const removeForm = removeButton.closest("form");
+    expect(removeForm?.querySelector('input[name="routineId"]')).toHaveValue(
+      "routine-1",
+    );
+    expect(
+      removeForm?.querySelector('input[name="templateExerciseId"]'),
+    ).toHaveValue("template-exercise-1");
+    fireEvent.click(removeButton);
+    expect(confirm).toHaveBeenCalledWith("Remove Bench Press from this routine?");
+    expect(mocks.deleteExerciseFromRoutine).not.toHaveBeenCalled();
+    confirm.mockRestore();
+  });
+
+  it("keeps long exercise names and notes available without widening rows", async () => {
+    const longExerciseName =
+      "Single-arm cable row with rotation and an intentionally long exercise name";
+    const longNote =
+      "Keep the rib cage stacked, pause at full contraction, and use a controlled return for every repetition in the planned set.";
+    mocks.findRoutine.mockResolvedValue({
+      ...populatedRoutine,
+      exercises: [
+        {
+          id: "template-exercise-long",
+          name: longExerciseName,
+          sets: 5,
+          reps: "12-15 with a controlled eccentric",
+          notes: longNote,
+          order: 7,
+        },
+      ],
+    });
+
+    await renderPage();
+
+    const row = screen.getByRole("listitem");
+    expect(
+      within(row).getByRole("heading", { name: longExerciseName }),
+    ).toHaveClass("[overflow-wrap:anywhere]");
+    expect(within(row).getByText("5 sets × 12-15 with a controlled eccentric")).toHaveClass(
+      "[overflow-wrap:anywhere]",
+    );
+    expect(within(row).getByText(longNote)).toHaveClass(
+      "[overflow-wrap:anywhere]",
+    );
+    expect(
+      within(row).getByRole("button", { name: `Edit ${longExerciseName} plan` }),
+    ).toBeInTheDocument();
+    expect(
+      within(row).getByRole("button", {
+        name: `Remove ${longExerciseName} from routine`,
+      }),
+    ).toBeInTheDocument();
   });
 
   it("moves Delete below the plan while preserving its confirmation and form wiring", async () => {

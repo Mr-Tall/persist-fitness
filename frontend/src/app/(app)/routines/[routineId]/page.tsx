@@ -180,56 +180,88 @@ export default async function RoutineDetailPage({
               </p>
             </div>
           ) : (
-            <div className="mt-5 space-y-3">
+            <ol
+              aria-label="Planned exercises"
+              className="mt-4 divide-y divide-white/10 overflow-hidden rounded-2xl border border-white/10 bg-black/20"
+            >
               {routine.exercises.map((exercise, index) => (
-                <div
+                <li
                   key={exercise.id}
-                  className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4"
+                  className="min-w-0 px-3 py-3.5 sm:px-4 sm:py-4"
                 >
-                  <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
-                    <div>
-                      <p className="font-semibold">
-                        {index + 1}. {exercise.name}
-                      </p>
-                      <p className="mt-1 text-sm text-neutral-600">
-                        {exercise.sets ? `${exercise.sets} sets` : "Sets not set"}
-                        {exercise.reps ? ` · ${exercise.reps} reps` : ""}
-                        {exercise.notes ? ` · ${exercise.notes}` : ""}
-                      </p>
-                    </div>
+                  <div className="flex min-w-0 items-start gap-3">
+                    <span
+                      aria-hidden="true"
+                      className="flex h-7 min-w-7 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-xs font-black text-neutral-300"
+                    >
+                      {index + 1}
+                    </span>
 
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                      <EditTemplateExerciseForm
-                        routineId={routine.id}
-                        exercise={{
-                          id: exercise.id,
-                          name: exercise.name,
-                          sets: exercise.sets,
-                          reps: exercise.reps,
-                          notes: exercise.notes,
-                        }}
-                      />
-
-                      <form action={deleteExerciseFromRoutine}>
-                        <input
-                          name="routineId"
-                          type="hidden"
-                          value={routine.id}
-                        />
-                        <input
-                          name="templateExerciseId"
-                          type="hidden"
-                          value={exercise.id}
-                        />
-                        <DeleteRoutineExerciseButton
-                          exerciseName={exercise.name}
-                        />
-                      </form>
+                    <div className="min-w-0 flex-1">
+                      <span className="sr-only">Exercise {index + 1}: </span>
+                      <h3 className="break-words text-sm font-black leading-5 text-white [overflow-wrap:anywhere] sm:text-base">
+                        {exercise.name}
+                      </h3>
+                      <p className="mt-1 break-words text-sm font-black leading-5 text-emerald-200 [overflow-wrap:anywhere]">
+                        {exercise.sets && exercise.reps
+                          ? `${exercise.sets} sets × ${exercise.reps}`
+                          : exercise.sets
+                            ? `${exercise.sets} sets`
+                            : exercise.reps
+                              ? `Target ${exercise.reps} reps`
+                              : "Targets not set"}
+                      </p>
                     </div>
                   </div>
-                </div>
+
+                  {exercise.notes && (
+                    <details className="group mt-2 ml-10 rounded-xl border border-white/[0.08] bg-white/[0.03]">
+                      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-3 py-2 text-xs font-bold text-neutral-300 transition hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-inset [&::-webkit-details-marker]:hidden">
+                        Notes
+                        <span
+                          aria-hidden="true"
+                          className="text-neutral-500 transition group-open:rotate-180"
+                        >
+                          ↓
+                        </span>
+                      </summary>
+                      <p className="break-words border-t border-white/[0.08] px-3 py-2.5 text-xs leading-5 text-neutral-400 [overflow-wrap:anywhere]">
+                        {exercise.notes}
+                      </p>
+                    </details>
+                  )}
+
+                  <div className="mt-2 ml-10 flex min-w-0 flex-wrap items-start gap-2">
+                    <EditTemplateExerciseForm
+                      routineId={routine.id}
+                      exercise={{
+                        id: exercise.id,
+                        name: exercise.name,
+                        sets: exercise.sets,
+                        reps: exercise.reps,
+                        notes: exercise.notes,
+                      }}
+                    />
+
+                    <form action={deleteExerciseFromRoutine}>
+                      <input
+                        name="routineId"
+                        type="hidden"
+                        value={routine.id}
+                      />
+                      <input
+                        name="templateExerciseId"
+                        type="hidden"
+                        value={exercise.id}
+                      />
+                      <DeleteRoutineExerciseButton
+                        exerciseName={exercise.name}
+                      />
+                    </form>
+                  </div>
+                </li>
               ))}
-            </div>
+            </ol>
           )}
         </div>
 

@@ -19,7 +19,8 @@ export function DeleteRoutineExerciseButton({
           event.preventDefault();
         }
       }}
-      className="rounded-lg px-2 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50"
+      aria-label={`Remove ${exerciseName} from routine`}
+      className="inline-flex min-h-11 items-center justify-center rounded-xl border border-red-300/15 bg-red-400/[0.04] px-3 py-2 text-xs font-black text-red-200 transition hover:border-red-300/30 hover:bg-red-400/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950"
     >
       Remove
     </button>
