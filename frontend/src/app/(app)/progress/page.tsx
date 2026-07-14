@@ -6,6 +6,7 @@ import { getDashboardAnalytics } from "@/lib/dashboard-analytics";
 import { requireUserId } from "@/lib/auth/require-user";
 import { formatWorkoutDate } from "@/lib/format-date";
 import { getTopExercisePersonalRecords } from "@/lib/personal-records";
+import { PersonalRecordList } from "./personal-record-list";
 
 function formatVolume(volume: number) {
   return `${Math.round(volume).toLocaleString()} lb`;
@@ -173,33 +174,12 @@ export default async function ProgressPage() {
             {personalRecords.length === 0 ? (
               <EmptyState
                 title="No personal records yet"
-                description="Log sets with weight and reps to start building your strength profile."
+                description="Log weight and reps to start building your record history."
                 actionLabel="Log a workout"
                 actionHref="/workouts/new"
               />
             ) : (
-              <div className="space-y-3">
-                {personalRecords.map((record) => (
-                  <Link
-                    key={`${record.exerciseName}-${record.workoutId}`}
-                    href={`/workouts/${record.workoutId}`}
-                    className="flex min-h-16 items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 transition hover:border-amber-300/30 hover:bg-white/[0.06] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate font-black text-white">
-                        {record.exerciseName}
-                      </p>
-                      <p className="mt-0.5 truncate text-xs text-neutral-400">
-                        {record.weight.toLocaleString()} lb &times; {record.reps}{" "}
-                        reps &middot; {formatWorkoutDate(record.workoutDate)}
-                      </p>
-                    </div>
-                    <div className="shrink-0 rounded-full bg-amber-300/15 px-3 py-1 text-xs font-black text-amber-200">
-                      {Math.round(record.estimatedOneRepMax).toLocaleString()} lb
-                    </div>
-                  </Link>
-                ))}
-              </div>
+              <PersonalRecordList records={personalRecords} />
             )}
           </Section>
 

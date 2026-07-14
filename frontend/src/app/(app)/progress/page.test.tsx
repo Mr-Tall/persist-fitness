@@ -121,17 +121,23 @@ describe("ProgressPage", () => {
     expect(
       within(topLift).getByText("Estimated 1RM 123,456,789 lb")
     ).toBeVisible();
+    expect(within(topLift).getByText("Strongest estimate")).toBeVisible();
     expect(within(topLift).getByRole("link")).toHaveAttribute(
       "href",
       "/workouts/source-workout"
     );
 
-    expect(screen.getByText(longWorkoutTitle)).toBeVisible();
+    const recentTraining = screen
+      .getByRole("heading", { name: "Recent training" })
+      .closest("div")!.parentElement!.parentElement!;
+    expect(within(recentTraining).getByText(longWorkoutTitle)).toBeVisible();
     expect(
       screen.getByRole("link", { name: "View full history" })
     ).toHaveAttribute("href", "/workouts");
     expect(
-      screen.getByRole("link", { name: new RegExp(longWorkoutTitle) })
+      within(recentTraining).getByRole("link", {
+        name: new RegExp(longWorkoutTitle),
+      })
     ).toHaveAttribute("href", "/workouts/recent-workout");
   });
 
