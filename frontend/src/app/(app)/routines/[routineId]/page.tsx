@@ -81,6 +81,7 @@ export default async function RoutineDetailPage({
     <AddTemplateExerciseForm
       routineId={routine.id}
       exercises={libraryExercises}
+      isEmptyRoutine={exerciseCount === 0}
     />
   );
 

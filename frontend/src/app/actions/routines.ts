@@ -8,7 +8,12 @@ import { z } from "zod";
 import {
   ActionError,
   runActionWithSafeErrors,
+  toActionErrorState,
 } from "@/lib/actions/action-error";
+import {
+  createActionSuccessState,
+  type ActionFormState,
+} from "@/lib/actions/action-result";
 import { coordinateActiveWorkout } from "@/lib/workouts/active-workout-coordinator";
 
 const createRoutineSchema = z.object({
@@ -352,6 +357,23 @@ export async function addExerciseToRoutine(formData: FormData) {
     { actionName: "addExerciseToRoutine" },
     () => addExerciseToRoutineUnsafe(formData)
   );
+}
+
+export type AddRoutineExerciseFormState = ActionFormState;
+
+export async function addExerciseToRoutineWithState(
+  _previousState: AddRoutineExerciseFormState,
+  formData: FormData,
+): Promise<AddRoutineExerciseFormState> {
+  try {
+    await addExerciseToRoutineUnsafe(formData);
+    return createActionSuccessState("Exercise added to routine.");
+  } catch (error) {
+    return toActionErrorState(error, {
+      actionName: "addExerciseToRoutineWithState",
+      validationMessage: "Please check the exercise details and try again.",
+    });
+  }
 }
 
 export async function updateExerciseInRoutine(formData: FormData) {

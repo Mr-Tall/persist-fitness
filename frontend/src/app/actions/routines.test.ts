@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   addExerciseToRoutine,
+  addExerciseToRoutineWithState,
   createRoutine,
   startRoutine,
 } from "@/app/actions/routines";
@@ -264,6 +265,39 @@ describe("routine exercise ordering allocation", () => {
         templateId: "routine_1",
       }),
     });
+  });
+
+  it("returns a compatible success state for the mobile routine sheet", async () => {
+    mocks.aggregateTemplateExercises.mockResolvedValue({
+      _max: { order: null },
+    });
+
+    const result = await addExerciseToRoutineWithState(
+      { status: "idle", message: "", submittedAt: null },
+      addExerciseFormData(),
+    );
+
+    expect(result).toMatchObject({
+      status: "success",
+      message: "Exercise added to routine.",
+    });
+    expect(result.submittedAt).toEqual(expect.any(Number));
+  });
+
+  it("returns a safe state for a missing routine in the mobile sheet", async () => {
+    mocks.findRoutine.mockResolvedValue(null);
+
+    const result = await addExerciseToRoutineWithState(
+      { status: "idle", message: "", submittedAt: null },
+      addExerciseFormData("forged_routine"),
+    );
+
+    expect(result).toMatchObject({
+      status: "error",
+      code: "NOT_FOUND",
+      message: "The requested routine item could not be found.",
+    });
+    expect(mocks.transaction).not.toHaveBeenCalled();
   });
 });
 

@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   updateRoutine: vi.fn(),
   deleteRoutine: vi.fn(),
   addExerciseToRoutine: vi.fn(),
+  addExerciseToRoutineWithState: vi.fn(),
   updateExerciseInRoutine: vi.fn(),
   deleteExerciseFromRoutine: vi.fn(),
   redirect: vi.fn(),
@@ -35,6 +36,7 @@ vi.mock("@/app/actions/routines", () => ({
   updateRoutine: mocks.updateRoutine,
   deleteRoutine: mocks.deleteRoutine,
   addExerciseToRoutine: mocks.addExerciseToRoutine,
+  addExerciseToRoutineWithState: mocks.addExerciseToRoutineWithState,
   updateExerciseInRoutine: mocks.updateExerciseInRoutine,
   deleteExerciseFromRoutine: mocks.deleteExerciseFromRoutine,
 }));
@@ -94,6 +96,11 @@ describe("RoutineDetailPage", () => {
     mocks.updateRoutine.mockResolvedValue(undefined);
     mocks.deleteRoutine.mockResolvedValue(undefined);
     mocks.addExerciseToRoutine.mockResolvedValue(undefined);
+    mocks.addExerciseToRoutineWithState.mockResolvedValue({
+      status: "success",
+      message: "Exercise added to routine.",
+      submittedAt: 1,
+    });
     mocks.updateExerciseInRoutine.mockResolvedValue(undefined);
     mocks.deleteExerciseFromRoutine.mockResolvedValue(undefined);
   });
