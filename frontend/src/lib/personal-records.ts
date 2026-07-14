@@ -45,7 +45,13 @@ export async function getTopExercisePersonalRecords(
       const exerciseKey = exercise.exerciseId ?? exercise.name.toLowerCase();
 
       for (const set of exercise.sets) {
-        if (set.weight === null || set.reps === null || set.reps <= 0) {
+        if (
+          set.weight === null ||
+          !Number.isFinite(set.weight) ||
+          set.weight <= 0 ||
+          set.reps === null ||
+          set.reps <= 0
+        ) {
           continue;
         }
 
