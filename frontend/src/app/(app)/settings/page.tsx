@@ -1,8 +1,9 @@
-import { saveProfile } from "@/app/actions/profile";
 import { auth } from "@/auth";
 import { LogoutButton } from "@/components/auth/logout-button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
+import { ProfileForm } from "./profile-form";
 
 const equipmentOptions = [
   "Barbell",
@@ -47,10 +48,7 @@ export default async function SettingsPage() {
         </p>
       </header>
 
-      <form
-        action={saveProfile}
-        className="space-y-7 rounded-[2rem] border border-white/10 bg-white/[0.06] p-5 shadow-2xl backdrop-blur sm:p-7"
-      >
+      <ProfileForm>
         <fieldset>
           <legend className="text-xs font-black uppercase tracking-[0.2em] text-emerald-300">
             Goal and experience
@@ -76,6 +74,7 @@ export default async function SettingsPage() {
                 <option value="Improve athleticism">
                   Improve athleticism
                 </option>
+                <option value="General fitness">General fitness</option>
               </select>
             </div>
 
@@ -186,13 +185,13 @@ export default async function SettingsPage() {
           </div>
         </fieldset>
 
-        <button
-          type="submit"
+        <SubmitButton
+          pendingText="Saving profile..."
           className="min-h-12 w-full rounded-2xl bg-emerald-400 px-6 py-3 font-black text-black shadow-[0_16px_40px_rgba(52,211,153,0.18)] transition hover:bg-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2 focus-visible:ring-offset-black sm:w-auto"
         >
           Save profile
-        </button>
-      </form>
+        </SubmitButton>
+      </ProfileForm>
 
       <section className="mt-5 rounded-[2rem] border border-white/10 bg-white/[0.05] p-5 sm:mt-6 sm:flex sm:items-center sm:justify-between sm:gap-6 sm:p-6">
         <div>

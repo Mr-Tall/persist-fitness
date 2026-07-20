@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createWorkout,
+  createWorkoutWithState,
   finishWorkout,
   reopenWorkout,
   repeatWorkout,
@@ -134,6 +135,53 @@ describe("workout creation coordination", () => {
 
     expect(mocks.createInTransaction).not.toHaveBeenCalled();
     expect(mocks.redirect).toHaveBeenCalledWith("/workouts/workout_active");
+  });
+
+  it("returns a safe validation state from the recoverable create wrapper", async () => {
+    const formData = validWorkoutFormData();
+    formData.set("title", "   ");
+
+    const result = await createWorkoutWithState(
+      { status: "idle", message: "", submittedAt: null },
+      formData,
+    );
+
+    expect(result).toMatchObject({
+      status: "error",
+      code: "VALIDATION_ERROR",
+      message: "Please check the workout details and try again.",
+    });
+    expect(mocks.coordinateActiveWorkout).not.toHaveBeenCalled();
+  });
+
+  it("sanitizes unexpected create failures in the recoverable wrapper", async () => {
+    const internalMessage = "private database connection failure";
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    mocks.coordinateActiveWorkout.mockRejectedValue(new Error(internalMessage));
+
+    const result = await createWorkoutWithState(
+      { status: "idle", message: "", submittedAt: null },
+      validWorkoutFormData(),
+    );
+
+    expect(result).toMatchObject({
+      status: "error",
+      code: "INTERNAL_ERROR",
+      message: "Something went wrong. Please try again.",
+    });
+    expect(JSON.stringify(result)).not.toContain(internalMessage);
+    consoleError.mockRestore();
+  });
+
+  it("preserves redirect control flow through the recoverable wrapper", async () => {
+    createThroughCoordinator("workout_manual");
+
+    await expect(
+      createWorkoutWithState(
+        { status: "idle", message: "", submittedAt: null },
+        validWorkoutFormData(),
+      ),
+    ).rejects.toBe(mocks.redirectError);
   });
 
   it("creates today's workout through the coordinator", async () => {

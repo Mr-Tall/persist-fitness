@@ -340,6 +340,23 @@ export async function createRoutine(formData: FormData) {
   );
 }
 
+export type CreateRoutineFormState = ActionFormState;
+
+export async function createRoutineWithState(
+  _previousState: CreateRoutineFormState,
+  formData: FormData,
+): Promise<CreateRoutineFormState> {
+  try {
+    await createRoutineUnsafe(formData);
+    return createActionSuccessState("Routine created.");
+  } catch (error) {
+    return toActionErrorState(error, {
+      actionName: "createRoutineWithState",
+      validationMessage: "Please check the routine details and try again.",
+    });
+  }
+}
+
 export async function updateRoutine(formData: FormData) {
   return runActionWithSafeErrors({ actionName: "updateRoutine" }, () =>
     updateRoutineUnsafe(formData)

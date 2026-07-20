@@ -19,6 +19,7 @@ import {
 } from "@/lib/validation/workout";
 
 export type UpdateWorkoutFormState = ActionFormState;
+export type CreateWorkoutFormState = ActionFormState;
 
 function calendarDateToUtcNoon(dateString: string) {
   return new Date(`${dateString}T12:00:00.000Z`);
@@ -97,6 +98,21 @@ export async function createWorkout(formData: FormData) {
   });
 
   redirect(`/workouts/${workoutId}`);
+}
+
+export async function createWorkoutWithState(
+  _previousState: CreateWorkoutFormState,
+  formData: FormData
+): Promise<CreateWorkoutFormState> {
+  try {
+    await createWorkout(formData);
+    return createActionSuccessState("Workout created.");
+  } catch (error) {
+    return toActionErrorState(error, {
+      actionName: "createWorkoutWithState",
+      validationMessage: "Please check the workout details and try again.",
+    });
+  }
 }
 
 export async function startTodaysWorkout() {

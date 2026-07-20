@@ -2,9 +2,17 @@
 
 import { requireUserId } from "@/lib/auth/require-user";
 import { db } from "@/lib/db";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { runActionWithSafeErrors } from "@/lib/actions/action-error";
+import {
+  runActionWithSafeErrors,
+  toActionErrorState,
+} from "@/lib/actions/action-error";
+import {
+  createActionSuccessState,
+  type ActionFormState,
+} from "@/lib/actions/action-result";
 
 const profileSchema = z.object({
   primaryGoal: z.string().min(1, "Primary goal is required"),
@@ -15,7 +23,7 @@ const profileSchema = z.object({
   equipment: z.array(z.string()).default([]),
 });
 
-async function saveProfileUnsafe(formData: FormData) {
+async function persistProfile(formData: FormData) {
   const userId = await requireUserId();
 
   const equipment = formData.getAll("equipment").map(String);
@@ -40,6 +48,13 @@ async function saveProfileUnsafe(formData: FormData) {
     },
   });
 
+  revalidatePath("/settings");
+  revalidatePath("/dashboard");
+}
+
+async function saveProfileUnsafe(formData: FormData) {
+  await persistProfile(formData);
+
   redirect("/dashboard");
 }
 
@@ -47,4 +62,21 @@ export async function saveProfile(formData: FormData) {
   return runActionWithSafeErrors({ actionName: "saveProfile" }, () =>
     saveProfileUnsafe(formData)
   );
+}
+
+export type SaveProfileFormState = ActionFormState;
+
+export async function saveProfileWithState(
+  _previousState: SaveProfileFormState,
+  formData: FormData,
+): Promise<SaveProfileFormState> {
+  try {
+    await persistProfile(formData);
+    return createActionSuccessState("Profile saved.");
+  } catch (error) {
+    return toActionErrorState(error, {
+      actionName: "saveProfileWithState",
+      validationMessage: "Please check your profile details and try again.",
+    });
+  }
 }

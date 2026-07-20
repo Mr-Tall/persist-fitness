@@ -3,6 +3,7 @@ import {
   addExerciseToRoutine,
   addExerciseToRoutineWithState,
   createRoutine,
+  createRoutineWithState,
   startRoutine,
   updateExerciseInRoutineWithState,
   updateRoutineWithState,
@@ -97,6 +98,59 @@ describe("routine action error handling", () => {
 
     await expect(createRoutine(formData)).rejects.toBe(mocks.redirectError);
     expect(mocks.redirect).toHaveBeenCalledWith("/routines/routine_1");
+  });
+
+  it("returns recoverable validation state without changing the public action", async () => {
+    const formData = new FormData();
+    formData.set("title", "");
+
+    const result = await createRoutineWithState(
+      { status: "idle", message: "", submittedAt: null },
+      formData,
+    );
+
+    expect(result).toMatchObject({
+      status: "error",
+      code: "VALIDATION_ERROR",
+      message: "Please check the routine details and try again.",
+    });
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
+
+  it("sanitizes recoverable routine creation failures", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    mocks.create.mockRejectedValue(new Error("private routine database failure"));
+    const formData = new FormData();
+    formData.set("title", "Upper body");
+
+    const result = await createRoutineWithState(
+      { status: "idle", message: "", submittedAt: null },
+      formData,
+    );
+
+    expect(result).toMatchObject({
+      status: "error",
+      code: "INTERNAL_ERROR",
+      message: "Something went wrong. Please try again.",
+    });
+    expect(JSON.stringify(result)).not.toContain("private routine database failure");
+    consoleError.mockRestore();
+  });
+
+  it("preserves create redirect control flow through the state wrapper", async () => {
+    mocks.create.mockResolvedValue({ id: "routine_1" });
+    mocks.redirect.mockImplementation(() => {
+      throw mocks.redirectError;
+    });
+    const formData = new FormData();
+    formData.set("title", "Upper body");
+
+    await expect(
+      createRoutineWithState(
+        { status: "idle", message: "", submittedAt: null },
+        formData,
+      ),
+    ).rejects.toBe(mocks.redirectError);
   });
 });
 

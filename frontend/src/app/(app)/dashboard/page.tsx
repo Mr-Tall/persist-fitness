@@ -16,6 +16,7 @@ import { PremiumPreviewCard } from "@/components/premium/premium-preview-card";
 import { MobileTodayPrimaryCard } from "./mobile-today-primary-card";
 import { MobileTodayHeader } from "./mobile-today-header";
 import { MobileProfileNudge } from "./mobile-profile-nudge";
+import { FirstTimeOnboarding } from "./first-time-onboarding";
 
 function formatVolume(volume: number) {
   return `${Math.round(volume).toLocaleString()} lb`;
@@ -98,7 +99,7 @@ export default async function DashboardPage() {
   const session = await requireUserSession();
   const userId = session.user.id;
 
-  const [profile, analytics, personalRecords, routineCount, activeWorkout] =
+  const [profile, analytics, personalRecords, routineCount, activeWorkout, user] =
     await Promise.all([
       db.profile.findUnique({
         where: {
@@ -131,6 +132,10 @@ export default async function DashboardPage() {
           },
         },
       }),
+      db.user.findUnique({
+        where: { id: userId },
+        select: { onboardingCompletedAt: true },
+      }),
     ]);
 
   const hasProfile = Boolean(profile);
@@ -152,7 +157,12 @@ export default async function DashboardPage() {
     : 0;
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-4 sm:px-6 sm:py-10">
+    <main
+      id="dashboard-content"
+      tabIndex={-1}
+      className="mx-auto max-w-6xl px-4 py-4 outline-none sm:px-6 sm:py-10"
+    >
+      {user?.onboardingCompletedAt === null && <FirstTimeOnboarding />}
       <div className="md:hidden">
         <MobileTodayHeader
           firstName={firstName}

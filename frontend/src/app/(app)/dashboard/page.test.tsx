@@ -7,6 +7,8 @@ const mocks = vi.hoisted(() => ({
   getPersonalRecords: vi.fn(),
   countRoutines: vi.fn(),
   findActiveWorkout: vi.fn(),
+  findUser: vi.fn(),
+  routerPush: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -14,6 +16,7 @@ vi.mock("@/lib/db", () => ({
     profile: { findUnique: mocks.findProfile },
     workoutTemplate: { count: mocks.countRoutines },
     workout: { findFirst: mocks.findActiveWorkout },
+    user: { findUnique: mocks.findUser },
   },
 }));
 
@@ -35,6 +38,14 @@ vi.mock("@/app/actions/workouts", () => ({
   startTodaysWorkout: vi.fn(),
 }));
 
+vi.mock("@/app/actions/onboarding", () => ({
+  completeOnboarding: vi.fn(),
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: mocks.routerPush }),
+}));
+
 vi.mock("@/components/auth/logout-button", () => ({
   LogoutButton: () => <button type="button">Sign out</button>,
 }));
@@ -50,6 +61,9 @@ const completeProfile = {
 };
 
 beforeEach(() => {
+  mocks.findUser.mockResolvedValue({
+    onboardingCompletedAt: new Date("2026-07-19T00:00:00.000Z"),
+  });
   mocks.findProfile.mockResolvedValue({
     ...completeProfile,
     equipment: [],
@@ -125,5 +139,23 @@ describe("DashboardPage mobile profile nudge", () => {
     expect(
       screen.getByRole("heading", { name: "Training setup" })
     ).toBeVisible();
+  });
+});
+
+describe("DashboardPage first-time onboarding", () => {
+  it("shows onboarding when the persisted completion timestamp is null", async () => {
+    mocks.findUser.mockResolvedValue({ onboardingCompletedAt: null });
+
+    render(await DashboardPage());
+
+    expect(
+      screen.getByRole("dialog", { name: "Make every workout count." }),
+    ).toBeInTheDocument();
+  });
+
+  it("does not show onboarding for a returning user", async () => {
+    render(await DashboardPage());
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });
