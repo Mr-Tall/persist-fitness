@@ -1,47 +1,47 @@
-function SkeletonBlock({ className = "" }: { className?: string }) {
+import { RouteLoading, SkeletonBlock } from "@/components/ui/route-loading";
+
+function WorkoutRowSkeleton({ showNotes = false }: { showNotes?: boolean }) {
   return (
-    <div
-      className={`animate-pulse rounded-2xl bg-white/[0.08] ${className}`}
-    />
+    <article
+      className="min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.05] p-4 sm:p-5"
+      data-skeleton="workout-row"
+    >
+      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0 flex-1">
+          <SkeletonBlock className="h-5 w-52 max-w-[85%]" />
+          <SkeletonBlock className="mt-2 h-3 w-64 max-w-full" />
+        </div>
+        <SkeletonBlock className="h-9 w-40 max-w-full shrink-0 rounded-xl" />
+      </div>
+      {showNotes && <SkeletonBlock className="mt-3 h-4 w-full max-w-2xl" />}
+    </article>
   );
 }
 
 export default function WorkoutsLoading() {
   return (
-    <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-      <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl backdrop-blur">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-          <div className="space-y-4">
-            <SkeletonBlock className="h-4 w-28" />
-            <SkeletonBlock className="h-10 w-64 max-w-full" />
-            <SkeletonBlock className="h-5 w-96 max-w-full" />
-          </div>
-
-          <SkeletonBlock className="h-12 w-full sm:w-44" />
+    <RouteLoading label="Loading workouts" maxWidth="max-w-6xl">
+      <header
+        className="mb-6 flex min-w-0 flex-col gap-4 sm:mb-8 md:flex-row md:items-end md:justify-between"
+        data-skeleton="workout-history-header"
+      >
+        <div className="min-w-0 flex-1">
+          <SkeletonBlock className="h-3 w-20 rounded-full" />
+          <SkeletonBlock className="mt-3 h-9 w-52 max-w-[80%]" />
+          <SkeletonBlock className="mt-3 h-4 w-full max-w-xl" />
         </div>
-      </section>
+        <SkeletonBlock className="h-12 w-full shrink-0 sm:w-40" />
+      </header>
 
-      <section className="mt-6 grid gap-4">
-        {[0, 1, 2, 3].map((item) => (
-          <article
-            key={item}
-            className="rounded-3xl border border-white/10 bg-white/[0.04] p-5"
-          >
-            <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-              <div className="space-y-3">
-                <SkeletonBlock className="h-6 w-56" />
-                <SkeletonBlock className="h-4 w-80 max-w-full" />
-                <SkeletonBlock className="h-4 w-48" />
-              </div>
-
-              <div className="flex gap-3">
-                <SkeletonBlock className="h-10 w-24" />
-                <SkeletonBlock className="h-10 w-24" />
-              </div>
-            </div>
-          </article>
-        ))}
+      <section
+        className="grid min-w-0 gap-3 sm:gap-4"
+        data-skeleton="workout-history-list"
+      >
+        <WorkoutRowSkeleton showNotes />
+        <WorkoutRowSkeleton />
+        <WorkoutRowSkeleton showNotes />
+        <WorkoutRowSkeleton />
       </section>
-    </main>
+    </RouteLoading>
   );
 }
