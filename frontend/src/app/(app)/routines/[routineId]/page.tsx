@@ -4,6 +4,10 @@ import {
   startRoutine,
 } from "@/app/actions/routines";
 import { auth } from "@/auth";
+import {
+  PlannedExerciseEditorProvider,
+  PlannedExerciseEditTrigger,
+} from "@/components/planned-exercise-editor";
 import { db } from "@/lib/db";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -11,7 +15,6 @@ import { AddTemplateExerciseForm } from "../add-template-exercise-form";
 import { DeleteRoutineExerciseButton } from "../delete-routine-exercise-button";
 import { DeleteRoutineButton } from "./delete-routine-button";
 import { EditRoutineForm } from "./edit-routine-form";
-import { EditTemplateExerciseForm } from "./edit-template-exercise-form";
 
 type RoutineDetailPageProps = {
   params: Promise<{
@@ -180,11 +183,21 @@ export default async function RoutineDetailPage({
               </p>
             </div>
           ) : (
-            <ol
-              aria-label="Planned exercises"
-              className="mt-4 divide-y divide-white/10 overflow-hidden rounded-2xl border border-white/10 bg-black/20"
+            <PlannedExerciseEditorProvider
+              routineId={routine.id}
+              exercises={routine.exercises.map((exercise) => ({
+                id: exercise.id,
+                name: exercise.name,
+                sets: exercise.sets,
+                reps: exercise.reps,
+                notes: exercise.notes,
+              }))}
             >
-              {routine.exercises.map((exercise, index) => (
+              <ol
+                aria-label="Planned exercises"
+                className="mt-4 divide-y divide-white/10 overflow-hidden rounded-2xl border border-white/10 bg-black/20"
+              >
+                {routine.exercises.map((exercise, index) => (
                 <li
                   key={exercise.id}
                   className="min-w-0 px-3 py-3.5 sm:px-4 sm:py-4"
@@ -232,15 +245,9 @@ export default async function RoutineDetailPage({
                   )}
 
                   <div className="mt-2 ml-10 flex min-w-0 flex-wrap items-start gap-2">
-                    <EditTemplateExerciseForm
-                      routineId={routine.id}
-                      exercise={{
-                        id: exercise.id,
-                        name: exercise.name,
-                        sets: exercise.sets,
-                        reps: exercise.reps,
-                        notes: exercise.notes,
-                      }}
+                    <PlannedExerciseEditTrigger
+                      exerciseId={exercise.id}
+                      exerciseName={exercise.name}
                     />
 
                     <form action={deleteExerciseFromRoutine}>
@@ -260,8 +267,9 @@ export default async function RoutineDetailPage({
                     </form>
                   </div>
                 </li>
-              ))}
-            </ol>
+                ))}
+              </ol>
+            </PlannedExerciseEditorProvider>
           )}
         </div>
 

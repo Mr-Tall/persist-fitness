@@ -4,6 +4,7 @@ import {
   addExerciseToRoutineWithState,
   createRoutine,
   startRoutine,
+  updateExerciseInRoutineWithState,
   updateRoutineWithState,
 } from "@/app/actions/routines";
 
@@ -20,6 +21,7 @@ const mocks = vi.hoisted(() => {
     transaction: vi.fn(),
     aggregateTemplateExercises: vi.fn(),
     createTemplateExercise: vi.fn(),
+    updateTemplateExercise: vi.fn(),
     coordinateActiveWorkout: vi.fn(),
     createWorkoutInTransaction: vi.fn(),
     redirect: vi.fn(),
@@ -41,6 +43,9 @@ vi.mock("@/lib/db", () => ({
     $transaction: mocks.transaction,
     exercise: {
       findUnique: mocks.findExercise,
+    },
+    templateExercise: {
+      updateMany: mocks.updateTemplateExercise,
     },
     workoutTemplate: {
       create: mocks.create,
@@ -150,6 +155,71 @@ describe("routine update form state", () => {
       message: "Please check the routine details and try again.",
     });
     expect(mocks.updateRoutineRecord).not.toHaveBeenCalled();
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
+  });
+});
+
+describe("planned exercise update form state", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.requireUserId.mockResolvedValue("user_1");
+    mocks.findRoutine.mockResolvedValue({ id: "routine_1" });
+    mocks.updateTemplateExercise.mockResolvedValue({ count: 1 });
+  });
+
+  function updateExerciseFormData(routineId = "routine_1") {
+    const formData = new FormData();
+    formData.set("routineId", routineId);
+    formData.set("templateExerciseId", "template_exercise_1");
+    formData.set("sets", "4");
+    formData.set("reps", "8-10");
+    formData.set("notes", "Controlled tempo");
+    return formData;
+  }
+
+  it("preserves ownership-scoped update and detail revalidation", async () => {
+    const result = await updateExerciseInRoutineWithState(
+      { status: "idle", message: "", submittedAt: null },
+      updateExerciseFormData(),
+    );
+
+    expect(result).toMatchObject({
+      status: "success",
+      message: "Exercise plan updated.",
+    });
+    expect(mocks.findRoutine).toHaveBeenCalledWith({
+      where: { id: "routine_1", userId: "user_1" },
+      select: { id: true },
+    });
+    expect(mocks.updateTemplateExercise).toHaveBeenCalledWith({
+      where: {
+        id: "template_exercise_1",
+        templateId: "routine_1",
+        template: { userId: "user_1" },
+      },
+      data: {
+        sets: 4,
+        reps: "8-10",
+        notes: "Controlled tempo",
+      },
+    });
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/routines/routine_1");
+  });
+
+  it("returns safe NOT_FOUND without updating a forged routine", async () => {
+    mocks.findRoutine.mockResolvedValue(null);
+
+    const result = await updateExerciseInRoutineWithState(
+      { status: "idle", message: "", submittedAt: null },
+      updateExerciseFormData("forged_routine"),
+    );
+
+    expect(result).toMatchObject({
+      status: "error",
+      code: "NOT_FOUND",
+      message: "The requested routine item could not be found.",
+    });
+    expect(mocks.updateTemplateExercise).not.toHaveBeenCalled();
     expect(mocks.revalidatePath).not.toHaveBeenCalled();
   });
 });

@@ -400,6 +400,23 @@ export async function updateExerciseInRoutine(formData: FormData) {
   );
 }
 
+export type UpdateRoutineExerciseFormState = ActionFormState;
+
+export async function updateExerciseInRoutineWithState(
+  _previousState: UpdateRoutineExerciseFormState,
+  formData: FormData,
+): Promise<UpdateRoutineExerciseFormState> {
+  try {
+    await updateExerciseInRoutineUnsafe(formData);
+    return createActionSuccessState("Exercise plan updated.");
+  } catch (error) {
+    return toActionErrorState(error, {
+      actionName: "updateExerciseInRoutineWithState",
+      validationMessage: "Please check the exercise plan and try again.",
+    });
+  }
+}
+
 export async function deleteExerciseFromRoutine(formData: FormData) {
   return runActionWithSafeErrors(
     { actionName: "deleteExerciseFromRoutine" },

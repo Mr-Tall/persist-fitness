@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   addExerciseToRoutine: vi.fn(),
   addExerciseToRoutineWithState: vi.fn(),
   updateExerciseInRoutine: vi.fn(),
+  updateExerciseInRoutineWithState: vi.fn(),
   deleteExerciseFromRoutine: vi.fn(),
   redirect: vi.fn(),
   notFound: vi.fn(),
@@ -40,6 +41,7 @@ vi.mock("@/app/actions/routines", () => ({
   addExerciseToRoutine: mocks.addExerciseToRoutine,
   addExerciseToRoutineWithState: mocks.addExerciseToRoutineWithState,
   updateExerciseInRoutine: mocks.updateExerciseInRoutine,
+  updateExerciseInRoutineWithState: mocks.updateExerciseInRoutineWithState,
   deleteExerciseFromRoutine: mocks.deleteExerciseFromRoutine,
 }));
 
@@ -109,6 +111,11 @@ describe("RoutineDetailPage", () => {
       submittedAt: 1,
     });
     mocks.updateExerciseInRoutine.mockResolvedValue(undefined);
+    mocks.updateExerciseInRoutineWithState.mockResolvedValue({
+      status: "success",
+      message: "Exercise plan updated.",
+      submittedAt: 1,
+    });
     mocks.deleteExerciseFromRoutine.mockResolvedValue(undefined);
   });
 
@@ -204,7 +211,7 @@ describe("RoutineDetailPage", () => {
     expect(removeButton).toHaveClass("min-h-11", "focus-visible:ring-2");
 
     fireEvent.click(editButton);
-    const editForm = within(benchRow)
+    const editForm = screen
       .getByRole("button", { name: "Save exercise" })
       .closest("form");
     expect(editForm?.querySelector('input[name="routineId"]')).toHaveValue(
