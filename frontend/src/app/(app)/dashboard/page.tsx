@@ -5,10 +5,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { MetricBadge } from "@/components/ui/metric-badge";
 import { Section } from "@/components/ui/section";
 import { StatCard } from "@/components/ui/stat-card";
-import { db } from "@/lib/db";
-import { getDashboardAnalytics } from "@/lib/dashboard-analytics";
+import { getDashboardData } from "@/lib/dashboard-data";
 import { formatWorkoutDate } from "@/lib/format-date";
-import { getTopExercisePersonalRecords } from "@/lib/personal-records";
 import Link from "next/link";
 import { StartWorkoutButton } from "./start-workout-button";
 import { requireUserSession } from "@/lib/auth/require-user";
@@ -58,32 +56,6 @@ function getTrainingStatus(workoutsThisWeek: number) {
   };
 }
 
-function calculateWorkoutVolume(
-  exercises: {
-    sets: {
-      weight: number | null;
-      reps: number | null;
-    }[];
-  }[]
-) {
-  return exercises.reduce((total, exercise) => {
-    return (
-      total +
-      exercise.sets.reduce((setTotal, set) => {
-        if (set.weight === null || set.reps === null) {
-          return setTotal;
-        }
-
-        return setTotal + set.weight * set.reps;
-      }, 0)
-    );
-  }, 0);
-}
-
-function getSetCount(exercises: { sets: unknown[] }[]) {
-  return exercises.reduce((total, exercise) => total + exercise.sets.length, 0);
-}
-
 function formatStartedTime(startedAt: Date | null) {
   if (!startedAt) {
     return "Recently started";
@@ -99,44 +71,16 @@ export default async function DashboardPage() {
   const session = await requireUserSession();
   const userId = session.user.id;
 
-  const [profile, analytics, personalRecords, routineCount, activeWorkout, user] =
-    await Promise.all([
-      db.profile.findUnique({
-        where: {
-          userId: userId,
-        },
-      }),
-      getDashboardAnalytics(userId),
-      getTopExercisePersonalRecords(userId, 5),
-      db.workoutTemplate.count({
-        where: {
-          userId: session.user.id,
-        },
-      }),
-      db.workout.findFirst({
-        where: {
-          userId: session.user.id,
-          status: "active",
-        },
-        orderBy: {
-          startedAt: "desc",
-        },
-        include: {
-          exercises: {
-            include: {
-              sets: true,
-            },
-            orderBy: {
-              order: "asc",
-            },
-          },
-        },
-      }),
-      db.user.findUnique({
-        where: { id: userId },
-        select: { onboardingCompletedAt: true },
-      }),
-    ]);
+  const {
+    activeWorkout,
+    activeWorkoutSetCount,
+    activeWorkoutVolume,
+    analytics,
+    onboardingCompletedAt,
+    personalRecords,
+    profile,
+    routineCount,
+  } = await getDashboardData(userId);
 
   const hasProfile = Boolean(profile);
   const hasWorkouts = analytics.workoutCount > 0;
@@ -149,20 +93,13 @@ export default async function DashboardPage() {
   );
   const topRecord = personalRecords[0];
 
-  const activeWorkoutSets = activeWorkout
-    ? getSetCount(activeWorkout.exercises)
-    : 0;
-  const activeWorkoutVolume = activeWorkout
-    ? calculateWorkoutVolume(activeWorkout.exercises)
-    : 0;
-
   return (
     <main
       id="dashboard-content"
       tabIndex={-1}
       className="mx-auto max-w-6xl px-4 py-4 outline-none sm:px-6 sm:py-10"
     >
-      {user?.onboardingCompletedAt === null && <FirstTimeOnboarding />}
+      {onboardingCompletedAt === null && <FirstTimeOnboarding />}
       <div className="md:hidden">
         <MobileTodayHeader
           firstName={firstName}
@@ -176,7 +113,7 @@ export default async function DashboardPage() {
                   id: activeWorkout.id,
                   title: activeWorkout.title,
                   startedTime: formatStartedTime(activeWorkout.startedAt),
-                  setCount: activeWorkoutSets,
+                  setCount: activeWorkoutSetCount,
                   exerciseCount: activeWorkout.exercises.length,
                 }
               : null
@@ -320,7 +257,7 @@ export default async function DashboardPage() {
                 Sets logged
               </p>
               <p className="mt-1 text-2xl font-black text-white">
-                {activeWorkoutSets}
+                {activeWorkoutSetCount}
               </p>
             </Card>
 
@@ -474,7 +411,7 @@ export default async function DashboardPage() {
                 {activeWorkout.title}
               </p>
               <p className="mt-1 text-sm text-neutral-400">
-                {activeWorkoutSets} sets · {formatVolume(activeWorkoutVolume)}
+                {activeWorkoutSetCount} sets · {formatVolume(activeWorkoutVolume)}
               </p>
             </Link>
           ) : latestWorkout ? (

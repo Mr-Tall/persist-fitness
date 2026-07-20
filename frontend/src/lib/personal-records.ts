@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { summarizeWorkoutHistory } from "@/lib/workout-history-summary";
 
 export type ExercisePersonalRecord = {
   exerciseName: string;
@@ -9,14 +10,6 @@ export type ExercisePersonalRecord = {
   reps: number;
   estimatedOneRepMax: number;
 };
-
-function estimateOneRepMax(weight: number, reps: number) {
-  if (reps <= 1) {
-    return weight;
-  }
-
-  return weight * (1 + reps / 30);
-}
 
 export async function getTopExercisePersonalRecords(
   userId: string,
@@ -38,46 +31,7 @@ export async function getTopExercisePersonalRecords(
     },
   });
 
-  const bestByExercise = new Map<string, ExercisePersonalRecord>();
-
-  for (const workout of workouts) {
-    for (const exercise of workout.exercises) {
-      const exerciseKey = exercise.exerciseId ?? exercise.name.toLowerCase();
-
-      for (const set of exercise.sets) {
-        if (
-          set.weight === null ||
-          !Number.isFinite(set.weight) ||
-          set.weight <= 0 ||
-          set.reps === null ||
-          set.reps <= 0
-        ) {
-          continue;
-        }
-
-        const estimatedOneRepMax = estimateOneRepMax(set.weight, set.reps);
-
-        const currentBest = bestByExercise.get(exerciseKey);
-
-        if (
-          !currentBest ||
-          estimatedOneRepMax > currentBest.estimatedOneRepMax
-        ) {
-          bestByExercise.set(exerciseKey, {
-            exerciseName: exercise.name,
-            workoutId: workout.id,
-            workoutTitle: workout.title,
-            workoutDate: workout.date,
-            weight: set.weight,
-            reps: set.reps,
-            estimatedOneRepMax,
-          });
-        }
-      }
-    }
-  }
-
-  return Array.from(bestByExercise.values())
-    .sort((a, b) => b.estimatedOneRepMax - a.estimatedOneRepMax)
-    .slice(0, limit);
+  return summarizeWorkoutHistory(workouts, {
+    personalRecordLimit: limit,
+  }).personalRecords;
 }

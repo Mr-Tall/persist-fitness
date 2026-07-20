@@ -2,30 +2,12 @@ import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  findProfile: vi.fn(),
-  getAnalytics: vi.fn(),
-  getPersonalRecords: vi.fn(),
-  countRoutines: vi.fn(),
-  findActiveWorkout: vi.fn(),
-  findUser: vi.fn(),
+  getDashboardData: vi.fn(),
   routerPush: vi.fn(),
 }));
 
-vi.mock("@/lib/db", () => ({
-  db: {
-    profile: { findUnique: mocks.findProfile },
-    workoutTemplate: { count: mocks.countRoutines },
-    workout: { findFirst: mocks.findActiveWorkout },
-    user: { findUnique: mocks.findUser },
-  },
-}));
-
-vi.mock("@/lib/dashboard-analytics", () => ({
-  getDashboardAnalytics: mocks.getAnalytics,
-}));
-
-vi.mock("@/lib/personal-records", () => ({
-  getTopExercisePersonalRecords: mocks.getPersonalRecords,
+vi.mock("@/lib/dashboard-data", () => ({
+  getDashboardData: mocks.getDashboardData,
 }));
 
 vi.mock("@/lib/auth/require-user", () => ({
@@ -60,24 +42,19 @@ const completeProfile = {
   preferredSplit: null,
 };
 
-beforeEach(() => {
-  mocks.findUser.mockResolvedValue({
-    onboardingCompletedAt: new Date("2026-07-19T00:00:00.000Z"),
-  });
-  mocks.findProfile.mockResolvedValue({
-    ...completeProfile,
-    equipment: [],
-  });
-  mocks.countRoutines.mockResolvedValue(0);
-  mocks.findActiveWorkout.mockResolvedValue({
+const defaultDashboardData = {
+  activeWorkout: {
     id: "active-workout",
     title: "Active strength session",
+    goal: null,
+    status: "active",
     startedAt: new Date("2026-07-13T18:00:00.000Z"),
     date: new Date("2026-07-13T18:00:00.000Z"),
     exercises: [],
-  });
-  mocks.getPersonalRecords.mockResolvedValue([]);
-  mocks.getAnalytics.mockResolvedValue({
+  },
+  activeWorkoutSetCount: 0,
+  activeWorkoutVolume: 0,
+  analytics: {
     workoutCount: 1,
     workoutsThisWeek: 1,
     totalSets: 3,
@@ -88,11 +65,25 @@ beforeEach(() => {
         id: "recent-workout",
         title: "Recent session",
         goal: "Strength",
+        status: "completed",
+        startedAt: new Date("2026-07-12T18:00:00.000Z"),
         date: new Date("2026-07-12T18:00:00.000Z"),
         exercises: [],
       },
     ],
-  });
+  },
+  onboardingCompletedAt: new Date("2026-07-19T00:00:00.000Z"),
+  personalRecords: [],
+  profile: {
+    ...completeProfile,
+    equipment: [],
+  },
+  routineCount: 0,
+};
+
+beforeEach(() => {
+  mocks.getDashboardData.mockReset();
+  mocks.getDashboardData.mockResolvedValue(defaultDashboardData);
 });
 
 describe("DashboardPage mobile profile nudge", () => {
@@ -129,7 +120,10 @@ describe("DashboardPage mobile profile nudge", () => {
   });
 
   it("hides the mobile nudge for a complete profile without changing desktop setup content", async () => {
-    mocks.findProfile.mockResolvedValue(completeProfile);
+    mocks.getDashboardData.mockResolvedValue({
+      ...defaultDashboardData,
+      profile: completeProfile,
+    });
 
     render(await DashboardPage());
 
@@ -144,7 +138,10 @@ describe("DashboardPage mobile profile nudge", () => {
 
 describe("DashboardPage first-time onboarding", () => {
   it("shows onboarding when the persisted completion timestamp is null", async () => {
-    mocks.findUser.mockResolvedValue({ onboardingCompletedAt: null });
+    mocks.getDashboardData.mockResolvedValue({
+      ...defaultDashboardData,
+      onboardingCompletedAt: null,
+    });
 
     render(await DashboardPage());
 
