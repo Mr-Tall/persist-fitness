@@ -1,6 +1,12 @@
 "use client";
 
-import { useActionState, useEffect, useId, useRef, useState } from "react";
+import {
+  useActionState,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 import {
   createWorkoutWithState,
@@ -22,24 +28,19 @@ export function NewWorkoutForm({ today }: { today: string }) {
   const [goal, setGoal] = useState("");
   const [date, setDate] = useState(today);
   const [notes, setNotes] = useState("");
-  const [showMessage, setShowMessage] = useState(false);
   const messageRef = useRef<HTMLParagraphElement>(null);
   const id = useId();
   const messageId = `${id}-message`;
 
   const [state, formAction, isPending] = useActionState(
-    async (previousState: CreateWorkoutFormState, formData: FormData) => {
-      const result = await createWorkoutWithState(previousState, formData);
-      setShowMessage(true);
-      return result;
-    },
+    createWorkoutWithState,
     initialState,
   );
 
   const hasError =
-    showMessage && state.status === "error" && Boolean(state.message);
+    !isPending && state.status === "error" && Boolean(state.message);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (hasError) {
       messageRef.current?.focus({ preventScroll: true });
     }
@@ -51,7 +52,6 @@ export function NewWorkoutForm({ today }: { today: string }) {
       aria-busy={isPending}
       aria-describedby={hasError ? messageId : undefined}
       className="space-y-5 rounded-[2rem] border border-white/10 bg-white/[0.06] p-5 shadow-2xl backdrop-blur sm:p-6"
-      onSubmit={() => setShowMessage(false)}
     >
       {hasError && (
         <p

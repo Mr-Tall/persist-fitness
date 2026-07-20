@@ -7,7 +7,6 @@ import {
   useId,
   useLayoutEffect,
   useRef,
-  useState,
   type FormEvent,
   type ReactNode,
 } from "react";
@@ -55,21 +54,16 @@ export function ProfileForm({ children }: { children: ReactNode }) {
   const formRef = useRef<HTMLFormElement>(null);
   const messageRef = useRef<HTMLParagraphElement>(null);
   const submittedValuesRef = useRef<FormData>(null);
-  const [showMessage, setShowMessage] = useState(false);
   const id = useId();
   const messageId = `${id}-message`;
 
   const [state, formAction, isPending] = useActionState(
-    async (previousState: SaveProfileFormState, formData: FormData) => {
-      const result = await saveProfileWithState(previousState, formData);
-      setShowMessage(true);
-      return result;
-    },
+    saveProfileWithState,
     initialState,
   );
 
   const hasMessage =
-    showMessage && state.status !== "idle" && Boolean(state.message);
+    !isPending && state.status !== "idle" && Boolean(state.message);
 
   useLayoutEffect(() => {
     if (state.status !== "error" || !hasMessage || !formRef.current) {
@@ -94,7 +88,6 @@ export function ProfileForm({ children }: { children: ReactNode }) {
 
   function captureSubmission(event: FormEvent<HTMLFormElement>) {
     submittedValuesRef.current = new FormData(event.currentTarget);
-    setShowMessage(false);
   }
 
   return (

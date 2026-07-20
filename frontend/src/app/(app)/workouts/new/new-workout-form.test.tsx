@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -29,8 +29,9 @@ describe("NewWorkoutForm", () => {
 
     await user.type(screen.getByLabelText("Workout title"), "Upper Strength");
     await user.selectOptions(screen.getByLabelText("Goal"), "Strength");
-    await user.clear(screen.getByLabelText("Date"));
-    await user.type(screen.getByLabelText("Date"), "2026-07-18");
+    fireEvent.change(screen.getByLabelText("Date"), {
+      target: { value: "2026-07-18" },
+    });
     await user.type(screen.getByLabelText("Notes"), "Heavy compounds");
     await user.click(
       screen.getByRole("button", { name: "Create workout and add exercises" }),

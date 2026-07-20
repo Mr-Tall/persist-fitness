@@ -1,7 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
-import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { WorkoutMobileBar } from "./workout-mobile-bar";
 
 vi.mock("@/app/actions/workouts", () => ({
@@ -12,6 +13,95 @@ vi.mock("@/app/actions/workouts", () => ({
 vi.mock("sonner", () => ({
   toast: vi.fn(),
 }));
+
+const originalInnerHeight = Object.getOwnPropertyDescriptor(window, "innerHeight");
+const originalMatchMedia = Object.getOwnPropertyDescriptor(window, "matchMedia");
+const originalVisualViewport = Object.getOwnPropertyDescriptor(
+  window,
+  "visualViewport",
+);
+const originalScrollIntoView = Object.getOwnPropertyDescriptor(
+  HTMLElement.prototype,
+  "scrollIntoView",
+);
+
+class TestVisualViewport extends EventTarget {
+  height = 800;
+  offsetTop = 0;
+}
+
+function setWindowValue(name: string, value: unknown) {
+  Object.defineProperty(window, name, {
+    configurable: true,
+    writable: true,
+    value,
+  });
+}
+
+function installMobileViewport({
+  desktop = false,
+  withVisualViewport = true,
+} = {}) {
+  const viewport = new TestVisualViewport();
+  setWindowValue("innerHeight", 800);
+  setWindowValue("visualViewport", withVisualViewport ? viewport : undefined);
+  setWindowValue("matchMedia", () => ({
+    matches: desktop,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  }));
+  return viewport;
+}
+
+function mockScrollIntoView() {
+  const mock = vi.fn();
+  Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+    configurable: true,
+    value: mock,
+  });
+  return mock;
+}
+
+function renderActiveDockWithEditor() {
+  return render(
+    <>
+      <form data-add-set-editor>
+        <input aria-label="Set weight" />
+      </form>
+      <button type="button">Outside editor</button>
+      <WorkoutMobileBar
+        workoutId="workout-1"
+        workoutStatus="active"
+        totalSets={7}
+        duration="In progress"
+      />
+    </>,
+  );
+}
+
+afterEach(() => {
+  for (const [name, descriptor] of [
+    ["innerHeight", originalInnerHeight],
+    ["matchMedia", originalMatchMedia],
+    ["visualViewport", originalVisualViewport],
+  ] as const) {
+    if (descriptor) {
+      Object.defineProperty(window, name, descriptor);
+    } else {
+      Reflect.deleteProperty(window, name);
+    }
+  }
+
+  if (originalScrollIntoView) {
+    Object.defineProperty(
+      HTMLElement.prototype,
+      "scrollIntoView",
+      originalScrollIntoView,
+    );
+  } else {
+    Reflect.deleteProperty(HTMLElement.prototype, "scrollIntoView");
+  }
+});
 
 describe("WorkoutMobileBar", () => {
   it("renders active workout status, concise metrics, and Finish", () => {
@@ -111,5 +201,141 @@ describe("WorkoutMobileBar", () => {
       "pb-[calc(5rem+env(safe-area-inset-bottom))]"
     );
     expect(workoutPage).toContain("px-4 pb-28 pt-6");
+  });
+
+  it("hides for a meaningful Visual Viewport reduction while an Add Set field is focused", async () => {
+    const viewport = installMobileViewport();
+    const scrollIntoView = mockScrollIntoView();
+    renderActiveDockWithEditor();
+    const weight = screen.getByRole("textbox", { name: "Set weight" });
+    vi.spyOn(weight, "getBoundingClientRect").mockReturnValue({
+      bottom: 760,
+    } as DOMRect);
+
+    weight.focus();
+    viewport.height = 500;
+    viewport.dispatchEvent(new Event("resize"));
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("complementary", { name: "Workout controls" }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: "nearest" });
+  });
+
+  it("restores the dock when the keyboard closes or focus leaves the editor", async () => {
+    const viewport = installMobileViewport();
+    mockScrollIntoView();
+    const user = userEvent.setup();
+    renderActiveDockWithEditor();
+    const weight = screen.getByRole("textbox", { name: "Set weight" });
+    weight.focus();
+    viewport.height = 500;
+    viewport.dispatchEvent(new Event("resize"));
+    await waitFor(() =>
+      expect(screen.queryByLabelText("Workout controls")).not.toBeInTheDocument(),
+    );
+
+    viewport.height = 800;
+    viewport.dispatchEvent(new Event("resize"));
+    await waitFor(() =>
+      expect(screen.getByLabelText("Workout controls")).toBeInTheDocument(),
+    );
+
+    viewport.height = 500;
+    viewport.dispatchEvent(new Event("resize"));
+    await waitFor(() =>
+      expect(screen.queryByLabelText("Workout controls")).not.toBeInTheDocument(),
+    );
+    await user.click(screen.getByRole("button", { name: "Outside editor" }));
+    await waitFor(() =>
+      expect(screen.getByLabelText("Workout controls")).toBeInTheDocument(),
+    );
+  });
+
+  it("uses the window-height fallback when Visual Viewport is unavailable", async () => {
+    installMobileViewport({ withVisualViewport: false });
+    renderActiveDockWithEditor();
+    screen.getByRole("textbox", { name: "Set weight" }).focus();
+    setWindowValue("innerHeight", 500);
+    fireEvent(window, new Event("resize"));
+
+    await waitFor(() =>
+      expect(screen.queryByLabelText("Workout controls")).not.toBeInTheDocument(),
+    );
+  });
+
+  it("ignores minor viewport changes without causing a layout jump", async () => {
+    const viewport = installMobileViewport();
+    renderActiveDockWithEditor();
+    screen.getByRole("textbox", { name: "Set weight" }).focus();
+    viewport.height = 710;
+    viewport.dispatchEvent(new Event("resize"));
+
+    await waitFor(() =>
+      expect(screen.getByLabelText("Workout controls")).toBeInTheDocument(),
+    );
+  });
+
+  it("does not suppress the dock at the desktop breakpoint", async () => {
+    const viewport = installMobileViewport({ desktop: true });
+    renderActiveDockWithEditor();
+    screen.getByRole("textbox", { name: "Set weight" }).focus();
+    viewport.height = 500;
+    viewport.dispatchEvent(new Event("resize"));
+
+    await waitFor(() =>
+      expect(screen.getByLabelText("Workout controls")).toBeInTheDocument(),
+    );
+  });
+
+  it("does not suppress the dock for editable fields outside Add Set", async () => {
+    const viewport = installMobileViewport();
+    render(
+      <>
+        <input aria-label="Edit Set weight" />
+        <WorkoutMobileBar
+          workoutId="workout-1"
+          workoutStatus="active"
+          totalSets={7}
+          duration="In progress"
+        />
+      </>,
+    );
+    screen.getByRole("textbox", { name: "Edit Set weight" }).focus();
+    viewport.height = 500;
+    viewport.dispatchEvent(new Event("resize"));
+
+    await waitFor(() =>
+      expect(screen.getByLabelText("Workout controls")).toBeInTheDocument(),
+    );
+  });
+
+  it("removes viewport and focus listeners on unmount", () => {
+    const viewport = installMobileViewport();
+    const removeViewportListener = vi.spyOn(viewport, "removeEventListener");
+    const removeWindowListener = vi.spyOn(window, "removeEventListener");
+    const { unmount } = renderActiveDockWithEditor();
+
+    unmount();
+
+    expect(removeViewportListener).toHaveBeenCalledWith(
+      "resize",
+      expect.any(Function),
+    );
+    expect(removeViewportListener).toHaveBeenCalledWith(
+      "scroll",
+      expect.any(Function),
+    );
+    expect(removeWindowListener).toHaveBeenCalledWith(
+      "focusin",
+      expect.any(Function),
+    );
+    expect(removeWindowListener).toHaveBeenCalledWith(
+      "focusout",
+      expect.any(Function),
+    );
+    removeWindowListener.mockRestore();
   });
 });

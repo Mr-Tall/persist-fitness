@@ -11,6 +11,7 @@ import {
   useActionState,
   useCallback,
   useEffect,
+  useEffectEvent,
   useId,
   useRef,
   useState,
@@ -40,31 +41,11 @@ export function AddExerciseForm({ workoutId, exercises }: AddExerciseFormProps) 
   const [selectorVersion, setSelectorVersion] = useState(0);
   const [showActionMessage, setShowActionMessage] = useState(true);
   const launcherRef = useRef<HTMLButtonElement>(null);
+  const handledSubmittedAtRef = useRef<number | null>(null);
   const titleId = useId();
   const descriptionId = useId();
   const [state, formAction] = useActionState(
-    async (
-      previousState: AddExerciseFormState,
-      formData: FormData
-    ): Promise<AddExerciseFormState> => {
-      const wasMobileSheetOpen = isSheetOpen;
-      const result = await addExerciseToWorkoutWithState(
-        previousState,
-        formData
-      );
-
-      if (result.status === "success") {
-        setCanSubmit(false);
-        setSelectorVersion((version) => version + 1);
-
-        if (wasMobileSheetOpen) {
-          setShowActionMessage(false);
-          setIsSheetOpen(false);
-        }
-      }
-
-      return result;
-    },
+    addExerciseToWorkoutWithState,
     initialState
   );
 
@@ -72,19 +53,35 @@ export function AddExerciseForm({ workoutId, exercises }: AddExerciseFormProps) 
     setIsSheetOpen(false);
   }, []);
 
+  const handleActionResult = useEffectEvent((result: AddExerciseFormState) => {
+    if (result.status === "success") {
+      setCanSubmit(false);
+      setSelectorVersion((version) => version + 1);
+
+      if (isSheetOpen) {
+        setShowActionMessage(false);
+        setIsSheetOpen(false);
+      }
+
+      toast.success(result.message);
+      return;
+    }
+
+    if (result.status === "error") {
+      toast.error(result.message);
+    }
+  });
+
   useEffect(() => {
     if (!state.submittedAt || !state.message) {
       return;
     }
 
-    if (state.status === "success") {
-      toast.success(state.message);
+    if (handledSubmittedAtRef.current === state.submittedAt) {
       return;
     }
-
-    if (state.status === "error") {
-      toast.error(state.message);
-    }
+    handledSubmittedAtRef.current = state.submittedAt;
+    handleActionResult(state);
   }, [state.message, state.status, state.submittedAt]);
 
   return (

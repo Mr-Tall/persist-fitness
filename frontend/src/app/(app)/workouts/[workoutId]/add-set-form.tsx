@@ -81,7 +81,7 @@ function moveFocusOnEnter(
       ? form?.querySelector<HTMLButtonElement>('button[type="submit"]')
       : (form?.elements.namedItem(target) as HTMLElement | null);
 
-  targetElement?.focus({ preventScroll: true });
+  targetElement?.focus();
 }
 
 export function AddSetForm({
@@ -124,7 +124,7 @@ export function AddSetForm({
         notes: "",
       });
       const repsInput = form.elements.namedItem("reps") as HTMLInputElement;
-      repsInput.focus({ preventScroll: true });
+      repsInput.focus();
       if (state.savedSetNumber !== undefined) {
         confirmSavedSet(state.savedSetNumber);
       }
@@ -158,6 +158,7 @@ export function AddSetForm({
           submittedValuesRef.current = getSetValues(event.currentTarget);
         }}
         aria-describedby={hasMessage ? messageId : undefined}
+        data-add-set-editor
         className="mt-5 rounded-3xl border border-emerald-300/20 bg-emerald-400/[0.06] p-3 sm:p-4"
       >
         <input type="hidden" name="workoutId" value={workoutId} />

@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useActionState, type ComponentProps } from "react";
@@ -194,6 +196,18 @@ describe("AddSetForm", () => {
     await user.keyboard("{Enter}");
     expect(screen.getByRole("button", { name: "Save set" })).toHaveFocus();
     expect(mocks.formAction).not.toHaveBeenCalled();
+  });
+
+  it("allows native viewport adjustment during keyboard focus progression", () => {
+    const source = fs.readFileSync(
+      path.join(
+        process.cwd(),
+        "src/app/(app)/workouts/[workoutId]/add-set-form.tsx",
+      ),
+      "utf8",
+    );
+
+    expect(source).not.toContain("preventScroll");
   });
 
   it("keeps optional detail fields inside an accessible native disclosure", async () => {
