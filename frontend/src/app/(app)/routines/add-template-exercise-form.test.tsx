@@ -65,7 +65,7 @@ describe("AddTemplateExerciseForm", () => {
     expect(launcher).toHaveAttribute("aria-expanded", "false");
     expect(launcher).toHaveClass("min-h-12", "md:hidden");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(form?.parentElement?.parentElement).toHaveClass("md:block");
+    expect(form?.parentElement).toHaveClass("hidden", "md:flex");
   });
 
   it("opens an accessible sheet, locks the background, and focuses search", async () => {
@@ -76,10 +76,12 @@ describe("AddTemplateExerciseForm", () => {
 
     await user.click(screen.getByRole("button", { name: "Open add exercise" }));
 
-    expect(screen.getByRole("dialog", { name: "Add exercise" })).toHaveAttribute(
+    const dialog = screen.getByRole("dialog", { name: "Add exercise" });
+    expect(dialog).toHaveAttribute(
       "aria-modal",
       "true",
     );
+    expect(dialog.closest("[data-dialog-portal]")).not.toBeNull();
     expect(screen.getByRole("group", { name: "Planned targets" })).toBeInTheDocument();
     await waitFor(() => expect(screen.getByRole("searchbox")).toHaveFocus());
     expect(document.body.style.overflow).toBe("hidden");
@@ -97,7 +99,7 @@ describe("AddTemplateExerciseForm", () => {
     fireEvent.keyDown(document, { key: "Escape" });
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(launcher).toHaveFocus();
+    await waitFor(() => expect(launcher).toHaveFocus());
     expect(document.body.style.overflow).toBe("");
   });
 
@@ -116,12 +118,12 @@ describe("AddTemplateExerciseForm", () => {
 
     await user.click(closeButton);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(launcher).toHaveFocus();
+    await waitFor(() => expect(launcher).toHaveFocus());
   });
 
   it("preserves the routine form contract and accessible planning labels", async () => {
     const user = userEvent.setup();
-    const { container } = render(
+    render(
       <AddTemplateExerciseForm routineId="routine-1" exercises={exercises} />,
     );
 
@@ -144,12 +146,12 @@ describe("AddTemplateExerciseForm", () => {
     expect(submittedData.get("sets")).toBe("4");
     expect(submittedData.get("reps")).toBe("8-10");
     expect(submittedData.get("notes")).toBe("Controlled tempo");
-    expect(container.querySelector('input[name="routineId"]')).toBeInTheDocument();
+    expect(document.querySelector('input[name="routineId"]')).toBeInTheDocument();
   });
 
   it("closes and clears every submission-ready value after confirmed success", async () => {
     const user = userEvent.setup();
-    const { container } = render(
+    render(
       <AddTemplateExerciseForm routineId="routine-1" exercises={exercises} />,
     );
     const launcher = screen.getByRole("button", { name: "Open add exercise" });
@@ -178,7 +180,7 @@ describe("AddTemplateExerciseForm", () => {
     expect(screen.getByLabelText("Sets")).toHaveValue(null);
     expect(screen.getByLabelText("Reps")).toHaveValue("");
     expect(screen.getByLabelText("Notes")).toHaveValue("");
-    expect(container.querySelector('input[name="exerciseId"]')).toHaveValue("");
+    expect(document.querySelector('input[name="exerciseId"]')).toHaveValue("");
     expect(screen.queryByText(/Selected:/)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Add exercise" })).toBeDisabled();
   });

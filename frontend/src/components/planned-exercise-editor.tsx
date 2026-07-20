@@ -4,6 +4,7 @@ import {
   updateExerciseInRoutineWithState,
   type UpdateRoutineExerciseFormState,
 } from "@/app/actions/routines";
+import { AccessibleDialog } from "@/components/ui/accessible-dialog";
 import { ToastSubmitButton } from "@/components/ui/toast-submit-button";
 import {
   createContext,
@@ -57,15 +58,6 @@ const initialState: UpdateRoutineExerciseFormState = {
 
 const EditorContext = createContext<EditorContextValue | null>(null);
 
-const focusableElementSelector = [
-  "button:not([disabled])",
-  "input:not([disabled]):not([type='hidden'])",
-  "select:not([disabled])",
-  "textarea:not([disabled])",
-  "[href]",
-  "[tabindex]:not([tabindex='-1'])",
-].join(",");
-
 function restoreEditableValues(form: HTMLFormElement, values: EditableValues) {
   for (const [fieldName, value] of Object.entries(values)) {
     const field = form.elements.namedItem(fieldName);
@@ -87,7 +79,6 @@ export function PlannedExerciseEditorProvider({
   const [reps, setReps] = useState("");
   const [notes, setNotes] = useState("");
   const openingTriggerRef = useRef<HTMLButtonElement | null>(null);
-  const sheetRef = useRef<HTMLElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const setsRef = useRef<HTMLInputElement>(null);
   const submittedValuesRef = useRef<EditableValues | null>(null);
@@ -105,7 +96,6 @@ export function PlannedExerciseEditorProvider({
     setActiveExerciseId(null);
     setShowActionMessage(false);
     submittedValuesRef.current = null;
-    window.setTimeout(() => openingTriggerRef.current?.focus(), 0);
   }, []);
 
   const [state, formAction] = useActionState(
@@ -157,54 +147,6 @@ export function PlannedExerciseEditorProvider({
     }
   }, [state.message, state.status, state.submittedAt]);
 
-  useEffect(() => {
-    if (!activeExercise) {
-      return;
-    }
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const focusTimer = window.setTimeout(() => setsRef.current?.focus(), 0);
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        closeEditor();
-        return;
-      }
-
-      if (event.key !== "Tab" || !sheetRef.current) {
-        return;
-      }
-
-      const focusableElements = Array.from(
-        sheetRef.current.querySelectorAll<HTMLElement>(focusableElementSelector),
-      );
-      const firstElement = focusableElements[0];
-      const lastElement = focusableElements[focusableElements.length - 1];
-
-      if (!firstElement || !lastElement) {
-        event.preventDefault();
-        sheetRef.current.focus();
-      } else if (event.shiftKey && document.activeElement === firstElement) {
-        event.preventDefault();
-        lastElement.focus();
-      } else if (!event.shiftKey && document.activeElement === lastElement) {
-        event.preventDefault();
-        firstElement.focus();
-      }
-    }
-
-    document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.clearTimeout(focusTimer);
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [activeExercise, closeEditor]);
-
   function openEditor(exerciseId: string, trigger: HTMLButtonElement) {
     const exercise = exercises.find((candidate) => candidate.id === exerciseId);
 
@@ -225,21 +167,20 @@ export function PlannedExerciseEditorProvider({
     <EditorContext.Provider value={{ activeExerciseId, openEditor }}>
       {children}
 
-      {activeExercise && (
-        <div className="fixed inset-0 z-[70] flex items-end bg-black/80 px-2 pt-3 backdrop-blur-sm sm:items-center sm:justify-center sm:p-4">
-          <section
-            ref={sheetRef}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={dialogTitleId}
-            aria-describedby={
-              shouldShowMessage
-                ? `${dialogDescriptionId} ${messageId}`
-                : dialogDescriptionId
-            }
-            tabIndex={-1}
-            className="flex h-[calc(100dvh-0.75rem)] w-full flex-col overflow-hidden rounded-t-[2rem] border border-white/10 bg-neutral-950 shadow-[0_-24px_80px_-35px_rgba(16,185,129,0.55)] sm:h-auto sm:max-h-[calc(100dvh-2rem)] sm:max-w-xl sm:rounded-3xl"
-          >
+      <AccessibleDialog
+        descriptionId={
+          shouldShowMessage
+            ? `${dialogDescriptionId} ${messageId}`
+            : dialogDescriptionId
+        }
+        initialFocusRef={setsRef}
+        onClose={closeEditor}
+        open={Boolean(activeExercise)}
+        restoreFocusRef={openingTriggerRef}
+        titleId={dialogTitleId}
+      >
+        {activeExercise && (
+          <>
             <header className="flex shrink-0 items-start justify-between gap-4 border-b border-white/10 px-4 py-4 sm:px-5">
               <div className="min-w-0">
                 <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-300">
@@ -386,9 +327,9 @@ export function PlannedExerciseEditorProvider({
                 </div>
               </footer>
             </form>
-          </section>
-        </div>
-      )}
+          </>
+        )}
+      </AccessibleDialog>
     </EditorContext.Provider>
   );
 }

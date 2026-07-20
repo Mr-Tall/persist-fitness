@@ -39,6 +39,7 @@ describe("FirstTimeOnboarding", () => {
       name: "Make every workout count.",
     });
     expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(dialog.closest("[data-dialog-portal]")).not.toBeNull();
     expect(dialog.querySelector("form")).toHaveAttribute("aria-busy", "false");
     expect(dialog).toHaveClass("h-[calc(100dvh-0.75rem)]");
     expect(screen.getByText("Track workouts")).toBeInTheDocument();

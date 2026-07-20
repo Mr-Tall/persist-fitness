@@ -87,12 +87,13 @@ describe("PlannedExerciseEditorProvider", () => {
 
   it("opens the selected exercise with original values, fields, and hidden IDs", async () => {
     const user = userEvent.setup();
-    const { container } = renderEditor();
+    renderEditor();
     const { dialog, trigger } = await openBenchEditor(user);
 
     expect(trigger).toHaveAttribute("aria-haspopup", "dialog");
     expect(trigger).toHaveAttribute("aria-expanded", "true");
     expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(dialog.closest("[data-dialog-portal]")).not.toBeNull();
     expect(dialog).toHaveAccessibleDescription(
       "Update planned sets, target reps, or coaching notes.",
     );
@@ -103,11 +104,11 @@ describe("PlannedExerciseEditorProvider", () => {
     expect(screen.getByLabelText("Planned sets")).toHaveAttribute("name", "sets");
     expect(screen.getByLabelText("Target reps")).toHaveAttribute("name", "reps");
     expect(screen.getByLabelText("Notes")).toHaveAttribute("name", "notes");
-    expect(container.querySelector('input[name="routineId"]')).toHaveValue(
+    expect(document.querySelector('input[name="routineId"]')).toHaveValue(
       "routine-1",
     );
     expect(
-      container.querySelector('input[name="templateExerciseId"]'),
+      document.querySelector('input[name="templateExerciseId"]'),
     ).toHaveValue("template-exercise-1");
     expect(dialog.parentElement).toHaveClass("sm:items-center");
   });

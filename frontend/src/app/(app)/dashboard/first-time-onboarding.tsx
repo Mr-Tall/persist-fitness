@@ -14,19 +14,13 @@ import {
   completeOnboarding,
   type OnboardingFormState,
 } from "@/app/actions/onboarding";
+import { AccessibleDialog } from "@/components/ui/accessible-dialog";
 
 const initialState: OnboardingFormState = {
   status: "idle",
   message: "",
   submittedAt: null,
 };
-
-const focusableElementSelector = [
-  "button:not([disabled])",
-  "input:not([disabled]):not([type='hidden'])",
-  "[href]",
-  "[tabindex]:not([tabindex='-1'])",
-].join(",");
 
 const goalOptions = [
   { label: "Build Muscle", value: "Build muscle" },
@@ -45,10 +39,13 @@ export function FirstTimeOnboarding({
   const [step, setStep] = useState(1);
   const [goal, setGoal] = useState("");
   const [isVisible, setIsVisible] = useState(true);
-  const dialogRef = useRef<HTMLElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const skipButtonRef = useRef<HTMLButtonElement>(null);
-  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(
+    typeof document !== "undefined" && document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null,
+  );
   const id = useId();
   const titleId = `${id}-title`;
   const descriptionId = `${id}-description`;
@@ -76,7 +73,6 @@ export function FirstTimeOnboarding({
 
       if (result.status === "success") {
         setIsVisible(false);
-        restoreDashboardFocus();
 
         if (intent === "create-workout") {
           router.push("/workouts/new");
@@ -93,81 +89,27 @@ export function FirstTimeOnboarding({
       return;
     }
 
-    previousFocusRef.current =
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape" && !isPending) {
-        event.preventDefault();
-        skipButtonRef.current?.click();
-        return;
-      }
-
-      if (event.key !== "Tab" || !dialogRef.current) {
-        return;
-      }
-
-      const focusableElements = Array.from(
-        dialogRef.current.querySelectorAll<HTMLElement>(focusableElementSelector),
-      );
-      if (focusableElements.length === 0) {
-        event.preventDefault();
-        headingRef.current?.focus();
-        return;
-      }
-
-      const firstElement = focusableElements[0];
-      const lastElement = focusableElements[focusableElements.length - 1];
-
-      if (event.shiftKey && document.activeElement === firstElement) {
-        event.preventDefault();
-        lastElement.focus();
-      } else if (!event.shiftKey && document.activeElement === lastElement) {
-        event.preventDefault();
-        firstElement.focus();
-      }
-    }
-
-    document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [isPending, isVisible]);
-
-  useEffect(() => {
-    if (!isVisible) {
-      return;
-    }
-
     const focusTimer = window.setTimeout(() => headingRef.current?.focus(), 0);
     return () => window.clearTimeout(focusTimer);
   }, [isVisible, step]);
 
-  if (!isVisible) {
-    return null;
-  }
-
   return (
-    <div className="fixed inset-0 z-[90] flex items-end bg-black/85 px-2 pt-3 backdrop-blur-sm sm:items-center sm:justify-center sm:p-4">
-      <section
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        aria-describedby={
+    <AccessibleDialog
+      descriptionId={
           state.status === "error"
             ? `${descriptionId} ${messageId}`
             : descriptionId
-        }
-        className="flex h-[calc(100dvh-0.75rem)] w-full flex-col overflow-hidden rounded-t-[2rem] border border-white/10 bg-neutral-950 shadow-[0_-24px_80px_-35px_rgba(16,185,129,0.65)] sm:h-auto sm:max-h-[calc(100dvh-2rem)] sm:max-w-lg sm:rounded-3xl"
-      >
+      }
+      escapeDisabled={isPending}
+      initialFocusRef={headingRef}
+      onClose={() => skipButtonRef.current?.click()}
+      onEscape={() => skipButtonRef.current?.click()}
+      open={isVisible}
+      overlayClassName="z-[90] bg-black/85"
+      panelClassName="sm:max-w-lg"
+      restoreFocus={restoreDashboardFocus}
+      titleId={titleId}
+    >
         <form
           action={formAction}
           aria-busy={isPending}
@@ -370,7 +312,6 @@ export function FirstTimeOnboarding({
             )}
           </footer>
         </form>
-      </section>
-    </div>
+    </AccessibleDialog>
   );
 }

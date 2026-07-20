@@ -61,7 +61,7 @@ describe("AddExerciseForm", () => {
     expect(launcher).toHaveAttribute("aria-expanded", "false");
     expect(launcher).toHaveClass("md:hidden");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(form?.parentElement?.parentElement).toHaveClass("md:block");
+    expect(form?.parentElement).toHaveClass("hidden", "md:flex");
   });
 
   it("opens an accessible sheet and moves focus to search", async () => {
@@ -72,6 +72,7 @@ describe("AddExerciseForm", () => {
 
     const dialog = screen.getByRole("dialog", { name: "Add exercise" });
     expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(dialog.closest("[data-dialog-portal]")).not.toBeNull();
     expect(screen.getByRole("heading", { name: "Add exercise" })).toBeInTheDocument();
     expect(screen.getByLabelText("Custom name")).toBeInTheDocument();
     expect(
@@ -90,7 +91,7 @@ describe("AddExerciseForm", () => {
     await user.click(screen.getByRole("button", { name: "Close add exercise" }));
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(launcher).toHaveFocus();
+    await waitFor(() => expect(launcher).toHaveFocus());
     expect(launcher).toHaveAttribute("aria-expanded", "false");
     expect(document.body.style.overflow).toBe("");
   });
@@ -105,12 +106,12 @@ describe("AddExerciseForm", () => {
     fireEvent.keyDown(document, { key: "Escape" });
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(launcher).toHaveFocus();
+    await waitFor(() => expect(launcher).toHaveFocus());
   });
 
   it("preserves selected exercise state and existing form fields", async () => {
     const user = userEvent.setup();
-    const { container } = render(
+    render(
       <AddExerciseForm workoutId="workout-1" exercises={exercises} />
     );
 
@@ -120,10 +121,10 @@ describe("AddExerciseForm", () => {
 
     expect(exerciseButton).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText("Selected: Bench Press")).toBeInTheDocument();
-    expect(container.querySelector('input[name="workoutId"]')).toHaveValue(
+    expect(document.querySelector('input[name="workoutId"]')).toHaveValue(
       "workout-1"
     );
-    expect(container.querySelector('input[name="exerciseId"]')).toHaveValue(
+    expect(document.querySelector('input[name="exerciseId"]')).toHaveValue(
       "exercise-2"
     );
     expect(screen.getByLabelText("Custom name")).toHaveAttribute("name", "name");
@@ -149,7 +150,7 @@ describe("AddExerciseForm", () => {
 
   it("closes and resets the mobile picker after confirmed success", async () => {
     const user = userEvent.setup();
-    const { container } = render(
+    render(
       <AddExerciseForm workoutId="workout-1" exercises={exercises} />
     );
     const launcher = screen.getByRole("button", { name: "Open add exercise" });
@@ -172,7 +173,7 @@ describe("AddExerciseForm", () => {
     expect(screen.getByRole("searchbox")).toHaveValue("");
     expect(screen.getByLabelText("Custom name")).toHaveValue("");
     expect(screen.queryByText("Selected: Bench Press")).not.toBeInTheDocument();
-    expect(container.querySelector('input[name="exerciseId"]')).toHaveValue("");
+    expect(document.querySelector('input[name="exerciseId"]')).toHaveValue("");
     expect(screen.getByRole("button", { name: "Add exercise" })).toBeDisabled();
   });
 

@@ -53,7 +53,7 @@ describe("EditRoutineForm", () => {
 
   it("opens a labelled modal sheet with original values and locks scrolling", async () => {
     const user = userEvent.setup();
-    const { container } = render(<EditRoutineForm routine={routine} />);
+    render(<EditRoutineForm routine={routine} />);
     const trigger = screen.getByRole("button", {
       name: "Edit Upper Body Strength routine",
     });
@@ -64,6 +64,7 @@ describe("EditRoutineForm", () => {
 
     const { dialog } = await openDialog(user);
     expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(dialog.closest("[data-dialog-portal]")).not.toBeNull();
     expect(dialog).toHaveAccessibleDescription(
       "Update the name, goal, or description for this routine.",
     );
@@ -77,7 +78,7 @@ describe("EditRoutineForm", () => {
       "name",
       "description",
     );
-    expect(container.querySelector('input[name="routineId"]')).toHaveValue(
+    expect(document.querySelector('input[name="routineId"]')).toHaveValue(
       "routine-1",
     );
     expect(dialog.parentElement).toHaveClass("sm:items-center");

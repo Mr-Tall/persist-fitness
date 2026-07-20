@@ -5,6 +5,7 @@ import {
   type AddRoutineExerciseFormState,
 } from "@/app/actions/routines";
 import { ExerciseSelect } from "@/components/exercise-select";
+import { AccessibleDialog } from "@/components/ui/accessible-dialog";
 import { ToastSubmitButton } from "@/components/ui/toast-submit-button";
 import {
   useActionState,
@@ -34,15 +35,6 @@ const initialState: AddRoutineExerciseFormState = {
   submittedAt: null,
 };
 
-const focusableElementSelector = [
-  "button:not([disabled])",
-  "input:not([disabled]):not([type='hidden'])",
-  "select:not([disabled])",
-  "textarea:not([disabled])",
-  "[href]",
-  "[tabindex]:not([tabindex='-1'])",
-].join(",");
-
 export function AddTemplateExerciseForm({
   routineId,
   exercises,
@@ -56,7 +48,6 @@ export function AddTemplateExerciseForm({
   const [reps, setReps] = useState("");
   const [notes, setNotes] = useState("");
   const launcherRef = useRef<HTMLButtonElement>(null);
-  const sheetRef = useRef<HTMLElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const titleId = useId();
   const descriptionId = useId();
@@ -86,7 +77,6 @@ export function AddTemplateExerciseForm({
         if (wasMobileSheetOpen) {
           setShowActionMessage(false);
           setIsSheetOpen(false);
-          window.setTimeout(() => launcherRef.current?.focus(), 0);
         }
       }
 
@@ -97,7 +87,6 @@ export function AddTemplateExerciseForm({
 
   const closeSheet = useCallback(() => {
     setIsSheetOpen(false);
-    launcherRef.current?.focus();
   }, []);
 
   useEffect(() => {
@@ -111,62 +100,6 @@ export function AddTemplateExerciseForm({
       toast.error(state.message);
     }
   }, [state.message, state.status, state.submittedAt]);
-
-  useEffect(() => {
-    if (!isSheetOpen) {
-      return;
-    }
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const focusTimer = window.setTimeout(() => {
-      sheetRef.current
-        ?.querySelector<HTMLInputElement>("input[type='search']")
-        ?.focus();
-    }, 0);
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        closeSheet();
-        return;
-      }
-
-      if (event.key !== "Tab" || !sheetRef.current) {
-        return;
-      }
-
-      const focusableElements = Array.from(
-        sheetRef.current.querySelectorAll<HTMLElement>(focusableElementSelector),
-      );
-
-      if (focusableElements.length === 0) {
-        event.preventDefault();
-        sheetRef.current.focus();
-        return;
-      }
-
-      const firstElement = focusableElements[0];
-      const lastElement = focusableElements[focusableElements.length - 1];
-
-      if (event.shiftKey && document.activeElement === firstElement) {
-        event.preventDefault();
-        lastElement.focus();
-      } else if (!event.shiftKey && document.activeElement === lastElement) {
-        event.preventDefault();
-        firstElement.focus();
-      }
-    }
-
-    document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.clearTimeout(focusTimer);
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [closeSheet, isSheetOpen]);
 
   return (
     <>
@@ -194,22 +127,18 @@ export function AddTemplateExerciseForm({
         Add exercise
       </button>
 
-      <div
-        className={
-          isSheetOpen
-            ? "fixed inset-0 z-[70] flex items-end bg-black/80 px-2 pt-3 backdrop-blur-sm md:static md:z-auto md:block md:bg-transparent md:p-0 md:backdrop-blur-none"
-            : "hidden md:block"
-        }
-        role={isSheetOpen ? "dialog" : undefined}
-        aria-modal={isSheetOpen ? true : undefined}
-        aria-labelledby={isSheetOpen ? titleId : undefined}
-        aria-describedby={isSheetOpen ? descriptionId : undefined}
+      <AccessibleDialog
+        descriptionId={descriptionId}
+        initialFocusSelector="input[type='search']"
+        inlineClassName="hidden md:flex md:h-auto md:w-full md:flex-col md:overflow-hidden md:rounded-3xl md:border md:border-white/10 md:bg-white/[0.05] md:shadow-sm"
+        onClose={closeSheet}
+        open={isSheetOpen}
+        overlayClassName="sm:items-end sm:justify-start sm:p-0 md:items-center md:justify-center md:p-4"
+        panelClassName="sm:h-[calc(100dvh-0.75rem)] sm:max-h-none sm:max-w-none sm:rounded-t-[2rem] sm:rounded-b-none md:h-auto md:max-h-[calc(100dvh-2rem)] md:max-w-xl md:rounded-3xl"
+        renderInlineWhenClosed
+        restoreFocusRef={launcherRef}
+        titleId={titleId}
       >
-        <section
-          ref={sheetRef}
-          tabIndex={-1}
-          className="flex h-[calc(100dvh-0.75rem)] w-full flex-col overflow-hidden rounded-t-[2rem] border border-white/10 bg-neutral-950 shadow-[0_-24px_80px_-35px_rgba(16,185,129,0.55)] md:h-auto md:rounded-3xl md:bg-white/[0.05] md:shadow-sm"
-        >
           <div className="flex shrink-0 items-start justify-between gap-4 border-b border-white/10 px-4 py-4 md:border-b-0 md:px-5 md:pb-0 md:pt-5">
             <div className="min-w-0">
               <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-300 md:hidden">
@@ -331,8 +260,7 @@ export function AddTemplateExerciseForm({
               </ToastSubmitButton>
             </div>
           </form>
-        </section>
-      </div>
+      </AccessibleDialog>
     </>
   );
 }

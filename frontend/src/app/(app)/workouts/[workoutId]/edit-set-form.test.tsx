@@ -66,6 +66,7 @@ describe("EditSetForm", () => {
     expect(trigger).toHaveAttribute("aria-haspopup", "dialog");
     expect(trigger).toHaveAttribute("aria-expanded", "true");
     expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(dialog.closest("[data-dialog-portal]")).not.toBeNull();
     expect(dialog).toHaveAccessibleDescription(
       "Update load, reps, effort, tempo, or notes."
     );
@@ -202,11 +203,30 @@ describe("EditSetForm", () => {
 
     await user.click(screen.getByRole("button", { name: "Edit set 3" }));
     await waitFor(() => expect(screen.getByLabelText("Weight")).toHaveFocus());
-    fireEvent.click(screen.getByRole("button", { name: "Edit set 4" }));
 
-    await waitFor(() =>
-      expect(screen.getAllByRole("dialog")).toHaveLength(1)
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+    expect(screen.getByRole("dialog", { name: "Edit set 3" })).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: "Edit set 4" })
+    ).not.toBeInTheDocument();
+
+    const hiddenSetFourTrigger = screen.getByRole("button", {
+      name: "Edit set 4",
+      hidden: true,
+    });
+    const inertBackground = hiddenSetFourTrigger.closest("[inert]");
+    expect(inertBackground).not.toBeNull();
+    expect(inertBackground).toHaveAttribute("aria-hidden", "true");
+
+    await user.click(
+      screen.getByRole("button", { name: "Cancel editing set 3" })
     );
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+    );
+    await user.click(screen.getByRole("button", { name: "Edit set 4" }));
+
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
     expect(screen.getByRole("dialog", { name: "Edit set 4" })).toBeVisible();
   });
 });

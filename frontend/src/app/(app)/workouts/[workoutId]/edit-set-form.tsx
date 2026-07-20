@@ -4,6 +4,7 @@ import {
   updateSetInExerciseWithState,
   type UpdateSetFormState,
 } from "@/app/actions/workout-exercises";
+import { AccessibleDialog } from "@/components/ui/accessible-dialog";
 import { ToastSubmitButton } from "@/components/ui/toast-submit-button";
 import {
   useActionState,
@@ -37,15 +38,6 @@ const initialState: UpdateSetFormState = {
 
 const editSetDialogOpenedEvent = "persist:edit-set-dialog-opened";
 
-const focusableElementSelector = [
-  "button:not([disabled])",
-  "input:not([disabled]):not([type='hidden'])",
-  "select:not([disabled])",
-  "textarea:not([disabled])",
-  "[href]",
-  "[tabindex]:not([tabindex='-1'])",
-].join(",");
-
 const editableFieldNames = ["weight", "reps", "rir", "tempo", "notes"] as const;
 
 type EditableSetValues = Record<(typeof editableFieldNames)[number], string>;
@@ -78,7 +70,6 @@ export function EditSetForm({ workoutId, set }: EditSetFormProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [openedAt, setOpenedAt] = useState(0);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const sheetRef = useRef<HTMLElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const weightRef = useRef<HTMLInputElement>(null);
   const submittedValuesRef = useRef<EditableSetValues | null>(null);
@@ -89,7 +80,6 @@ export function EditSetForm({ workoutId, set }: EditSetFormProps) {
 
   const closeDialog = useCallback(() => {
     setIsOpen(false);
-    window.setTimeout(() => triggerRef.current?.focus(), 0);
   }, []);
 
   const [state, formAction] = useActionState(
@@ -163,60 +153,6 @@ export function EditSetForm({ workoutId, set }: EditSetFormProps) {
     };
   }, [set.id]);
 
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const focusTimer = window.setTimeout(() => {
-      weightRef.current?.focus();
-    }, 0);
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        closeDialog();
-        return;
-      }
-
-      if (event.key !== "Tab" || !sheetRef.current) {
-        return;
-      }
-
-      const focusableElements = Array.from(
-        sheetRef.current.querySelectorAll<HTMLElement>(focusableElementSelector)
-      );
-
-      if (focusableElements.length === 0) {
-        event.preventDefault();
-        sheetRef.current.focus();
-        return;
-      }
-
-      const firstElement = focusableElements[0];
-      const lastElement = focusableElements[focusableElements.length - 1];
-
-      if (event.shiftKey && document.activeElement === firstElement) {
-        event.preventDefault();
-        lastElement.focus();
-      } else if (!event.shiftKey && document.activeElement === lastElement) {
-        event.preventDefault();
-        firstElement.focus();
-      }
-    }
-
-    document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.clearTimeout(focusTimer);
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [closeDialog, isOpen]);
-
   function openDialog() {
     window.dispatchEvent(
       new CustomEvent<string>(editSetDialogOpenedEvent, { detail: set.id })
@@ -241,21 +177,16 @@ export function EditSetForm({ workoutId, set }: EditSetFormProps) {
         Edit
       </button>
 
-      {isOpen && (
-        <div className="fixed inset-0 z-[70] flex items-end bg-black/80 px-2 pt-3 backdrop-blur-sm sm:items-center sm:justify-center sm:p-4">
-          <section
-            ref={sheetRef}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={titleId}
-            aria-describedby={
-              shouldShowError
-                ? `${descriptionId} ${messageId}`
-                : descriptionId
-            }
-            tabIndex={-1}
-            className="flex h-[calc(100dvh-0.75rem)] w-full flex-col overflow-hidden rounded-t-[2rem] border border-white/10 bg-neutral-950 shadow-[0_-24px_80px_-35px_rgba(16,185,129,0.55)] sm:h-auto sm:max-h-[calc(100dvh-2rem)] sm:max-w-xl sm:rounded-3xl"
-          >
+      <AccessibleDialog
+        descriptionId={
+          shouldShowError ? `${descriptionId} ${messageId}` : descriptionId
+        }
+        initialFocusRef={weightRef}
+        onClose={closeDialog}
+        open={isOpen}
+        restoreFocusRef={triggerRef}
+        titleId={titleId}
+      >
             <header className="flex shrink-0 items-start justify-between gap-4 border-b border-white/10 px-4 py-4 sm:px-5">
               <div className="min-w-0">
                 <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-300">
@@ -427,9 +358,7 @@ export function EditSetForm({ workoutId, set }: EditSetFormProps) {
                 </ToastSubmitButton>
               </footer>
             </form>
-          </section>
-        </div>
-      )}
+      </AccessibleDialog>
     </>
   );
 }
