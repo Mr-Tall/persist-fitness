@@ -42,6 +42,25 @@ function SavedSetTestTrigger({ setNumber }: { setNumber: number }) {
 }
 
 describe("SetCard", () => {
+  it.each([
+    ["reps_only", { reps: 20 }, "20 reps"],
+    ["time", { durationSeconds: 90 }, "90 sec"],
+    ["distance", { distance: 5, distanceUnit: "km" }, "5 km"],
+    ["distance_time", { distance: 500, distanceUnit: "m", durationSeconds: 102 }, "500 m in 1:42"],
+  ])("renders a %s result without weighted placeholders", (trackingType, values, expected) => {
+    render(
+      <SetCard
+        editable={false}
+        trackingType={trackingType}
+        workoutId="workout-1"
+        set={{ ...completeSet, weight: null, reps: null, ...values }}
+      />,
+    );
+
+    expect(screen.getByLabelText(expected)).toHaveTextContent(expected);
+    expect(screen.queryByText("Weight not logged")).not.toBeInTheDocument();
+  });
+
   it("renders a semantic, scan-friendly set row with all metadata", () => {
     render(<SetCard workoutId="workout-1" set={completeSet} />);
 
@@ -199,7 +218,7 @@ describe("SetCard", () => {
       ).toBeInTheDocument();
       expect(within(setTwo).queryByText("Saved")).not.toBeInTheDocument();
       expect(setTwo).toHaveClass("border-white/10");
-      expect(setThree).toHaveClass("border-emerald-300/70");
+      expect(setThree).toHaveClass("border-success/70");
       expect(setThree).toHaveClass("motion-reduce:transition-none");
 
       act(() => {

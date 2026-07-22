@@ -54,7 +54,7 @@ export function MobileProfileNudge({ profile }: MobileProfileNudgeProps) {
       <Button
         href="/settings"
         variant="secondary"
-        className="min-h-12 shrink-0 px-4 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950"
+        className="min-h-12 shrink-0 px-4 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
       >
         Finish setup
       </Button>

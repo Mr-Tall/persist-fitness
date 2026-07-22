@@ -40,7 +40,7 @@ function WorkoutHeaderSkeleton() {
 function AddSetComposerSkeleton() {
   return (
     <section
-      className="rounded-2xl border border-emerald-300/20 bg-emerald-400/[0.06] p-3 sm:p-4"
+      className="rounded-2xl border border-border bg-surface-elevated p-3 sm:p-4"
       data-skeleton="add-set-composer"
     >
       <SkeletonBlock className="h-3 w-24" />
@@ -78,7 +78,7 @@ function SavedSetRowSkeleton() {
 function ExerciseAccordionSkeleton() {
   return (
     <div className="mt-5 min-w-0 space-y-3" data-skeleton="exercise-accordion">
-      <article className="min-w-0 overflow-hidden rounded-2xl border border-emerald-300/30 bg-emerald-400/[0.05]">
+      <article className="min-w-0 overflow-hidden rounded-2xl border border-border-strong bg-surface-elevated">
         <div className="flex min-h-14 min-w-0 items-center gap-3 px-4 py-2" data-skeleton="current-exercise-summary">
           <div className="min-w-0 flex-1">
             <SkeletonBlock className="h-5 w-52 max-w-[85%]" />
@@ -87,7 +87,7 @@ function ExerciseAccordionSkeleton() {
           <SkeletonBlock className="h-6 w-16 shrink-0 rounded-full" />
         </div>
 
-        <div className="border-t border-emerald-300/15">
+        <div className="border-t border-border">
           <div className="bg-white/[0.025] p-4 sm:p-5" data-skeleton="previous-performance">
             <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
               <div className="flex min-w-0 items-center justify-between gap-3">

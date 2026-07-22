@@ -82,6 +82,10 @@ describe("RoutinesPage", () => {
     const createLink = screen.getByRole("link", { name: "Create routine" });
     expect(createLink).toHaveAttribute("href", "/routines/new");
     expect(createLink).toHaveClass("min-h-12", "focus-visible:ring-2");
+    expect(screen.getByRole("link", { name: "Browse programs" })).toHaveAttribute(
+      "href",
+      "/programs",
+    );
   });
 
   it("renders routines as compact semantic rows with exercise previews", async () => {
@@ -122,7 +126,7 @@ describe("RoutinesPage", () => {
       name: `Delete ${longRoutineTitle} routine`,
     });
 
-    expect(startButton).toHaveClass("min-h-12", "bg-emerald-400");
+    expect(startButton).toHaveClass("min-h-12", "bg-action");
     expect(editLink).toHaveClass("min-h-11", "focus-visible:ring-2");
     expect(deleteButton).toHaveClass("min-h-11", "focus-visible:ring-2");
     expect(editLink).toHaveAttribute("href", "/routines/routine-1");

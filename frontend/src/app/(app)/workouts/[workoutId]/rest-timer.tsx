@@ -1,6 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
+import {
+  formatRestTime,
+  useWorkoutTimer,
+} from "./workout-experience-provider";
 
 const presets = [
   { label: "90s", seconds: 90 },
@@ -8,85 +12,79 @@ const presets = [
   { label: "3m", seconds: 180 },
 ];
 
-function formatTime(seconds: number) {
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-
-  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
-}
-
 export function RestTimer() {
-  const [secondsLeft, setSecondsLeft] = useState(120);
-  const [isRunning, setIsRunning] = useState(false);
+  const timer = useWorkoutTimer();
+  const panelRef = useRef<HTMLDetailsElement>(null);
 
   useEffect(() => {
-    if (!isRunning || secondsLeft <= 0) {
-      return;
-    }
+    if (!timer?.controlsOpen) return;
+    const frame = window.requestAnimationFrame(() => {
+      panelRef.current?.scrollIntoView?.({ block: "nearest" });
+      panelRef.current?.querySelector<HTMLElement>("summary")?.focus();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [timer?.controlsOpen]);
 
-    const interval = window.setInterval(() => {
-      setSecondsLeft((current) => {
-        if (current <= 1) {
-          setIsRunning(false);
-          return 0;
-        }
-
-        return current - 1;
-      });
-    }, 1000);
-
-    return () => window.clearInterval(interval);
-  }, [isRunning, secondsLeft]);
+  if (!timer) {
+    return null;
+  }
 
   return (
-    <div className="mt-4 rounded-3xl border border-white/10 bg-black/20 p-4">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-neutral-500">
+    <details
+      className="mt-4 rounded-2xl border border-border bg-surface"
+      onToggle={(event) => timer.setControlsOpen(event.currentTarget.open)}
+      open={timer.controlsOpen}
+      ref={panelRef}
+    >
+      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between rounded-2xl px-4 py-3 outline-none focus-visible:ring-2 focus-visible:ring-focus [&::-webkit-details-marker]:hidden">
+        <span>
+          <span className="block text-[10px] font-black uppercase tracking-[0.18em] text-text-muted">
             Rest timer
-          </p>
-          <p className="mt-1 text-4xl font-black text-white">
-            {formatTime(secondsLeft)}
-          </p>
-        </div>
+          </span>
+          <span className="mt-0.5 block text-xl font-black text-text-primary">
+            {formatRestTime(timer.secondsLeft)}
+          </span>
+        </span>
+        <span className="text-xs font-bold text-text-secondary">
+          {timer.isRunning ? "Running · Controls" : "Timer controls"}
+        </span>
+      </summary>
 
-        <div className="grid grid-cols-3 gap-2 sm:flex sm:items-center">
+      <div className="border-t border-border p-4">
+        <div className="grid grid-cols-3 gap-2">
           {presets.map((preset) => (
             <button
+              className="min-h-11 rounded-xl border border-border px-3 py-2 text-xs font-black text-text-secondary hover:bg-action-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
               key={preset.seconds}
+              onClick={() => timer.setPreset(preset.seconds)}
               type="button"
-              onClick={() => {
-                setSecondsLeft(preset.seconds);
-                setIsRunning(false);
-              }}
-              className="rounded-xl border border-white/10 px-3 py-2 text-xs font-black text-neutral-300 transition hover:bg-white/10 hover:text-white"
             >
               {preset.label}
             </button>
           ))}
         </div>
-      </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          onClick={() => setIsRunning((current) => !current)}
-          className="rounded-xl bg-emerald-400 px-4 py-3 text-sm font-black text-black transition hover:bg-emerald-300"
-        >
-          {isRunning ? "Pause" : secondsLeft === 0 ? "Restart" : "Start"}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            setSecondsLeft(120);
-            setIsRunning(false);
-          }}
-          className="rounded-xl border border-white/10 px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"
-        >
-          Reset
-        </button>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <button
+            className="min-h-12 rounded-xl bg-warning px-4 py-3 text-sm font-black text-black hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            onClick={timer.toggleRunning}
+            type="button"
+          >
+            {timer.isRunning
+              ? "Pause"
+              : timer.secondsLeft === 0
+                ? "Restart"
+                : "Start"}
+          </button>
+          <button
+            className="min-h-12 rounded-xl border border-border px-4 py-3 text-sm font-black text-text-primary hover:bg-action-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            onClick={timer.reset}
+            type="button"
+          >
+            Reset
+          </button>
+        </div>
       </div>
-    </div>
+    </details>
   );
 }

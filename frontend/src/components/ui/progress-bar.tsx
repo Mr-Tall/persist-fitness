@@ -39,9 +39,16 @@ export function ProgressBar({
         </div>
       )}
 
-      <div className="h-3 overflow-hidden rounded-full bg-white/10">
+      <div
+        aria-label={label ?? "Progress"}
+        aria-valuemax={100}
+        aria-valuemin={0}
+        aria-valuenow={percentage}
+        className="h-3 overflow-hidden rounded-full bg-white/10"
+        role="progressbar"
+      >
         <div
-          className="h-full rounded-full bg-emerald-400 transition-all"
+          className="h-full rounded-full bg-action transition-all"
           style={{ width: `${percentage}%` }}
         />
       </div>

@@ -4,7 +4,7 @@ export default function WorkoutNotFound() {
   return (
     <main className="mx-auto flex min-h-[70vh] max-w-3xl items-center px-4 py-12 sm:px-6 lg:px-8">
       <section className="w-full rounded-[2rem] border border-white/10 bg-white/[0.04] p-8 text-center shadow-2xl backdrop-blur">
-        <p className="text-sm font-black uppercase tracking-[0.22em] text-emerald-300">
+        <p className="text-sm font-black uppercase tracking-[0.22em] text-text-secondary">
           Workout not found
         </p>
 
@@ -20,7 +20,7 @@ export default function WorkoutNotFound() {
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <Link
             href="/workouts"
-            className="rounded-xl bg-emerald-400 px-5 py-3 text-sm font-black text-black transition hover:bg-emerald-300"
+            className="rounded-xl bg-action px-5 py-3 text-sm font-black text-action-foreground transition hover:bg-action-hover"
           >
             Back to workouts
           </Link>

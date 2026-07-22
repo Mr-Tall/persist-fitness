@@ -4,6 +4,15 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { ProfileForm } from "./profile-form";
+import { FeedbackDialog } from "@/components/feedback/feedback-dialog";
+import Link from "next/link";
+import { listManagedSessions } from "@/lib/auth/session-management";
+import {
+  AccountDataControls,
+  DeleteAccountControl,
+  SessionManagement,
+} from "./account-management";
+import { HealthSettings } from "@/components/health/health-settings";
 
 const equipmentOptions = [
   "Barbell",
@@ -16,27 +25,27 @@ const equipmentOptions = [
 ];
 
 const controlClassName =
-  "mt-2 min-h-12 w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-base text-white outline-none transition focus-visible:border-emerald-300/60 focus-visible:ring-2 focus-visible:ring-emerald-300/25";
+  "mt-2 min-h-12 w-full rounded-2xl border border-border bg-surface px-4 py-3 text-base text-text-primary outline-none transition-colors placeholder:text-text-muted focus-visible:border-focus focus-visible:ring-2 focus-visible:ring-focus/25";
 
 const labelClassName = "block text-sm font-bold text-neutral-200";
 
-export default async function SettingsPage() {
+export default async function SettingsPage({ searchParams }: { searchParams?: Promise<{ feedback?: string; reference?: string }> }) {
   const session = await auth();
 
   if (!session?.user?.id) {
     redirect("/login");
   }
 
-  const profile = await db.profile.findUnique({
-    where: {
-      userId: session.user.id,
-    },
-  });
+  const [profile, sessions] = await Promise.all([
+    db.profile.findUnique({ where: { userId: session.user.id } }),
+    listManagedSessions(session),
+  ]);
+  const query = await searchParams;
 
   return (
     <main className="mx-auto max-w-3xl px-4 pb-8 pt-5 sm:px-6 sm:py-10">
       <header className="mb-5 px-1 sm:mb-8">
-        <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-300">
+        <p className="text-xs font-black uppercase tracking-[0.24em] text-text-secondary">
           Profile
         </p>
         <h1 className="mt-2 text-3xl font-black tracking-tight text-white sm:text-4xl">
@@ -50,7 +59,7 @@ export default async function SettingsPage() {
 
       <ProfileForm>
         <fieldset>
-          <legend className="text-xs font-black uppercase tracking-[0.2em] text-emerald-300">
+          <legend className="text-xs font-black uppercase tracking-[0.2em] text-text-secondary">
             Goal and experience
           </legend>
 
@@ -114,7 +123,7 @@ export default async function SettingsPage() {
         <div className="h-px bg-white/10" />
 
         <fieldset>
-          <legend className="text-xs font-black uppercase tracking-[0.2em] text-emerald-300">
+          <legend className="text-xs font-black uppercase tracking-[0.2em] text-text-secondary">
             Schedule and split
           </legend>
 
@@ -159,7 +168,7 @@ export default async function SettingsPage() {
         <div className="h-px bg-white/10" />
 
         <fieldset>
-          <legend className="text-xs font-black uppercase tracking-[0.2em] text-emerald-300">
+          <legend className="text-xs font-black uppercase tracking-[0.2em] text-text-secondary">
             Available equipment
           </legend>
           <p className="mt-2 text-sm leading-6 text-neutral-400">
@@ -170,14 +179,14 @@ export default async function SettingsPage() {
             {equipmentOptions.map((item) => (
               <label
                 key={item}
-                className="flex min-h-12 cursor-pointer items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm font-bold text-neutral-200 transition hover:bg-white/[0.06] focus-within:border-emerald-300/60 focus-within:ring-2 focus-within:ring-emerald-300/25"
+                className="flex min-h-12 cursor-pointer items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 text-sm font-bold text-text-secondary transition-colors hover:bg-surface-elevated focus-within:border-focus focus-within:ring-2 focus-within:ring-focus/25"
               >
                 <input
                   type="checkbox"
                   name="equipment"
                   value={item}
                   defaultChecked={profile?.equipment.includes(item)}
-                  className="h-5 w-5 shrink-0 accent-emerald-400"
+                  className="h-5 w-5 shrink-0 accent-action"
                 />
                 <span>{item}</span>
               </label>
@@ -187,7 +196,7 @@ export default async function SettingsPage() {
 
         <SubmitButton
           pendingText="Saving profile..."
-          className="min-h-12 w-full rounded-2xl bg-emerald-400 px-6 py-3 font-black text-black shadow-[0_16px_40px_rgba(52,211,153,0.18)] transition hover:bg-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2 focus-visible:ring-offset-black sm:w-auto"
+          className="min-h-12 w-full rounded-2xl bg-action px-6 py-3 font-black text-action-foreground shadow-[0_16px_40px_rgba(0,0,0,0.3)] transition-colors hover:bg-action-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas sm:w-auto"
         >
           Save profile
         </SubmitButton>
@@ -201,10 +210,33 @@ export default async function SettingsPage() {
           </p>
         </div>
 
-        <div className="mt-4 [&_button]:min-h-12 [&_button]:w-full [&_button]:border-white/15 [&_button]:bg-white/[0.04] [&_button]:text-neutral-200 [&_button]:hover:bg-white/10 [&_button]:focus-visible:outline-none [&_button]:focus-visible:ring-2 [&_button]:focus-visible:ring-emerald-300/40 sm:mt-0 sm:[&_button]:w-auto">
+        <div className="mt-4 [&_button]:min-h-12 [&_button]:w-full [&_button]:border-border [&_button]:bg-action-secondary [&_button]:text-text-secondary [&_button]:hover:bg-surface-elevated [&_button]:focus-visible:outline-none [&_button]:focus-visible:ring-2 [&_button]:focus-visible:ring-focus sm:mt-0 sm:[&_button]:w-auto">
           <LogoutButton />
         </div>
       </section>
+      <SessionManagement sessions={sessions.map((item) => ({
+        ...item,
+        createdAt: item.createdAt.toISOString(),
+        expires: item.expires.toISOString(),
+        lastActiveAt: item.lastActiveAt.toISOString(),
+      }))} />
+      <HealthSettings />
+      <AccountDataControls />
+      <section className="mt-5 rounded-[2rem] border border-white/10 bg-white/[0.05] p-5 sm:p-6">
+        <h2 className="text-lg font-black text-white">Beta feedback</h2>
+        <p className="mt-1 mb-4 text-sm leading-6 text-neutral-400">Report a problem or tell us what would make Persist better.</p>
+        <FeedbackDialog autoOpen={query?.feedback === "bug"} initialCategory={query?.feedback === "bug" ? "bug" : "general"} errorReference={query?.reference ?? ""} />
+      </section>
+      <section aria-labelledby="privacy-resources-heading" className="mt-5 rounded-[2rem] border border-border bg-surface p-5 sm:p-6">
+        <h2 id="privacy-resources-heading" className="text-lg font-black text-white">Privacy and terms</h2>
+        <p className="mt-1 text-sm leading-6 text-text-muted">Review how the beta handles account data, analytics, crash reports, feedback, and offline storage.</p>
+        <nav aria-label="Privacy resources" className="mt-3 flex flex-wrap gap-2">
+          <Link href="/privacy" className="inline-flex min-h-11 items-center rounded-xl px-3 font-bold text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus">Privacy policy</Link>
+          <Link href="/terms" className="inline-flex min-h-11 items-center rounded-xl px-3 font-bold text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus">Terms</Link>
+          <Link href="/data-usage" className="inline-flex min-h-11 items-center rounded-xl px-3 font-bold text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus">Data usage</Link>
+        </nav>
+      </section>
+      <DeleteAccountControl />
     </main>
   );
 }

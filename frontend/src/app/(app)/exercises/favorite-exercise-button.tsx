@@ -1,26 +1,37 @@
+"use client";
+
 import { toggleFavoriteExercise } from "@/app/actions/favorite-exercises";
 
 type FavoriteExerciseButtonProps = {
   exerciseId: string;
+  exerciseName?: string;
   isFavorite: boolean;
 };
 
 export function FavoriteExerciseButton({
   exerciseId,
+  exerciseName,
   isFavorite,
 }: FavoriteExerciseButtonProps) {
   return (
     <form action={toggleFavoriteExercise}>
       <input type="hidden" name="exerciseId" value={exerciseId} />
       <button
-        type="submit"
-        className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+        aria-label={
+          exerciseName
+            ? `${isFavorite ? "Unpin" : "Pin"} ${exerciseName}`
+            : isFavorite
+              ? "Unpin exercise"
+              : "Pin exercise"
+        }
+        className={`min-h-11 rounded-full border px-3 py-2 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus ${
           isFavorite
-            ? "bg-amber-100 text-amber-700 hover:bg-amber-200"
-            : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+            ? "border-border-strong bg-action text-action-foreground hover:bg-action-hover"
+            : "border-border bg-action-secondary text-text-secondary hover:text-text-primary"
         }`}
+        type="submit"
       >
-        {isFavorite ? "★ Favorited" : "☆ Favorite"}
+        {isFavorite ? "★ Pinned" : "☆ Pin"}
       </button>
     </form>
   );

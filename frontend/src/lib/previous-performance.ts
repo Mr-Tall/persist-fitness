@@ -4,11 +4,15 @@ export type PreviousPerformance = {
   exerciseName: string;
   workoutTitle: string;
   workoutDate: Date;
+  trackingType?: string | null;
   sets: {
     setNumber: number;
     reps: number | null;
     weight: number | null;
     rir: number | null;
+    durationSeconds?: number | null;
+    distance?: number | null;
+    distanceUnit?: string | null;
   }[];
 };
 
@@ -17,11 +21,13 @@ export async function getPreviousPerformanceForExercise({
   currentWorkoutId,
   exerciseId,
   exerciseName,
+  trackingType,
 }: {
   userId: string;
   currentWorkoutId: string;
   exerciseId: string | null;
   exerciseName: string;
+  trackingType?: string | null;
 }): Promise<PreviousPerformance | null> {
   const previousExercise = await db.workoutExercise.findFirst({
     where: {
@@ -76,6 +82,9 @@ export async function getPreviousPerformanceForExercise({
           reps: true,
           weight: true,
           rir: true,
+          durationSeconds: true,
+          distance: true,
+          distanceUnit: true,
         },
       },
     },
@@ -89,6 +98,7 @@ export async function getPreviousPerformanceForExercise({
     exerciseName: previousExercise.name,
     workoutTitle: previousExercise.workout.title,
     workoutDate: previousExercise.workout.date,
+    trackingType: trackingType ?? null,
     sets: previousExercise.sets,
   };
 }

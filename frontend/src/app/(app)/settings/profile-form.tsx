@@ -95,6 +95,10 @@ export function ProfileForm({ children }: { children: ReactNode }) {
       action={formAction}
       aria-busy={isPending}
       aria-describedby={hasMessage ? messageId : undefined}
+      data-sensitive
+      data-ph-mask
+      data-ph-no-capture
+      data-sentry-mask
       className="space-y-7 rounded-[2rem] border border-white/10 bg-white/[0.06] p-5 shadow-2xl backdrop-blur sm:p-7"
       onSubmit={captureSubmission}
       ref={formRef}
@@ -103,8 +107,8 @@ export function ProfileForm({ children }: { children: ReactNode }) {
         <p
           className={`rounded-2xl border px-4 py-3 text-sm font-bold leading-6 outline-none ${
             state.status === "success"
-              ? "border-emerald-300/25 bg-emerald-400/[0.08] text-emerald-200"
-              : "border-red-300/25 bg-red-400/[0.08] text-red-200"
+              ? "border-success/25 bg-success-soft text-success"
+              : "border-danger/25 bg-danger-soft text-danger"
           }`}
           id={messageId}
           ref={messageRef}

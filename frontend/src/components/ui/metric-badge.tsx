@@ -1,7 +1,16 @@
 import clsx from "clsx";
 import { ReactNode } from "react";
 
-type MetricBadgeVariant = "default" | "emerald" | "amber" | "red";
+type MetricBadgeVariant =
+  | "default"
+  | "success"
+  | "warning"
+  | "danger"
+  | "info"
+  // Temporary backwards-compatible aliases. Prefer semantic names above.
+  | "emerald"
+  | "amber"
+  | "red";
 
 type MetricBadgeProps = {
   children: ReactNode;
@@ -10,10 +19,14 @@ type MetricBadgeProps = {
 };
 
 const styles = {
-  default: "border-white/10 bg-white/[0.06] text-neutral-300",
-  emerald: "border-emerald-300/30 bg-emerald-400/10 text-emerald-200",
-  amber: "border-amber-300/30 bg-amber-400/10 text-amber-200",
-  red: "border-red-300/30 bg-red-400/10 text-red-200",
+  default: "border-border bg-action-secondary text-text-secondary",
+  success: "border-success/30 bg-success-soft text-success",
+  warning: "border-warning/30 bg-warning-soft text-warning",
+  danger: "border-danger/30 bg-danger-soft text-danger",
+  info: "border-info/30 bg-info-soft text-info",
+  emerald: "border-success/30 bg-success-soft text-success",
+  amber: "border-warning/30 bg-warning-soft text-warning",
+  red: "border-danger/30 bg-danger-soft text-danger",
 };
 
 export function MetricBadge({

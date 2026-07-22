@@ -12,6 +12,8 @@ export const MAX_TEMPO_LENGTH = 30;
 export const MAX_WEIGHT = 10_000;
 export const MAX_REPS = 10_000;
 export const MAX_RIR = 10;
+export const MAX_DURATION_MINUTES = 1_440;
+export const MAX_DISTANCE = 1_000_000;
 
 export const workoutTitleSchema = z
   .string()
@@ -93,6 +95,23 @@ export const optionalRirSchema = optionalNumberSchema(
     .max(MAX_RIR, `RIR cannot exceed ${MAX_RIR}.`)
 );
 
+export const optionalDurationMinutesSchema = optionalNumberSchema(
+  z.number().finite().int().min(0).max(MAX_DURATION_MINUTES)
+);
+
+export const optionalDurationSecondsSchema = optionalNumberSchema(
+  z.number().finite().int().min(0).max(59)
+);
+
+export const optionalDistanceSchema = optionalNumberSchema(
+  z.number().finite().positive("Distance must be greater than zero.").max(MAX_DISTANCE)
+);
+
+export const optionalDistanceUnitSchema = z.preprocess(
+  (value) => (typeof value === "string" && value.trim() ? value.trim() : undefined),
+  z.enum(["m", "km", "mi"]).optional(),
+);
+
 export const createWorkoutSchema = z.object({
   title: workoutTitleSchema,
   goal: optionalWorkoutGoalSchema,
@@ -120,6 +139,10 @@ const setValueSchemas = {
   rir: optionalRirSchema,
   tempo: optionalTempoSchema,
   notes: optionalNotesSchema,
+  minutes: optionalDurationMinutesSchema,
+  seconds: optionalDurationSecondsSchema,
+  distance: optionalDistanceSchema,
+  distanceUnit: optionalDistanceUnitSchema,
 };
 
 export const addSetSchema = z.object({

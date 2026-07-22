@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { formatWorkoutDate } from "@/lib/format-date";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
+import { normalizeTrackingType } from "@/lib/exercise-tracking";
 
 type ExerciseDetailPageProps = {
   params: Promise<{
@@ -52,6 +53,8 @@ export default async function ExerciseDetailPage({
     notFound();
   }
 
+  const isWeighted = normalizeTrackingType(exercise.trackingType) === "weight_reps";
+
   const loggedExercises = await db.workoutExercise.findMany({
     where: {
       exerciseId: exercise.id,
@@ -84,7 +87,9 @@ export default async function ExerciseDetailPage({
   const bestSet = loggedExercises
     .flatMap((loggedExercise) =>
       loggedExercise.sets
-        .filter((set) => set.weight !== null && set.reps !== null)
+        .filter(
+          (set) => isWeighted && set.weight !== null && set.reps !== null,
+        )
         .map((set) => ({
           workoutId: loggedExercise.workout.id,
           workoutTitle: loggedExercise.workout.title,
@@ -103,7 +108,13 @@ export default async function ExerciseDetailPage({
   const chartPoints = loggedExercises
     .map((loggedExercise) => {
       const bestSetForWorkout = loggedExercise.sets
-        .filter((set) => set.weight !== null && set.reps !== null && set.reps > 0)
+        .filter(
+          (set) =>
+            isWeighted &&
+            set.weight !== null &&
+            set.reps !== null &&
+            set.reps > 0,
+        )
         .map((set) => ({
           weight: set.weight as number,
           reps: set.reps as number,
@@ -133,7 +144,7 @@ export default async function ExerciseDetailPage({
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10">
-      <Link href="/exercises" className="text-sm font-medium text-emerald-600">
+      <Link href="/exercises" className="text-sm font-medium text-text-secondary">
         ← Back to exercises
       </Link>
 
@@ -147,6 +158,7 @@ export default async function ExerciseDetailPage({
           action={
             <FavoriteExerciseButton
               exerciseId={exercise.id}
+              exerciseName={exercise.name}
               isFavorite={exercise.favoritedBy.length > 0}
             />
           }
@@ -190,7 +202,7 @@ export default async function ExerciseDetailPage({
                   exercise.primaryMuscles.map((muscle) => (
                     <span
                       key={muscle}
-                      className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700"
+                      className="rounded-full bg-action-secondary px-3 py-1 text-xs font-semibold text-text-secondary"
                     >
                       {muscle}
                     </span>

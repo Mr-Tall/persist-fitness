@@ -12,8 +12,12 @@ import type { WorkoutForPage } from "./workout-page-types";
 
 type WorkoutHeaderProps = {
   workout: WorkoutForPage;
+  completedExercises: number;
+  totalExercises: number;
   totalSets: number;
   totalVolume: string;
+  personalRecordCount: number;
+  estimatedDuration: string;
   duration: string;
   workoutProgress: number;
   isCompleted: boolean;
@@ -21,20 +25,24 @@ type WorkoutHeaderProps = {
 
 export function WorkoutHeader({
   workout,
+  completedExercises,
+  totalExercises,
   totalSets,
   totalVolume,
+  personalRecordCount,
+  estimatedDuration,
   duration,
   workoutProgress,
   isCompleted,
 }: WorkoutHeaderProps) {
   return (
     <Card className="relative overflow-hidden p-3 sm:p-5 lg:p-7">
-      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,rgba(52,211,153,0.20),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(132,204,22,0.10),transparent_30%)]" />
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.10),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(161,161,170,0.06),transparent_30%)]" />
 
       <Button
         href="/workouts"
         variant="ghost"
-        className="min-h-11 rounded-xl px-2 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/40"
+        className="min-h-11 rounded-xl px-2 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
       >
         ← Back to workouts
       </Button>
@@ -48,7 +56,7 @@ export function WorkoutHeader({
           aria-label="Workout status and duration"
           className="mt-2 flex min-w-0 flex-wrap items-center gap-2"
         >
-          <MetricBadge variant={isCompleted ? "emerald" : "amber"}>
+          <MetricBadge variant={isCompleted ? "success" : "warning"}>
             {isCompleted ? "Completed workout" : "Active workout"}
           </MetricBadge>
 
@@ -66,10 +74,22 @@ export function WorkoutHeader({
       </header>
 
       <div className="mt-3">
+        <ProgressBar
+          value={workoutProgress}
+          max={100}
+          label="Workout progress"
+          helper={`${completedExercises} / ${totalExercises} exercises completed`}
+        />
+      </div>
+
+      <div className="mt-3">
         <WorkoutStatGrid
-          exerciseCount={workout.exercises.length}
+          completedExercises={completedExercises}
+          totalExercises={totalExercises}
           totalSets={totalSets}
           totalVolume={totalVolume}
+          personalRecordCount={personalRecordCount}
+          estimatedDuration={estimatedDuration}
         />
       </div>
 
@@ -86,7 +106,7 @@ export function WorkoutHeader({
               type="submit"
               variant="secondary"
               fullWidth
-              className="min-h-11 rounded-xl px-3 py-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/40 sm:text-sm"
+              className="min-h-11 rounded-xl px-3 py-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus sm:text-sm"
             >
               Repeat workout
             </Button>
@@ -112,14 +132,6 @@ export function WorkoutHeader({
           </form>
         </div>
       </section>
-
-      <ProgressBar
-        value={workoutProgress}
-        max={100}
-        label="Session progress"
-        helper={`${totalSets} / 12 sets logged`}
-        className="mt-4 hidden md:block"
-      />
 
       {workout.notes && (
         <Card className="mt-3 rounded-2xl bg-black/25 p-3 sm:mt-4 sm:p-4">

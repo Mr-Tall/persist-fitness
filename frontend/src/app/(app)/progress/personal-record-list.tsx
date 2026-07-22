@@ -18,7 +18,7 @@ export function PersonalRecordList({ records }: PersonalRecordListProps) {
             <Link
               href={`/workouts/${record.workoutId}`}
               aria-labelledby={`${idPrefix}-view ${idPrefix}-exercise ${idPrefix}-record ${idPrefix}-result ${idPrefix}-estimate ${idPrefix}-source`}
-              className="flex min-h-16 items-start gap-3 p-4 transition hover:bg-amber-300/[0.05] active:bg-amber-300/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-200 sm:p-5"
+              className="flex min-h-16 items-start gap-3 p-4 transition hover:bg-success-soft/60 active:bg-success-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus sm:p-5"
             >
               <span id={`${idPrefix}-view`} className="sr-only">
                 View
@@ -45,7 +45,7 @@ export function PersonalRecordList({ records }: PersonalRecordListProps) {
                   </p>
                   <p
                     id={`${idPrefix}-estimate`}
-                    className="break-words text-xs font-bold text-amber-200 [overflow-wrap:anywhere]"
+                    className="break-words text-xs font-bold text-success [overflow-wrap:anywhere]"
                   >
                     Estimated 1RM{" "}
                     {Math.round(record.estimatedOneRepMax).toLocaleString()} lb
@@ -63,7 +63,7 @@ export function PersonalRecordList({ records }: PersonalRecordListProps) {
 
               <span
                 aria-hidden="true"
-                className="mt-0.5 shrink-0 text-xl text-amber-200/60"
+                className="mt-0.5 shrink-0 text-xl text-success/60"
               >
                 &rsaquo;
               </span>

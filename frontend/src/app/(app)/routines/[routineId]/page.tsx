@@ -60,6 +60,19 @@ export default async function RoutineDetailPage({
       name: true,
       equipment: true,
       primaryMuscles: true,
+      secondaryMuscles: true,
+      force: true,
+      level: true,
+      mechanic: true,
+      movementPattern: true,
+      exerciseType: true,
+      laterality: true,
+      trackingType: true,
+      instructions: true,
+      tips: true,
+      aliases: true,
+      images: true,
+      thumbnailUrl: true,
       favoritedBy: {
         where: {
           userId: session.user.id,
@@ -76,6 +89,19 @@ export default async function RoutineDetailPage({
     name: exercise.name,
     equipment: exercise.equipment,
     primaryMuscles: exercise.primaryMuscles,
+    secondaryMuscles: exercise.secondaryMuscles,
+    force: exercise.force,
+    level: exercise.level,
+    mechanic: exercise.mechanic,
+    movementPattern: exercise.movementPattern,
+    exerciseType: exercise.exerciseType,
+    laterality: exercise.laterality,
+    trackingType: exercise.trackingType,
+    instructions: exercise.instructions,
+    tips: exercise.tips,
+    aliases: exercise.aliases,
+    images: exercise.images,
+    thumbnailUrl: exercise.thumbnailUrl,
     isFavorite: exercise.favoritedBy.length > 0,
   }));
 
@@ -92,7 +118,7 @@ export default async function RoutineDetailPage({
     <main className="mx-auto max-w-4xl px-4 pb-10 pt-4 sm:px-6 sm:py-10">
       <header className="px-1">
         <Link
-          className="inline-flex min-h-11 items-center rounded-xl px-2 text-sm font-bold text-emerald-300 transition hover:bg-emerald-400/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950"
+          className="inline-flex min-h-11 items-center rounded-xl px-2 text-sm font-bold text-text-secondary transition-colors hover:bg-action-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
           href="/routines"
         >
           <span aria-hidden="true" className="mr-1.5">
@@ -137,7 +163,7 @@ export default async function RoutineDetailPage({
             <input name="routineId" type="hidden" value={routine.id} />
             <button
               aria-label={`Start ${routine.title} workout`}
-              className="inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-emerald-400 px-5 py-3 text-sm font-black text-black transition hover:bg-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950 sm:w-auto"
+              className="inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-action px-5 py-3 text-sm font-black text-action-foreground transition-colors hover:bg-action-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas sm:w-auto"
               type="submit"
             >
               Start workout
@@ -155,7 +181,7 @@ export default async function RoutineDetailPage({
         </div>
 
         {exerciseCount === 0 && (
-          <p className="mt-3 rounded-2xl border border-amber-300/20 bg-amber-400/[0.07] px-4 py-3 text-xs font-bold leading-5 text-amber-100">
+          <p className="mt-3 rounded-2xl border border-warning/20 bg-warning-soft px-4 py-3 text-xs font-bold leading-5 text-warning">
             This routine has no planned exercises. Starting it will create an
             empty workout you can build as you train.
           </p>
@@ -215,7 +241,7 @@ export default async function RoutineDetailPage({
                       <h3 className="break-words text-sm font-black leading-5 text-white [overflow-wrap:anywhere] sm:text-base">
                         {exercise.name}
                       </h3>
-                      <p className="mt-1 break-words text-sm font-black leading-5 text-emerald-200 [overflow-wrap:anywhere]">
+                      <p className="mt-1 break-words text-sm font-black leading-5 text-text-primary [overflow-wrap:anywhere]">
                         {exercise.sets && exercise.reps
                           ? `${exercise.sets} sets × ${exercise.reps}`
                           : exercise.sets
@@ -229,7 +255,7 @@ export default async function RoutineDetailPage({
 
                   {exercise.notes && (
                     <details className="group mt-2 ml-10 rounded-xl border border-white/[0.08] bg-white/[0.03]">
-                      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-3 py-2 text-xs font-bold text-neutral-300 transition hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-inset [&::-webkit-details-marker]:hidden">
+                      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-3 py-2 text-xs font-bold text-text-secondary transition hover:bg-action-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-inset [&::-webkit-details-marker]:hidden">
                         Notes
                         <span
                           aria-hidden="true"
@@ -278,7 +304,7 @@ export default async function RoutineDetailPage({
 
       <section
         aria-labelledby="routine-settings-title"
-        className="mt-6 rounded-2xl border border-red-300/15 bg-red-400/[0.04] p-4 sm:mt-8 sm:flex sm:items-center sm:justify-between sm:gap-5"
+        className="mt-6 rounded-2xl border border-danger/20 bg-danger-soft p-4 sm:mt-8 sm:flex sm:items-center sm:justify-between sm:gap-5"
       >
         <div>
           <h2 className="text-sm font-black text-white" id="routine-settings-title">

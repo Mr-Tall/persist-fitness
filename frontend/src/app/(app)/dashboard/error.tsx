@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
+import { ErrorReference } from "@/components/observability/error-reference";
 
 type DashboardErrorProps = {
   error: Error & { digest?: string };
@@ -27,7 +28,7 @@ export default function DashboardError({
         role="alert"
         className="w-full max-w-xl rounded-[1.75rem] border border-white/10 bg-white/[0.06] p-5 shadow-sm backdrop-blur sm:p-8"
       >
-        <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-300">
+        <p className="text-xs font-black uppercase tracking-[0.24em] text-text-secondary">
           Today
         </p>
 
@@ -41,13 +42,14 @@ export default function DashboardError({
         <p className="mt-3 text-sm leading-6 text-neutral-300">
           Your workout data is still safe. Try loading this screen again.
         </p>
+        <ErrorReference error={error} />
 
         <div className="mt-6 flex flex-col gap-2 sm:flex-row">
           <Button
             type="button"
             onClick={reset}
             fullWidth
-            className="min-h-12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950"
+            className="min-h-12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
           >
             Try again
           </Button>
@@ -56,7 +58,7 @@ export default function DashboardError({
             href="/workouts"
             variant="secondary"
             fullWidth
-            className="min-h-12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950"
+            className="min-h-12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
           >
             View workouts
           </Button>

@@ -19,7 +19,7 @@ export function EmptyState({
   children,
 }: EmptyStateProps) {
   return (
-    <div className="rounded-3xl border border-dashed border-white/10 bg-black/20 p-8 text-center">
+    <div className="rounded-3xl border border-dashed border-border bg-surface/70 p-8 text-center">
       <h3 className="font-black text-white">{title}</h3>
 
       {description && (

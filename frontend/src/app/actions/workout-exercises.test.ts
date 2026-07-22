@@ -201,7 +201,11 @@ function useStoredSets(sets: StoredSet[]) {
 
 function useSetAllocation(
   sets: StoredSet[],
-  exercises = [{ id: "exercise_1", workoutId: "workout_1" }]
+  exercises: Array<{
+    id: string;
+    workoutId: string;
+    exercise?: { trackingType: string | null } | null;
+  }> = [{ id: "exercise_1", workoutId: "workout_1" }]
 ) {
   mocks.findWorkoutExercise.mockImplementation(
     async ({ where }: { where: { id: string; workoutId: string } }) =>
@@ -604,6 +608,7 @@ describe("workout set allocation", () => {
       },
       select: {
         id: true,
+        exercise: { select: { trackingType: true } },
       },
     });
     expect(mocks.aggregateSets).toHaveBeenCalledWith({
@@ -617,6 +622,36 @@ describe("workout set allocation", () => {
     expect(
       sets.find((set) => set.workoutExerciseId === "exercise_2")
     ).toMatchObject({ setNumber: 6 });
+  });
+
+  it.each([
+    ["weight_reps", { weight: "225", reps: "5" }, { weight: 225, reps: 5 }],
+    ["reps_only", { reps: "20" }, { weight: null, reps: 20 }],
+    ["time", { minutes: "1", seconds: "30" }, { durationSeconds: 90 }],
+    ["distance", { distance: "5", distanceUnit: "km" }, { distance: 5, distanceUnit: "km" }],
+    [
+      "distance_time",
+      { distance: "500", distanceUnit: "m", minutes: "1", seconds: "42" },
+      { distance: 500, distanceUnit: "m", durationSeconds: 102 },
+    ],
+  ])("stores only fields relevant to %s exercises", async (trackingType, values, expected) => {
+    useSetAllocation([], [
+      {
+        id: "exercise_1",
+        workoutId: "workout_1",
+        exercise: { trackingType },
+      },
+    ]);
+    const formData = new FormData();
+    formData.set("workoutId", "workout_1");
+    formData.set("workoutExerciseId", "exercise_1");
+    Object.entries(values).forEach(([name, value]) => formData.set(name, value));
+
+    await addSetToExerciseWithState(initialState, formData);
+
+    expect(mocks.createSet).toHaveBeenCalledWith({
+      data: expect.objectContaining(expected),
+    });
   });
 });
 

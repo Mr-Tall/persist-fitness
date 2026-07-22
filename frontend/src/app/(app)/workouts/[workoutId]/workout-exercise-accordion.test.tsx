@@ -1,7 +1,8 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import {
+  getExerciseStatus,
   reconcileCurrentExercise,
   selectDefaultExercise,
   WorkoutExerciseAccordion,
@@ -25,6 +26,17 @@ function item(
 }
 
 describe("WorkoutExerciseAccordion", () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
+  it("derives explicit exercise states from saved work and current context", () => {
+    expect(getExerciseStatus(item("a", 0), false)).toBe("not-started");
+    expect(getExerciseStatus(item("a", 0), true)).toBe("in-progress");
+    expect(getExerciseStatus(item("a", 2), true)).toBe("completed");
+    expect(getExerciseStatus(item("a", 2), false)).toBe("completed");
+  });
+
   it("selects the first exercise without sets, otherwise the last exercise", () => {
     expect(selectDefaultExercise([item("a", 2), item("b", 0), item("c", 0)])).toBe(
       "b"
@@ -73,6 +85,67 @@ describe("WorkoutExerciseAccordion", () => {
     expect(within(summary).getByText("Latest 225 lb × 8")).toBeVisible();
     expect(within(summary).getByText("PR")).toBeVisible();
     expect(within(summary).getByText("Current")).toBeVisible();
+    expect(within(summary).getByText("Completed")).toBeVisible();
+  });
+
+  it("defaults auto-collapse on and persists the user's local preference", async () => {
+    const user = userEvent.setup();
+    const { unmount } = render(
+      <WorkoutExerciseAccordion
+        isCompleted={false}
+        items={[item("a", 1), item("b", 0)]}
+      />
+    );
+
+    const preference = screen.getByRole("switch", {
+      name: "Auto-collapse completed exercises",
+    });
+    expect(preference).toHaveAttribute("aria-checked", "true");
+
+    await user.click(preference);
+    expect(preference).toHaveAttribute("aria-checked", "false");
+    expect(window.localStorage.getItem("persist-fitness:auto-collapse-completed-exercises"))
+      .toBe("false");
+
+    unmount();
+    render(
+      <WorkoutExerciseAccordion
+        isCompleted={false}
+        items={[item("a", 1), item("b", 0)]}
+      />
+    );
+    expect(screen.getByRole("switch", {
+      name: "Auto-collapse completed exercises",
+    })).toHaveAttribute("aria-checked", "false");
+  });
+
+  it("keeps multiple exercises expandable when auto-collapse is disabled", async () => {
+    window.localStorage.setItem(
+      "persist-fitness:auto-collapse-completed-exercises",
+      "false",
+    );
+    const user = userEvent.setup();
+    render(
+      <WorkoutExerciseAccordion
+        isCompleted={false}
+        items={[item("a", 1), item("b", 0)]}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: /Exercise a/ }));
+    expect(screen.getByText("Expanded content a")).toBeVisible();
+    expect(screen.getByText("Expanded content b")).toBeVisible();
+  });
+
+  it("keeps the current exercise header sticky on mobile only", () => {
+    render(
+      <WorkoutExerciseAccordion isCompleted={false} items={[item("a", 0)]} />
+    );
+
+    const currentHeading = screen
+      .getByRole("button", { name: /Exercise a/ })
+      .closest("h3");
+    expect(currentHeading).toHaveClass("sticky", "top-0", "md:static");
   });
 
   it("makes a newly added exercise current without resetting on ordinary refreshes", () => {

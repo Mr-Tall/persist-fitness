@@ -32,6 +32,12 @@ const exercises = [
     name: "Bench Press",
     equipment: "Barbell",
     primaryMuscles: ["Chest", "Triceps"],
+    secondaryMuscles: ["Shoulders"],
+    exerciseType: "compound",
+    movementPattern: "horizontal_push",
+    level: "Intermediate",
+    instructions: ["Lower the bar under control."],
+    tips: ["Keep your shoulder blades stable."],
   },
 ];
 
@@ -76,7 +82,10 @@ describe("AddExerciseForm", () => {
     expect(screen.getByRole("heading", { name: "Add exercise" })).toBeInTheDocument();
     expect(screen.getByLabelText("Custom name")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /Barbell Back Squat/ })
+      screen.getByRole("button", {
+        name: /Barbell Back Squat/,
+        pressed: false,
+      })
     ).toBeInTheDocument();
     await waitFor(() => expect(screen.getByRole("searchbox")).toHaveFocus());
     expect(document.body.style.overflow).toBe("hidden");
@@ -109,6 +118,40 @@ describe("AddExerciseForm", () => {
     await waitFor(() => expect(launcher).toHaveFocus());
   });
 
+  it("opens exercise details without losing the picker and restores exact focus", async () => {
+    const user = userEvent.setup();
+    render(<AddExerciseForm workoutId="workout-1" exercises={exercises} />);
+
+    await user.click(screen.getByRole("button", { name: "Open add exercise" }));
+    await user.type(screen.getByRole("searchbox"), "Bench");
+    await user.click(
+      screen.getByRole("button", { name: /Bench Press/, pressed: false }),
+    );
+    const detailsTrigger = screen.getByRole("button", {
+      name: "View details for Bench Press",
+    });
+    await user.click(detailsTrigger);
+
+    expect(
+      screen.getByRole("dialog", { name: "Bench Press" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "Add exercise" })).not.toBeInTheDocument();
+    expect(screen.getByText("horizontal push")).toBeInTheDocument();
+
+    await user.keyboard("{Escape}");
+
+    expect(
+      await screen.findByRole("dialog", { name: "Add exercise" }),
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "View details for Bench Press" }),
+      ).toHaveFocus(),
+    );
+    expect(screen.getByRole("searchbox")).toHaveValue("Bench");
+    expect(screen.getByText("Selected: Bench Press")).toBeInTheDocument();
+  });
+
   it("preserves selected exercise state and existing form fields", async () => {
     const user = userEvent.setup();
     render(
@@ -116,7 +159,10 @@ describe("AddExerciseForm", () => {
     );
 
     await user.click(screen.getByRole("button", { name: "Open add exercise" }));
-    const exerciseButton = screen.getByRole("button", { name: /Bench Press/ });
+    const exerciseButton = screen.getByRole("button", {
+      name: /Bench Press/,
+      pressed: false,
+    });
     await user.click(exerciseButton);
 
     expect(exerciseButton).toHaveAttribute("aria-pressed", "true");
@@ -137,7 +183,10 @@ describe("AddExerciseForm", () => {
 
     await user.click(screen.getByRole("button", { name: "Open add exercise" }));
     await user.click(
-      screen.getByRole("button", { name: /Barbell Back Squat/ })
+      screen.getByRole("button", {
+        name: /Barbell Back Squat/,
+        pressed: false,
+      })
     );
     await user.click(screen.getByRole("button", { name: "Add exercise" }));
 
@@ -157,7 +206,9 @@ describe("AddExerciseForm", () => {
 
     await user.click(launcher);
     await user.type(screen.getByRole("searchbox"), "Bench");
-    await user.click(screen.getByRole("button", { name: /Bench Press/ }));
+    await user.click(
+      screen.getByRole("button", { name: /Bench Press/, pressed: false }),
+    );
     await user.click(screen.getByRole("button", { name: "Add exercise" }));
 
     await waitFor(() =>
@@ -207,7 +258,9 @@ describe("AddExerciseForm", () => {
 
     await user.click(screen.getByRole("button", { name: "Open add exercise" }));
     await user.type(screen.getByRole("searchbox"), "Bench");
-    await user.click(screen.getByRole("button", { name: /Bench Press/ }));
+    await user.click(
+      screen.getByRole("button", { name: /Bench Press/, pressed: false }),
+    );
     await user.click(screen.getByRole("button", { name: "Add exercise" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(

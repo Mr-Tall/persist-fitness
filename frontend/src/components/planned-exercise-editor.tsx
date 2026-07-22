@@ -183,7 +183,7 @@ export function PlannedExerciseEditorProvider({
           <>
             <header className="flex shrink-0 items-start justify-between gap-4 border-b border-white/10 px-4 py-4 sm:px-5">
               <div className="min-w-0">
-                <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-300">
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-text-secondary">
                   Planned exercise
                 </p>
                 <h2
@@ -204,7 +204,7 @@ export function PlannedExerciseEditorProvider({
                 type="button"
                 onClick={closeEditor}
                 aria-label={`Close ${activeExercise.name} plan editor`}
-                className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-lg font-bold text-neutral-200 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950"
+                className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full border border-border bg-action-secondary text-lg font-bold text-text-secondary transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
               >
                 <span aria-hidden="true">×</span>
               </button>
@@ -249,7 +249,7 @@ export function PlannedExerciseEditorProvider({
                       value={sets}
                       onChange={(event) => setSets(event.target.value)}
                       placeholder="3"
-                      className="mt-1 min-h-12 w-full rounded-xl border border-white/15 bg-black/25 px-3 py-3 text-base font-bold text-white outline-none transition focus-visible:border-emerald-400 focus-visible:ring-2 focus-visible:ring-emerald-400/30"
+                      className="mt-1 min-h-12 w-full rounded-xl border border-border bg-canvas/60 px-3 py-3 text-base font-bold text-text-primary outline-none transition-colors focus-visible:border-focus focus-visible:ring-2 focus-visible:ring-focus/25"
                     />
                   </div>
 
@@ -269,7 +269,7 @@ export function PlannedExerciseEditorProvider({
                       value={reps}
                       onChange={(event) => setReps(event.target.value)}
                       placeholder="8-10"
-                      className="mt-1 min-h-12 w-full rounded-xl border border-white/15 bg-black/25 px-3 py-3 text-base text-white outline-none transition focus-visible:border-emerald-400 focus-visible:ring-2 focus-visible:ring-emerald-400/30"
+                      className="mt-1 min-h-12 w-full rounded-xl border border-border bg-canvas/60 px-3 py-3 text-base text-text-primary outline-none transition-colors focus-visible:border-focus focus-visible:ring-2 focus-visible:ring-focus/25"
                     />
                   </div>
                 </div>
@@ -289,7 +289,7 @@ export function PlannedExerciseEditorProvider({
                     value={notes}
                     onChange={(event) => setNotes(event.target.value)}
                     placeholder="Tempo, technique cue, intensity target, etc."
-                    className="mt-1 min-h-32 w-full resize-y rounded-xl border border-white/15 bg-black/25 px-3 py-3 text-base leading-6 text-white outline-none transition focus-visible:border-emerald-400 focus-visible:ring-2 focus-visible:ring-emerald-400/30"
+                    className="mt-1 min-h-32 w-full resize-y rounded-xl border border-border bg-canvas/60 px-3 py-3 text-base leading-6 text-text-primary outline-none transition-colors focus-visible:border-focus focus-visible:ring-2 focus-visible:ring-focus/25"
                   />
                 </div>
               </div>
@@ -301,8 +301,8 @@ export function PlannedExerciseEditorProvider({
                     role={state.status === "error" ? "alert" : "status"}
                     className={`mb-3 rounded-2xl border px-4 py-3 text-sm font-bold leading-6 ${
                       state.status === "success"
-                        ? "border-emerald-300/25 bg-emerald-400/[0.08] text-emerald-200"
-                        : "border-red-300/25 bg-red-400/[0.08] text-red-200"
+                        ? "border-success/25 bg-success-soft text-success"
+                        : "border-danger/25 bg-danger-soft text-danger"
                     }`}
                   >
                     {state.message}
@@ -313,14 +313,14 @@ export function PlannedExerciseEditorProvider({
                   <button
                     type="button"
                     onClick={closeEditor}
-                    className="min-h-12 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm font-black text-neutral-200 transition hover:bg-white/[0.09] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950"
+                    className="min-h-12 rounded-xl border border-border bg-action-secondary px-4 py-3 text-sm font-black text-text-secondary transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
                   >
                     Cancel
                   </button>
                   <ToastSubmitButton
                     pendingText="Saving exercise..."
                     toastMessage="Saving exercise..."
-                    className="min-h-12 rounded-xl bg-emerald-400 px-4 py-3 text-sm font-black text-black transition hover:bg-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950 sm:min-w-40"
+                    className="min-h-12 rounded-xl bg-action px-4 py-3 text-sm font-black text-action-foreground transition-colors hover:bg-action-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas sm:min-w-40"
                   >
                     Save exercise
                   </ToastSubmitButton>
@@ -364,7 +364,7 @@ export function PlannedExerciseEditTrigger({
       aria-expanded={isActive}
       aria-hidden={isEditorOpen ? true : undefined}
       tabIndex={isEditorOpen ? -1 : undefined}
-      className="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-black text-neutral-200 transition hover:border-emerald-300/30 hover:bg-emerald-400/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950"
+      className="inline-flex min-h-11 items-center justify-center rounded-xl border border-border bg-action-secondary px-3 py-2 text-xs font-black text-text-secondary transition-colors hover:border-border-strong hover:bg-surface-elevated hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
     >
       Edit
     </button>

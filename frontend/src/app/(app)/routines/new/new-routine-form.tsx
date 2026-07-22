@@ -21,7 +21,7 @@ const initialState: CreateRoutineFormState = {
 };
 
 const controlClassName =
-  "mt-2 min-h-12 w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-base text-white outline-none transition focus-visible:border-emerald-300/60 focus-visible:ring-2 focus-visible:ring-emerald-300/25";
+  "mt-2 min-h-12 w-full rounded-2xl border border-border bg-surface px-4 py-3 text-base text-text-primary outline-none transition-colors placeholder:text-text-muted focus-visible:border-focus focus-visible:ring-2 focus-visible:ring-focus/25";
 
 export function NewRoutineForm() {
   const [title, setTitle] = useState("");
@@ -54,7 +54,7 @@ export function NewRoutineForm() {
     >
       {hasError && (
         <p
-          className="rounded-2xl border border-red-300/25 bg-red-400/[0.08] px-4 py-3 text-sm font-bold leading-6 text-red-200 outline-none"
+          className="rounded-2xl border border-danger/25 bg-danger-soft px-4 py-3 text-sm font-bold leading-6 text-danger outline-none"
           id={messageId}
           ref={messageRef}
           role="alert"
@@ -116,7 +116,7 @@ export function NewRoutineForm() {
       </div>
 
       <SubmitButton
-        className="min-h-12 w-full rounded-2xl bg-emerald-400 px-5 py-3 font-black text-black transition hover:bg-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950 sm:w-auto"
+        className="min-h-12 w-full rounded-2xl bg-action px-5 py-3 font-black text-action-foreground transition-colors hover:bg-action-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas sm:w-auto"
         disabled={isPending}
         pendingText="Creating routine..."
       >

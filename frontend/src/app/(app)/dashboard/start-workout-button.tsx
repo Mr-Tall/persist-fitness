@@ -6,7 +6,7 @@ export function StartWorkoutButton() {
     <form action={startTodaysWorkout}>
       <SubmitButton
         pendingText="Starting..."
-        className="w-full rounded-2xl bg-emerald-400 px-6 py-4 text-sm font-black text-black shadow-[0_18px_50px_rgba(52,211,153,0.22)] transition hover:-translate-y-0.5 hover:bg-emerald-300 sm:w-auto lg:w-full"
+        className="w-full rounded-2xl bg-action px-6 py-4 text-sm font-black text-action-foreground shadow-[0_18px_50px_rgba(0,0,0,0.32)] transition-colors hover:bg-action-hover sm:w-auto lg:w-full"
       >
         Start today&apos;s workout
       </SubmitButton>

@@ -8,9 +8,23 @@ export default function ExercisesLoading() {
         <SkeletonBlock className="mt-3 h-9 w-64 max-w-full" />
         <SkeletonBlock className="mt-3 h-4 w-full max-w-2xl" />
       </header>
-      <section className="mt-6 grid gap-4 md:grid-cols-2" data-skeleton="exercise-list">
+      <section
+        aria-hidden="true"
+        className="mt-6 rounded-2xl border border-white/10 bg-white/[0.04] p-3"
+        data-skeleton="exercise-search"
+      >
+        <SkeletonBlock className="h-3 w-28" />
+        <SkeletonBlock className="mt-2 h-12 w-full rounded-xl" />
+        <SkeletonBlock className="mt-3 h-12 w-full rounded-xl" />
+      </section>
+      <section className="mt-7" data-skeleton="exercise-list">
+        <div className="flex items-center justify-between gap-3">
+          <SkeletonBlock className="h-6 w-28" />
+          <SkeletonBlock className="h-4 w-16" />
+        </div>
+        <div className="mt-3 grid gap-3 md:grid-cols-2">
         {[0, 1, 2, 3].map((exercise) => (
-          <div className="rounded-3xl border border-white/10 bg-white/[0.05] p-5" key={exercise}>
+          <div className="rounded-2xl border border-white/10 bg-white/[0.05] p-4" key={exercise}>
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <SkeletonBlock className="h-6 w-48 max-w-full" />
@@ -22,9 +36,13 @@ export default function ExercisesLoading() {
               <SkeletonBlock className="h-7 w-20 rounded-full" />
               <SkeletonBlock className="h-7 w-24 rounded-full" />
             </div>
-            <SkeletonBlock className="mt-4 h-12 w-full" />
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <SkeletonBlock className="h-14 w-full rounded-xl" />
+              <SkeletonBlock className="h-14 w-full rounded-xl" />
+            </div>
           </div>
         ))}
+        </div>
       </section>
     </RouteLoading>
   );

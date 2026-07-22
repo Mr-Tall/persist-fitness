@@ -4,7 +4,7 @@ export function SkeletonBlock({ className = "" }: { className?: string }) {
   return (
     <div
       aria-hidden="true"
-      className={`animate-pulse rounded-2xl bg-white/[0.08] motion-reduce:animate-none ${className}`}
+      className={`animate-pulse rounded-2xl bg-surface-elevated motion-reduce:animate-none ${className}`}
       data-skeleton-block
     />
   );

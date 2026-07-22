@@ -11,11 +11,18 @@ export default function PublicLayout({
         <nav className="mx-auto flex max-w-6xl items-center px-5 py-4 sm:px-6">
           <Link href="/" className="text-lg font-black tracking-tight">
             <span className="text-white">Persist</span>{" "}
-            <span className="text-emerald-400">Fitness</span>
+            <span className="text-text-secondary">Fitness</span>
           </Link>
         </nav>
       </header>
       {children}
+      <footer className="border-t border-border px-5 py-5 text-sm text-text-muted">
+        <nav aria-label="Legal" className="mx-auto flex max-w-6xl flex-wrap gap-2">
+          <Link href="/privacy" className="inline-flex min-h-11 items-center rounded-xl px-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus">Privacy</Link>
+          <Link href="/terms" className="inline-flex min-h-11 items-center rounded-xl px-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus">Terms</Link>
+          <Link href="/data-usage" className="inline-flex min-h-11 items-center rounded-xl px-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus">Data usage</Link>
+        </nav>
+      </footer>
     </>
   );
 }

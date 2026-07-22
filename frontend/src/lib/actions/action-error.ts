@@ -6,6 +6,7 @@ import {
   type ActionErrorCode,
   type ActionFormState,
 } from "@/lib/actions/action-result";
+import { captureServerException } from "@/lib/observability/sentry";
 
 const DEFAULT_ERROR_MESSAGE = "Something went wrong. Please try again.";
 const DEFAULT_VALIDATION_MESSAGE = "Please check the form and try again.";
@@ -79,6 +80,7 @@ export function toActionErrorState(
     requestId,
     errorType: error instanceof Error ? error.name : typeof error,
   });
+  captureServerException(error, { actionName, reference: requestId });
 
   return createActionErrorState({
     code: "INTERNAL_ERROR",

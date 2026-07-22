@@ -8,6 +8,7 @@ type SectionProps = {
   action?: ReactNode;
   children: ReactNode;
   className?: string;
+  headingId?: string;
 };
 
 export function Section({
@@ -17,6 +18,7 @@ export function Section({
   action,
   children,
   className,
+  headingId,
 }: SectionProps) {
   return (
     <Card className={className}>
@@ -24,13 +26,18 @@ export function Section({
         <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div>
             {eyebrow && (
-              <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-300">
+              <p className="text-xs font-black uppercase tracking-[0.24em] text-text-secondary">
                 {eyebrow}
               </p>
             )}
 
             {title && (
-              <h2 className="mt-2 text-2xl font-black text-white">{title}</h2>
+              <h2
+                className="mt-2 text-2xl font-black text-white"
+                id={headingId}
+              >
+                {title}
+              </h2>
             )}
 
             {description && (

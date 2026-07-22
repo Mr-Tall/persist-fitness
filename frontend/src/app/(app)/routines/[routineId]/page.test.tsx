@@ -146,7 +146,7 @@ describe("RoutineDetailPage", () => {
       name: `Edit ${longRoutineTitle} routine`,
     });
 
-    expect(startButton).toHaveClass("min-h-12", "bg-emerald-400");
+    expect(startButton).toHaveClass("min-h-12", "bg-action");
     expect(editButton).toHaveClass("min-h-12", "focus-visible:ring-2");
     expect(screen.getAllByRole("button", { name: /Start .* workout/ })).toHaveLength(1);
     expect(screen.getAllByRole("button", { name: /Edit .* routine/ })).toHaveLength(1);

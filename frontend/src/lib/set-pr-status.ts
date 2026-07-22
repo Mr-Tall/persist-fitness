@@ -1,32 +1,32 @@
 import { db } from "@/lib/db";
+import {
+  calculateExerciseRecord,
+  normalizeTrackingType,
+} from "@/lib/exercise-tracking";
 
 type SetPrStatusInput = {
   userId: string;
   currentWorkoutId: string;
   exerciseId: string | null;
   exerciseName: string;
+  trackingType?: string | null;
 };
 
 export type SetPrStatus = {
   setId: string;
   estimatedOneRepMax: number | null;
   isPersonalRecord: boolean;
+  recordLabel: string | null;
 };
-
-function estimateOneRepMax(weight: number, reps: number) {
-  if (reps <= 1) {
-    return weight;
-  }
-
-  return weight * (1 + reps / 30);
-}
 
 export async function getSetPrStatuses({
   userId,
   currentWorkoutId,
   exerciseId,
   exerciseName,
+  trackingType,
 }: SetPrStatusInput): Promise<Map<string, SetPrStatus>> {
+  const mode = normalizeTrackingType(trackingType);
   const currentExercise = await db.workoutExercise.findFirst({
     where: {
       workoutId: currentWorkoutId,
@@ -94,32 +94,37 @@ export async function getSetPrStatuses({
     },
   });
 
-  const previousBestEstimatedOneRepMax = previousExercises
-    .flatMap((exercise) => exercise.sets)
-    .filter((set) => set.weight !== null && set.reps !== null && set.reps > 0)
-    .map((set) => estimateOneRepMax(set.weight as number, set.reps as number))
-    .sort((a, b) => b - a)[0];
+  const previousBest = calculateExerciseRecord(
+    mode,
+    previousExercises.flatMap((exercise) => exercise.sets),
+  );
 
   const statuses = new Map<string, SetPrStatus>();
 
   for (const set of currentExercise.sets) {
-    if (set.weight === null || set.reps === null || set.reps <= 0) {
+    const record = calculateExerciseRecord(mode, [set]);
+    if (!record) {
       statuses.set(set.id, {
         setId: set.id,
         estimatedOneRepMax: null,
         isPersonalRecord: false,
+        recordLabel: null,
       });
       continue;
     }
 
-    const estimatedOneRepMax = estimateOneRepMax(set.weight, set.reps);
+    const beatsPrevious =
+      !previousBest ||
+      (record.type === "pace"
+        ? record.value < previousBest.value
+        : record.value > previousBest.value);
 
     statuses.set(set.id, {
       setId: set.id,
-      estimatedOneRepMax,
-      isPersonalRecord:
-        previousBestEstimatedOneRepMax === undefined ||
-        estimatedOneRepMax > previousBestEstimatedOneRepMax,
+      estimatedOneRepMax:
+        record.type === "weight" ? record.estimatedOneRepMax : null,
+      isPersonalRecord: beatsPrevious,
+      recordLabel: record.type === "weight" ? null : record.label,
     });
   }
 

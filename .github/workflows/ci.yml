@@ -99,6 +99,46 @@ jobs:
             exit 1
           fi
 
+      - name: Verify one-active-program partial unique index
+        shell: bash
+        run: |
+          index_count="$(
+            psql --dbname="$DIRECT_URL" --no-psqlrc --tuples-only --no-align --set ON_ERROR_STOP=1 --command "
+              SELECT COUNT(*)
+              FROM pg_index AS index_data
+              JOIN pg_class AS index_class
+                ON index_class.oid = index_data.indexrelid
+              JOIN pg_class AS table_data
+                ON table_data.oid = index_data.indrelid
+              JOIN pg_namespace AS schema_data
+                ON schema_data.oid = table_data.relnamespace
+              WHERE schema_data.nspname = 'public'
+                AND table_data.relname = 'ProgramEnrollment'
+                AND index_class.relname = 'ProgramEnrollment_one_active_per_user_key'
+                AND index_data.indisunique
+                AND index_data.indisvalid
+                AND index_data.indisready
+                AND index_data.indnkeyatts = 1
+                AND (
+                  SELECT array_agg(attribute_data.attname ORDER BY key_data.ordinality)
+                  FROM unnest(index_data.indkey) WITH ORDINALITY
+                    AS key_data(attnum, ordinality)
+                  JOIN pg_attribute AS attribute_data
+                    ON attribute_data.attrelid = table_data.oid
+                   AND attribute_data.attnum = key_data.attnum
+                  WHERE key_data.ordinality <= index_data.indnkeyatts
+                ) = ARRAY['userId']::name[]
+                AND pg_get_expr(index_data.indpred, index_data.indrelid) =
+                  '(status = ''active''::text)';
+            "
+          )"
+          index_count="$(printf '%s' "$index_count" | tr -d '[:space:]')"
+
+          if [ "$index_count" != "1" ]; then
+            echo "Expected the one-active-program partial unique index."
+            exit 1
+          fi
+
       - name: Verify migration history matches Prisma schema
         run: |
           npx prisma migrate diff \

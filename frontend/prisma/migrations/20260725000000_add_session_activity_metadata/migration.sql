@@ -1,0 +1,6 @@
+ALTER TABLE "Session"
+ADD COLUMN "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN "lastActiveAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN "userAgentSummary" TEXT;
+
+CREATE INDEX "Session_userId_expires_idx" ON "Session"("userId", "expires");

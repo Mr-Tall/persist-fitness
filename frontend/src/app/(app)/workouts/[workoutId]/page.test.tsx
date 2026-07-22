@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import WorkoutDetailPage from "./page";
@@ -209,6 +209,11 @@ describe("WorkoutDetailPage lifecycle modes", () => {
     expect(
       screen.queryByRole("button", { name: "Reopen workout" })
     ).not.toBeInTheDocument();
+    expect(screen.getByText("1 / 1 exercises completed")).toBeVisible();
+    const summary = screen.getByRole("group", { name: "Workout summary" });
+    expect(within(summary).getByText("1,800 lb")).toBeVisible();
+    expect(within(summary).getByText("1 / 1")).toBeVisible();
+    expect(within(summary).getByText("PRs earned")).toBeVisible();
   });
 
   it("places previous context and the composer before saved-set history", async () => {

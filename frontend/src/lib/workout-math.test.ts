@@ -33,6 +33,16 @@ describe("workout math", () => {
     expect(volume).toBe(1800);
   });
 
+  it("ignores weights attached to non-weight tracking modes", () => {
+    expect(
+      calculateWorkoutVolume([
+        { trackingType: "weight_reps", sets: [{ weight: 100, reps: 5 }] },
+        { trackingType: "reps_only", sets: [{ weight: 200, reps: 20 }] },
+        { trackingType: "time", sets: [{ weight: 300, reps: 10 }] },
+      ]),
+    ).toBe(500);
+  });
+
   it("caps workout progress at 100 percent", () => {
     expect(calculateWorkoutProgress(15, 12)).toBe(100);
   });

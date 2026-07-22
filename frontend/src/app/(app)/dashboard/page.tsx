@@ -10,11 +10,12 @@ import { formatWorkoutDate } from "@/lib/format-date";
 import Link from "next/link";
 import { StartWorkoutButton } from "./start-workout-button";
 import { requireUserSession } from "@/lib/auth/require-user";
-import { PremiumPreviewCard } from "@/components/premium/premium-preview-card";
 import { MobileTodayPrimaryCard } from "./mobile-today-primary-card";
 import { MobileTodayHeader } from "./mobile-today-header";
 import { MobileProfileNudge } from "./mobile-profile-nudge";
 import { FirstTimeOnboarding } from "./first-time-onboarding";
+import { CurrentProgramCard } from "./current-program-card";
+import { AiCoachCard } from "./ai-coach-card";
 
 function formatVolume(volume: number) {
   return `${Math.round(volume).toLocaleString()} lb`;
@@ -76,6 +77,8 @@ export default async function DashboardPage() {
     activeWorkoutSetCount,
     activeWorkoutVolume,
     analytics,
+    coach,
+    currentProgram,
     onboardingCompletedAt,
     personalRecords,
     profile,
@@ -122,6 +125,14 @@ export default async function DashboardPage() {
           trainingMessage={trainingStatus.message}
         />
 
+        {currentProgram && (
+          <CurrentProgramCard
+            hasActiveWorkout={Boolean(activeWorkout)}
+            headingId="mobile-current-program-title"
+            program={currentProgram}
+          />
+        )}
+
         <section aria-labelledby="weekly-momentum" className="mt-4">
           <div className="mb-2 flex items-center justify-between px-1">
             <h2
@@ -155,6 +166,8 @@ export default async function DashboardPage() {
           </div>
         </section>
 
+        <AiCoachCard headingId="mobile-ai-coach-title" report={coach} />
+
         {mobileLatestWorkout && (
           <section aria-labelledby="latest-workout" className="mt-5">
             <div className="mb-2 flex items-center justify-between px-1">
@@ -163,7 +176,7 @@ export default async function DashboardPage() {
               </h2>
               <Link
                 href="/workouts"
-                className="inline-flex min-h-11 items-center rounded-xl px-3 text-xs font-bold text-emerald-300 transition hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950"
+                className="inline-flex min-h-11 items-center rounded-xl px-3 text-xs font-bold text-text-secondary transition hover:bg-action-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
               >
                 View all
               </Link>
@@ -194,11 +207,11 @@ export default async function DashboardPage() {
 
       <div className="hidden md:block">
       <Card className="relative overflow-hidden p-5 sm:p-8">
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,rgba(52,211,153,0.24),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(132,204,22,0.12),transparent_34%)]" />
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.12),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(161,161,170,0.08),transparent_34%)]" />
 
         <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
           <div className="max-w-3xl">
-            <p className="text-xs font-black uppercase tracking-[0.28em] text-emerald-300">
+            <p className="text-xs font-black uppercase tracking-[0.28em] text-text-secondary">
               Training command center
             </p>
 
@@ -212,7 +225,7 @@ export default async function DashboardPage() {
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
-              <MetricBadge variant="emerald">{trainingStatus.label}</MetricBadge>
+              <MetricBadge>{trainingStatus.label}</MetricBadge>
               <MetricBadge>{analytics.currentStreak} day streak</MetricBadge>
               <MetricBadge>{analytics.workoutsThisWeek} this week</MetricBadge>
             </div>
@@ -229,10 +242,10 @@ export default async function DashboardPage() {
       </Card>
 
       {activeWorkout && (
-        <Card variant="emerald" className="mt-6 p-5 sm:p-6">
+        <Card variant="elevated" className="mt-6 p-5 sm:p-6">
           <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-300">
+              <p className="text-xs font-black uppercase tracking-[0.24em] text-text-secondary">
                 Active workout
               </p>
 
@@ -282,10 +295,18 @@ export default async function DashboardPage() {
         </Card>
       )}
 
-      <PremiumPreviewCard />
+      {currentProgram && (
+        <CurrentProgramCard
+          hasActiveWorkout={Boolean(activeWorkout)}
+          headingId="desktop-current-program-title"
+          program={currentProgram}
+        />
+      )}
+
+      <AiCoachCard headingId="desktop-ai-coach-title" report={coach} />
 
       {(!hasProfile || !hasWorkouts || !hasRoutines) && (
-        <Card variant="emerald" className="mt-6 p-5 sm:p-6">
+        <Card variant="elevated" className="mt-6 p-5 sm:p-6">
           <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
             <div>
               <h2 className="text-xl font-black text-white">
@@ -297,7 +318,7 @@ export default async function DashboardPage() {
               </p>
             </div>
 
-            <MetricBadge variant="emerald">
+            <MetricBadge variant="success">
               {[
                 hasProfile ? 1 : 0,
                 hasWorkouts ? 1 : 0,
@@ -310,7 +331,7 @@ export default async function DashboardPage() {
           <div className="mt-5 grid gap-3 md:grid-cols-3">
             <Link
               href="/settings"
-              className="rounded-2xl border border-white/10 bg-white/[0.06] p-4 transition hover:border-emerald-300/40 hover:bg-white/[0.09]"
+              className="rounded-2xl border border-border bg-surface-elevated p-4 transition hover:border-border-strong hover:bg-action-secondary"
             >
               <p className="font-black text-white">
                 {hasProfile ? "Profile complete" : "Complete profile"}
@@ -322,7 +343,7 @@ export default async function DashboardPage() {
 
             <Link
               href="/workouts/new"
-              className="rounded-2xl border border-white/10 bg-white/[0.06] p-4 transition hover:border-emerald-300/40 hover:bg-white/[0.09]"
+              className="rounded-2xl border border-border bg-surface-elevated p-4 transition hover:border-border-strong hover:bg-action-secondary"
             >
               <p className="font-black text-white">
                 {hasWorkouts ? "Workout logged" : "Log first workout"}
@@ -334,7 +355,7 @@ export default async function DashboardPage() {
 
             <Link
               href="/routines/new"
-              className="rounded-2xl border border-white/10 bg-white/[0.06] p-4 transition hover:border-emerald-300/40 hover:bg-white/[0.09]"
+              className="rounded-2xl border border-border bg-surface-elevated p-4 transition hover:border-border-strong hover:bg-action-secondary"
             >
               <p className="font-black text-white">
                 {hasRoutines ? "Routine created" : "Create a routine"}
@@ -402,9 +423,9 @@ export default async function DashboardPage() {
           {activeWorkout ? (
             <Link
               href={`/workouts/${activeWorkout.id}`}
-              className="mt-5 block rounded-2xl border border-emerald-300/30 bg-emerald-400/[0.08] p-4 transition hover:border-emerald-300/50 hover:bg-emerald-400/[0.12]"
+              className="mt-5 block rounded-2xl border border-border-strong bg-surface-elevated p-4 transition hover:border-focus hover:bg-action-secondary"
             >
-              <p className="text-sm font-bold text-emerald-200">
+              <p className="text-sm font-bold text-text-primary">
                 Active session
               </p>
               <p className="mt-2 text-xl font-black text-white">
@@ -417,7 +438,7 @@ export default async function DashboardPage() {
           ) : latestWorkout ? (
             <Link
               href={`/workouts/${latestWorkout.id}`}
-              className="mt-5 block rounded-2xl border border-white/10 bg-black/20 p-4 transition hover:border-emerald-300/40 hover:bg-white/[0.08]"
+              className="mt-5 block rounded-2xl border border-border bg-surface p-4 transition hover:border-border-strong hover:bg-surface-elevated"
             >
               <p className="text-sm font-bold text-neutral-400">
                 Latest workout
@@ -441,7 +462,7 @@ export default async function DashboardPage() {
           {topRecord ? (
             <Link
               href={`/workouts/${topRecord.workoutId}`}
-              className="block rounded-2xl border border-amber-300/20 bg-amber-400/[0.08] p-4 transition hover:border-amber-300/40"
+              className="block rounded-2xl border border-success/25 bg-success-soft p-4 transition hover:border-success/45"
             >
               <p className="text-2xl font-black text-white">
                 {topRecord.exerciseName}
@@ -449,7 +470,7 @@ export default async function DashboardPage() {
               <p className="mt-2 text-sm text-neutral-300">
                 {topRecord.weight} lb × {topRecord.reps} reps
               </p>
-              <p className="mt-4 inline-flex rounded-full bg-amber-300/15 px-3 py-1 text-sm font-black text-amber-200">
+              <p className="mt-4 inline-flex rounded-full bg-success-soft px-3 py-1 text-sm font-black text-success">
                 est. 1RM {Math.round(topRecord.estimatedOneRepMax)} lb
               </p>
             </Link>
@@ -529,7 +550,7 @@ export default async function DashboardPage() {
                 <Link
                   key={workout.id}
                   href={`/workouts/${workout.id}`}
-                  className="block rounded-2xl border border-white/10 bg-black/20 p-4 transition hover:border-emerald-300/40 hover:bg-white/[0.08]"
+                  className="block rounded-2xl border border-border bg-surface p-4 transition hover:border-border-strong hover:bg-surface-elevated"
                 >
                   <p className="font-black text-white">{workout.title}</p>
                   <p className="mt-1 text-sm text-neutral-400">
@@ -559,7 +580,7 @@ export default async function DashboardPage() {
               <Link
                 key={`${record.exerciseName}-${record.workoutId}`}
                 href={`/workouts/${record.workoutId}`}
-                className="block rounded-2xl border border-white/10 bg-black/20 p-4 transition hover:border-amber-300/40 hover:bg-white/[0.08]"
+                className="block rounded-2xl border border-border bg-surface p-4 transition hover:border-success/40 hover:bg-success-soft/40"
               >
                 <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
                   <div>
@@ -572,7 +593,7 @@ export default async function DashboardPage() {
                     </p>
                   </div>
 
-                  <div className="rounded-full bg-amber-300/15 px-3 py-1 text-sm font-black text-amber-200">
+                  <div className="rounded-full bg-success-soft px-3 py-1 text-sm font-black text-success">
                     {Math.round(record.estimatedOneRepMax)} lb
                   </div>
                 </div>

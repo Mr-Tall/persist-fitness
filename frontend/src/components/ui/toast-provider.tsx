@@ -10,7 +10,7 @@ export function ToastProvider() {
       closeButton
       toastOptions={{
         className:
-          "border border-white/10 bg-zinc-950 text-white shadow-2xl",
+          "border border-border bg-surface-elevated text-text-primary shadow-2xl",
       }}
     />
   );

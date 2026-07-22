@@ -1,9 +1,8 @@
 import { auth } from "@/auth";
 import { PageHeader } from "@/components/ui/page-header";
-import { db } from "@/lib/db";
+import { getExerciseLibraryData } from "@/lib/exercise-library-data";
 import { redirect } from "next/navigation";
-import Link from "next/link";
-import { FavoriteExerciseButton } from "./favorite-exercise-button";
+import { ExerciseLibraryBrowser } from "./exercise-library-browser";
 
 export default async function ExercisesPage() {
   const session = await auth();
@@ -12,105 +11,25 @@ export default async function ExercisesPage() {
     redirect("/login");
   }
 
-  const exercises = await db.exercise.findMany({
-    orderBy: {
-      name: "asc",
-    },
-    include: {
-      favoritedBy: {
-        where: {
-          userId: session.user.id,
-        },
-        select: {
-          id: true,
-        },
-      },
-    },
-  });
+  const exercises = await getExerciseLibraryData(session.user.id);
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
       <PageHeader
         eyebrow="Exercises"
         title="Exercise library"
-        description="Browse the starter exercise library. This powers routines, previous performance, substitutions, and future AI suggestions."
+        description="Browse movements by training intent, revisit recent performance, and find useful alternatives."
       />
 
       {exercises.length === 0 ? (
-        <section className="rounded-3xl border border-dashed border-neutral-300 bg-neutral-50 p-8 text-center">
-          <h2 className="text-xl font-semibold">No exercises seeded yet</h2>
-          <p className="mt-2 text-sm text-neutral-600">
-            Run <code>npx prisma db seed</code> to add the starter library.
+        <section className="rounded-2xl border border-dashed border-border bg-surface p-7 text-center">
+          <h2 className="text-xl font-black text-text-primary">No exercises available</h2>
+          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-text-secondary">
+            The exercise catalog is not available yet. Try loading this screen again later.
           </p>
         </section>
       ) : (
-        <section className="grid gap-4 md:grid-cols-2">
-          {exercises.map((exercise) => (
-            <article
-              key={exercise.id}
-              className="rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm transition hover:border-neutral-400 hover:bg-neutral-50"
-            >
-              <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
-                <Link href={`/exercises/${exercise.id}`} className="block">
-                  <h2 className="text-lg font-semibold">{exercise.name}</h2>
-                  <p className="mt-1 text-sm text-neutral-500">
-                    {exercise.equipment || "No equipment"} ·{" "}
-                    {exercise.mechanic || "Movement"}
-                  </p>
-                </Link>
-
-                <div className="flex flex-wrap gap-2">
-                  {exercise.category && (
-                    <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                      {exercise.category}
-                    </span>
-                  )}
-
-                  <FavoriteExerciseButton
-                    exerciseId={exercise.id}
-                    isFavorite={exercise.favoritedBy.length > 0}
-                  />
-                </div>
-              </div>
-
-              <Link href={`/exercises/${exercise.id}`} className="block">
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {exercise.primaryMuscles.map((muscle) => (
-                    <span
-                      key={muscle}
-                      className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-700"
-                    >
-                      {muscle}
-                    </span>
-                  ))}
-
-                  {exercise.secondaryMuscles.map((muscle) => (
-                    <span
-                      key={muscle}
-                      className="rounded-full bg-neutral-50 px-3 py-1 text-xs font-medium text-neutral-500"
-                    >
-                      {muscle}
-                    </span>
-                  ))}
-                </div>
-
-                {exercise.instructions.length > 0 && (
-                  <details className="mt-4 rounded-2xl bg-neutral-50 p-4">
-                    <summary className="cursor-pointer text-sm font-semibold">
-                      Instructions
-                    </summary>
-
-                    <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-6 text-neutral-600">
-                      {exercise.instructions.map((instruction) => (
-                        <li key={instruction}>{instruction}</li>
-                      ))}
-                    </ol>
-                  </details>
-                )}
-              </Link>
-            </article>
-          ))}
-        </section>
+        <ExerciseLibraryBrowser exercises={exercises} />
       )}
     </main>
   );

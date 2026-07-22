@@ -22,6 +22,7 @@ import {
   deleteSetSchema,
   updateSetSchema,
 } from "@/lib/validation/workout";
+import { normalizeTrackingType } from "@/lib/exercise-tracking";
 
 export type AddExerciseFormState = ActionFormState;
 export type AddSetFormState = ActionFormState & {
@@ -36,6 +37,51 @@ const WORKOUT_SET_NUMBER_CONSTRAINT =
 type TransactionRetryOptions = {
   retryWorkoutSetNumberConflict?: boolean;
 };
+
+function getDurationSeconds(minutes?: number, seconds?: number) {
+  const total = (minutes ?? 0) * 60 + (seconds ?? 0);
+  return total > 0 ? total : null;
+}
+
+function getTrackedSetData(
+  trackingType: string | null | undefined,
+  parsed: {
+    weight?: number;
+    reps?: number;
+    rir?: number;
+    tempo?: string;
+    notes?: string;
+    minutes?: number;
+    seconds?: number;
+    distance?: number;
+    distanceUnit?: "m" | "km" | "mi";
+  },
+) {
+  const mode = normalizeTrackingType(trackingType);
+  const durationSeconds = getDurationSeconds(parsed.minutes, parsed.seconds);
+
+  return {
+    weight: mode === "weight_reps" ? parsed.weight : null,
+    reps:
+      mode === "weight_reps" || mode === "reps_only" ? parsed.reps : null,
+    durationSeconds:
+      mode === "time" || mode === "distance_time" ? durationSeconds : null,
+    distance:
+      mode === "distance" || mode === "distance_time"
+        ? (parsed.distance ?? null)
+        : null,
+    distanceUnit:
+      mode === "distance" || mode === "distance_time"
+        ? (parsed.distanceUnit ?? "m")
+        : null,
+    rir:
+      mode === "weight_reps" || mode === "reps_only"
+        ? (parsed.rir ?? null)
+        : null,
+    tempo: mode === "weight_reps" ? (parsed.tempo ?? null) : null,
+    notes: parsed.notes ?? null,
+  };
+}
 
 function isWorkoutSetNumberConflict(error: unknown) {
   if (
@@ -194,6 +240,10 @@ async function createWorkoutSetFromFormData(userId: string, formData: FormData) 
     rir: formData.get("rir"),
     tempo: formData.get("tempo"),
     notes: formData.get("notes"),
+    minutes: formData.get("minutes"),
+    seconds: formData.get("seconds"),
+    distance: formData.get("distance"),
+    distanceUnit: formData.get("distanceUnit"),
   });
 
   await verifyWorkoutOwner(parsed.workoutId, userId);
@@ -203,12 +253,15 @@ async function createWorkoutSetFromFormData(userId: string, formData: FormData) 
     parsed.weight !== undefined ||
     parsed.rir !== undefined ||
     parsed.tempo !== undefined ||
-    parsed.notes !== undefined;
+    parsed.notes !== undefined ||
+    parsed.minutes !== undefined ||
+    parsed.seconds !== undefined ||
+    parsed.distance !== undefined;
 
   if (!hasSetData) {
     return {
       status: "error" as const,
-      message: "Enter reps, weight, effort, tempo, or notes before saving a set.",
+      message: "Enter a tracked result or note before saving a set.",
       workoutId: parsed.workoutId,
       setNumber: null,
     };
@@ -223,6 +276,7 @@ async function createWorkoutSetFromFormData(userId: string, formData: FormData) 
         },
         select: {
           id: true,
+          exercise: { select: { trackingType: true } },
         },
       });
 
@@ -247,11 +301,10 @@ async function createWorkoutSetFromFormData(userId: string, formData: FormData) 
         data: {
           workoutExerciseId: workoutExercise.id,
           setNumber: nextSetNumber,
-          reps: parsed.reps,
-          weight: parsed.weight,
-          rir: parsed.rir,
-          tempo: parsed.tempo,
-          notes: parsed.notes,
+          ...getTrackedSetData(
+            workoutExercise.exercise?.trackingType,
+            parsed,
+          ),
         },
       });
 
@@ -279,6 +332,10 @@ async function updateWorkoutSetFromFormData(userId: string, formData: FormData) 
     rir: formData.get("rir"),
     tempo: formData.get("tempo"),
     notes: formData.get("notes"),
+    minutes: formData.get("minutes"),
+    seconds: formData.get("seconds"),
+    distance: formData.get("distance"),
+    distanceUnit: formData.get("distanceUnit"),
   });
 
   await verifyWorkoutOwner(parsed.workoutId, userId);
@@ -288,7 +345,10 @@ async function updateWorkoutSetFromFormData(userId: string, formData: FormData) 
     parsed.weight !== undefined ||
     parsed.rir !== undefined ||
     parsed.tempo !== undefined ||
-    parsed.notes !== undefined;
+    parsed.notes !== undefined ||
+    parsed.minutes !== undefined ||
+    parsed.seconds !== undefined ||
+    parsed.distance !== undefined;
 
   if (!hasSetData) {
     return {
@@ -309,6 +369,9 @@ async function updateWorkoutSetFromFormData(userId: string, formData: FormData) 
     select: {
       id: true,
       setNumber: true,
+      workoutExercise: {
+        select: { exercise: { select: { trackingType: true } } },
+      },
     },
   });
 
@@ -324,11 +387,10 @@ async function updateWorkoutSetFromFormData(userId: string, formData: FormData) 
       id: parsed.workoutSetId,
     },
     data: {
-      reps: parsed.reps,
-      weight: parsed.weight,
-      rir: parsed.rir,
-      tempo: parsed.tempo ?? null,
-      notes: parsed.notes ?? null,
+      ...getTrackedSetData(
+        set.workoutExercise.exercise?.trackingType,
+        parsed,
+      ),
     },
   });
 

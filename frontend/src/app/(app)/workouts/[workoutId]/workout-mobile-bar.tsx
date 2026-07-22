@@ -2,6 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { FinishWorkoutButton } from "./finish-workout-button";
+import {
+  formatRestTime,
+  useWorkoutTimer,
+  useOfflineWorkout,
+} from "./workout-experience-provider";
 
 const KEYBOARD_HEIGHT_THRESHOLD = 120;
 const EDITABLE_FIELD_SELECTOR =
@@ -109,6 +114,8 @@ export function WorkoutMobileBar({
   totalSets,
   duration,
 }: WorkoutMobileBarProps) {
+  const timer = useWorkoutTimer();
+  const offline = useOfflineWorkout();
   const isSuppressedForKeyboard = useSuppressDockForKeyboard(
     workoutStatus === "active",
   );
@@ -127,7 +134,7 @@ export function WorkoutMobileBar({
           <p className="flex items-center gap-2 text-xs font-black text-white">
             <span
               aria-hidden="true"
-              className="h-2 w-2 shrink-0 rounded-full bg-emerald-400"
+              className="h-2 w-2 shrink-0 rounded-full bg-text-primary"
             />
             Active workout
           </p>
@@ -139,8 +146,24 @@ export function WorkoutMobileBar({
             <span aria-hidden="true"> · </span>
             <span className="sr-only">Duration </span>
             {duration}
+            {offline && (!offline.isOnline || offline.pendingCount > 0) && (
+              <span aria-hidden="true">
+                {" · "}{!offline.isOnline ? "Offline" : `${offline.pendingCount} pending`}
+              </span>
+            )}
           </p>
         </div>
+
+        {timer?.isRunning && (
+          <button
+            aria-label={`Rest timer ${formatRestTime(timer.secondsLeft)}, open controls`}
+            className="min-h-12 shrink-0 rounded-xl border border-warning/30 bg-warning-soft px-3 text-xs font-black text-warning focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            onClick={timer.openControls}
+            type="button"
+          >
+            Rest {formatRestTime(timer.secondsLeft)}
+          </button>
+        )}
 
         <div className="shrink-0 [&_button]:min-h-12 [&_button]:whitespace-nowrap [&_form]:m-0">
           <FinishWorkoutButton workoutId={workoutId} status={workoutStatus} />

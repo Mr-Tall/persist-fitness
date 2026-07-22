@@ -248,8 +248,182 @@ const exercises = [
   },
 ];
 
+const exerciseLibraryMetadata = {
+  "Barbell Bench Press": {
+    movementPattern: "horizontal_push",
+    exerciseType: "compound",
+    laterality: "bilateral",
+    trackingType: "weight_reps",
+    aliases: ["Bench Press", "Flat Bench Press", "Barbell Chest Press"],
+    tips: [
+      "Keep your shoulder blades pulled back and down throughout the set.",
+      "Keep your wrists stacked over your elbows as you press.",
+    ],
+  },
+  "Incline Dumbbell Press": {
+    movementPattern: "horizontal_push",
+    exerciseType: "compound",
+    laterality: "bilateral",
+    trackingType: "weight_reps",
+    aliases: ["Incline DB Press", "Incline Chest Press"],
+    tips: [
+      "Use a moderate incline to keep the chest as the primary mover.",
+      "Keep both dumbbells moving at the same pace.",
+    ],
+  },
+  Squat: {
+    movementPattern: "squat",
+    exerciseType: "compound",
+    laterality: "bilateral",
+    trackingType: "weight_reps",
+    aliases: ["Back Squat", "Barbell Back Squat"],
+    tips: [
+      "Brace before each repetition and keep pressure through your whole foot.",
+      "Let your knees track in the same direction as your toes.",
+    ],
+  },
+  Deadlift: {
+    movementPattern: "hinge",
+    exerciseType: "compound",
+    laterality: "bilateral",
+    trackingType: "weight_reps",
+    aliases: ["Conventional Deadlift", "Barbell Deadlift"],
+    tips: [
+      "Take the slack out of the bar before it leaves the floor.",
+      "Keep the bar close to your legs throughout the lift.",
+    ],
+  },
+  "Leg Press": {
+    movementPattern: "squat",
+    exerciseType: "compound",
+    laterality: "bilateral",
+    trackingType: "weight_reps",
+    aliases: ["Machine Leg Press", "Sled Leg Press"],
+    tips: [
+      "Keep your hips and lower back supported by the pad.",
+      "Use a depth you can control without your pelvis rolling upward.",
+    ],
+  },
+  "Leg Curl": {
+    movementPattern: "knee_flexion",
+    exerciseType: "isolation",
+    laterality: "bilateral",
+    trackingType: "weight_reps",
+    aliases: ["Hamstring Curl", "Machine Leg Curl"],
+    tips: [
+      "Keep your hips still while bending your knees.",
+      "Pause briefly in the shortened position before lowering.",
+    ],
+  },
+  "Lat Pulldown": {
+    movementPattern: "vertical_pull",
+    exerciseType: "compound",
+    laterality: "bilateral",
+    trackingType: "weight_reps",
+    aliases: ["Cable Pulldown", "Wide Grip Pulldown"],
+    tips: [
+      "Drive your elbows down instead of pulling with your hands.",
+      "Avoid leaning far back to turn the movement into a row.",
+    ],
+  },
+  "Pull-Up": {
+    movementPattern: "vertical_pull",
+    exerciseType: "bodyweight",
+    laterality: "bilateral",
+    trackingType: "reps_only",
+    aliases: ["Pull Up", "Pronated Pull-Up", "Bodyweight Pull-Up"],
+    tips: [
+      "Begin each repetition from a controlled full hang.",
+      "Keep your ribs down and avoid swinging for strict repetitions.",
+    ],
+  },
+  "Seated Cable Row": {
+    movementPattern: "horizontal_pull",
+    exerciseType: "compound",
+    laterality: "bilateral",
+    trackingType: "weight_reps",
+    aliases: ["Cable Row", "Seated Row"],
+    tips: [
+      "Keep your torso stable while pulling your elbows behind you.",
+      "Reach forward under control without rounding aggressively.",
+    ],
+  },
+  "Shoulder Press": {
+    movementPattern: "vertical_push",
+    exerciseType: "compound",
+    laterality: "bilateral",
+    trackingType: "weight_reps",
+    aliases: ["Machine Shoulder Press", "Overhead Press Machine"],
+    tips: [
+      "Keep your ribs stacked rather than arching to finish the press.",
+      "Use a grip that lets your forearms stay close to vertical.",
+    ],
+  },
+  "Lateral Raise": {
+    movementPattern: "shoulder_abduction",
+    exerciseType: "isolation",
+    laterality: "bilateral",
+    trackingType: "weight_reps",
+    aliases: ["Dumbbell Lateral Raise", "Side Raise"],
+    tips: [
+      "Lead with your elbows and keep a soft bend in your arms.",
+      "Use controlled repetitions instead of swinging the weights.",
+    ],
+  },
+  "Tricep Pushdown": {
+    movementPattern: "elbow_extension",
+    exerciseType: "isolation",
+    laterality: "bilateral",
+    trackingType: "weight_reps",
+    aliases: ["Triceps Pushdown", "Cable Pushdown"],
+    tips: [
+      "Keep your upper arms still beside your torso.",
+      "Finish each repetition by fully extending the elbows under control.",
+    ],
+  },
+  "Cable Curl": {
+    movementPattern: "elbow_flexion",
+    exerciseType: "isolation",
+    laterality: "bilateral",
+    trackingType: "weight_reps",
+    aliases: ["Cable Biceps Curl", "Standing Cable Curl"],
+    tips: [
+      "Keep your elbows close to your sides throughout the curl.",
+      "Resist the cable as you return to the starting position.",
+    ],
+  },
+  "Hammer Curl": {
+    movementPattern: "elbow_flexion",
+    exerciseType: "isolation",
+    laterality: "bilateral",
+    trackingType: "weight_reps",
+    aliases: ["Dumbbell Hammer Curl", "Neutral Grip Curl"],
+    tips: [
+      "Keep a neutral grip from the bottom to the top.",
+      "Avoid letting your elbows drift far forward.",
+    ],
+  },
+  "Standing Calf Raise": {
+    movementPattern: "plantar_flexion",
+    exerciseType: "isolation",
+    laterality: "bilateral",
+    trackingType: "weight_reps",
+    aliases: ["Calf Raise", "Machine Calf Raise"],
+    tips: [
+      "Pause at the top instead of bouncing through repetitions.",
+      "Lower through a comfortable full range before the next repetition.",
+    ],
+  },
+};
+
 async function main() {
   for (const exercise of exercises) {
+    const metadata =
+      exerciseLibraryMetadata[
+        exercise.name as keyof typeof exerciseLibraryMetadata
+      ];
+    const exerciseData = { ...exercise, ...metadata };
+
     const existing = await prisma.exercise.findFirst({
       where: {
         name: exercise.name,
@@ -261,11 +435,11 @@ async function main() {
         where: {
           id: existing.id,
         },
-        data: exercise,
+        data: exerciseData,
       });
     } else {
       await prisma.exercise.create({
-        data: exercise,
+        data: exerciseData,
       });
     }
   }

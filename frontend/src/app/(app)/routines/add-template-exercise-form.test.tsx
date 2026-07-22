@@ -128,7 +128,12 @@ describe("AddTemplateExerciseForm", () => {
     );
 
     await user.click(screen.getByRole("button", { name: "Open add exercise" }));
-    await user.click(screen.getByRole("button", { name: /Barbell Back Squat/ }));
+    await user.click(
+      screen.getByRole("button", {
+        name: /Barbell Back Squat/,
+        pressed: false,
+      }),
+    );
     fireEvent.change(screen.getByLabelText("Sets"), { target: { value: "4" } });
     fireEvent.change(screen.getByLabelText("Reps"), {
       target: { value: "8-10" },
@@ -160,7 +165,12 @@ describe("AddTemplateExerciseForm", () => {
     fireEvent.change(screen.getByRole("searchbox"), {
       target: { value: "Single-arm" },
     });
-    await user.click(screen.getByRole("button", { name: /Single-arm cable row/ }));
+    await user.click(
+      screen.getByRole("button", {
+        name: /Single-arm cable row/,
+        pressed: false,
+      }),
+    );
     fireEvent.change(screen.getByLabelText("Sets"), { target: { value: "3" } });
     fireEvent.change(screen.getByLabelText("Reps"), { target: { value: "12" } });
     fireEvent.change(screen.getByLabelText("Notes"), {
@@ -201,7 +211,12 @@ describe("AddTemplateExerciseForm", () => {
     fireEvent.change(screen.getByRole("searchbox"), {
       target: { value: "Back Squat" },
     });
-    await user.click(screen.getByRole("button", { name: /Barbell Back Squat/ }));
+    await user.click(
+      screen.getByRole("button", {
+        name: /Barbell Back Squat/,
+        pressed: false,
+      }),
+    );
     fireEvent.change(screen.getByLabelText("Sets"), { target: { value: "5" } });
     fireEvent.change(screen.getByLabelText("Reps"), { target: { value: "5" } });
     fireEvent.change(screen.getByLabelText("Notes"), {

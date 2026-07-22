@@ -1,32 +1,60 @@
 import { formatWorkoutDate } from "@/lib/format-date";
 import type { PreviousPerformance } from "@/lib/previous-performance";
 import { getProgressionSuggestion } from "@/lib/progression-suggestions";
+import {
+  calculateExerciseRecord,
+  formatTrackedSet,
+  normalizeTrackingType,
+} from "@/lib/exercise-tracking";
 
 type PreviousPerformanceCardProps = {
   previous: PreviousPerformance | null;
 };
 
 function getPrimarySet(previous: PreviousPerformance) {
-  const completeSets = previous.sets.filter(
-    (set) => set.weight !== null && set.reps !== null
-  );
+  const mode = normalizeTrackingType(previous.trackingType);
+  if (mode === "weight_reps") {
+    const completeSets = previous.sets.filter(
+      (set) => set.weight !== null && set.reps !== null,
+    );
+    return completeSets.reduce<(typeof previous.sets)[number] | null>(
+      (bestSet, set) =>
+        !bestSet ||
+        (set.weight ?? 0) * (set.reps ?? 0) >
+          (bestSet.weight ?? 0) * (bestSet.reps ?? 0)
+          ? set
+          : bestSet,
+      null,
+    ) ?? previous.sets[0] ?? null;
+  }
 
-  return completeSets.reduce<(typeof previous.sets)[number] | null>(
+  return previous.sets.reduce<(typeof previous.sets)[number] | null>(
     (bestSet, set) => {
+      const record = calculateExerciseRecord(mode, [set]);
+      if (!record) return bestSet;
       if (!bestSet) {
         return set;
       }
-
-      return (set.weight ?? 0) * (set.reps ?? 0) >
-        (bestSet.weight ?? 0) * (bestSet.reps ?? 0)
-        ? set
-        : bestSet;
+      const bestRecord = calculateExerciseRecord(mode, [bestSet]);
+      if (!bestRecord) return set;
+      const isBetter =
+        record.type === "pace"
+          ? record.value < bestRecord.value
+          : record.value > bestRecord.value;
+      return isBetter ? set : bestSet;
     },
     null
   ) ?? previous.sets[0] ?? null;
 }
 
-function getSetValue(set: PreviousPerformance["sets"][number]) {
+function getSetValue(
+  set: PreviousPerformance["sets"][number],
+  trackingType?: string | null,
+) {
+  if (normalizeTrackingType(trackingType) !== "weight_reps") {
+    const formatted = formatTrackedSet(trackingType, set);
+    return { visible: formatted, accessible: formatted };
+  }
   const visibleWeight = set.weight !== null ? `${set.weight} lb` : "—";
   const visibleReps = set.reps !== null ? set.reps : "—";
   const accessibleWeight =
@@ -43,7 +71,10 @@ function getSetValue(set: PreviousPerformance["sets"][number]) {
 export function PreviousPerformanceCard({
   previous,
 }: PreviousPerformanceCardProps) {
-  const suggestion = getProgressionSuggestion(previous);
+  const suggestion =
+    previous && normalizeTrackingType(previous.trackingType) === "weight_reps"
+      ? getProgressionSuggestion(previous)
+      : null;
 
   if (!previous) {
     return (
@@ -54,7 +85,9 @@ export function PreviousPerformanceCard({
   }
 
   const primarySet = getPrimarySet(previous);
-  const primaryValue = primarySet ? getSetValue(primarySet) : null;
+  const primaryValue = primarySet
+    ? getSetValue(primarySet, previous.trackingType)
+    : null;
 
   return (
     <section
@@ -63,7 +96,7 @@ export function PreviousPerformanceCard({
     >
       <div className="flex min-w-0 items-center justify-between gap-3 px-3 py-2.5">
         <div className="min-w-0">
-          <p className="text-[11px] font-black uppercase tracking-[0.16em] text-emerald-300">
+          <p className="text-[11px] font-black uppercase tracking-[0.16em] text-success">
             Last session
           </p>
 
@@ -89,21 +122,14 @@ export function PreviousPerformanceCard({
       {suggestion && (
         <div className="border-t border-white/[0.08] px-3 py-2">
           <p className="text-xs leading-5 text-neutral-300">
-            <span className="font-black text-amber-300">Suggested next:</span>{" "}
+            <span className="font-black text-success">Suggested next:</span>{" "}
             {suggestion.message}
           </p>
         </div>
       )}
 
-      <details className="group border-t border-white/[0.08]">
-        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-sm font-bold text-neutral-300 outline-none transition hover:bg-white/[0.04] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-300/40 [&::-webkit-details-marker]:hidden">
-          <span>View previous sets</span>
-          <span className="text-xs font-medium text-neutral-500">
-            {previous.sets.length} {previous.sets.length === 1 ? "set" : "sets"}
-          </span>
-        </summary>
-
-        <div className="border-t border-white/[0.08] px-3 py-3">
+      <div className="border-t border-white/[0.08] px-3 py-3">
+        <div>
           <p className="break-words text-xs leading-5 text-neutral-500">
             <span className="font-bold text-neutral-300">
               {previous.workoutTitle}
@@ -114,7 +140,7 @@ export function PreviousPerformanceCard({
           {previous.sets.length > 0 && (
             <ol className="mt-2 space-y-1.5" aria-label="Previous sets">
               {previous.sets.map((set) => {
-                const setValue = getSetValue(set);
+                const setValue = getSetValue(set, previous.trackingType);
 
                 return (
                   <li
@@ -141,7 +167,7 @@ export function PreviousPerformanceCard({
             </ol>
           )}
         </div>
-      </details>
+      </div>
     </section>
   );
 }

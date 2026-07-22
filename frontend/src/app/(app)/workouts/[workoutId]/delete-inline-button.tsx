@@ -31,7 +31,7 @@ function ConfirmedDeleteButton({
           });
         }
       }}
-      className="min-h-11 rounded-xl bg-red-600 px-3 py-2 text-xs font-black text-white transition hover:bg-red-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300/60 disabled:cursor-not-allowed disabled:opacity-70"
+      className="min-h-11 rounded-xl bg-danger px-3 py-2 text-xs font-black text-white transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:cursor-not-allowed disabled:opacity-70"
     >
       {pending ? "Deleting..." : label}
     </button>
@@ -51,7 +51,7 @@ export function DeleteInlineButton({
         type="button"
         aria-label={accessibleLabel}
         onClick={() => setIsConfirming(true)}
-        className="min-h-11 rounded-xl px-3 py-2 text-xs font-bold text-red-300 transition hover:bg-red-400/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300/50"
+        className="min-h-11 rounded-xl px-3 py-2 text-xs font-bold text-danger transition hover:bg-danger-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
       >
         {label}
       </button>
@@ -59,8 +59,8 @@ export function DeleteInlineButton({
   }
 
   return (
-    <div className="flex flex-wrap items-center justify-end gap-2 rounded-xl border border-red-300/20 bg-red-400/[0.08] p-2">
-      <span className="basis-full text-right text-xs font-semibold text-red-200 sm:basis-auto">
+    <div className="flex flex-wrap items-center justify-end gap-2 rounded-xl border border-danger/20 bg-danger-soft p-2">
+      <span className="basis-full text-right text-xs font-semibold text-danger sm:basis-auto">
         {confirmMessage}
       </span>
 

@@ -9,11 +9,11 @@ const premiumFeatures = [
 
 export function PremiumPreviewCard() {
   return (
-    <section className="mt-6 overflow-hidden rounded-[2rem] border border-amber-300/20 bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,0.18),transparent_34%),rgba(255,255,255,0.04)] p-5 shadow-2xl backdrop-blur sm:p-6">
+    <section className="mt-6 overflow-hidden rounded-[2rem] border border-info/20 bg-info-soft p-5 shadow-2xl backdrop-blur sm:p-6">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-2xl">
           <div className="flex flex-wrap items-center gap-3">
-            <span className="rounded-full border border-amber-300/30 bg-amber-300/10 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-amber-200">
+            <span className="rounded-full border border-info/30 bg-info-soft px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-info">
               Persist Pro Preview
             </span>
 
@@ -60,7 +60,7 @@ export function PremiumPreviewCard() {
 
           <Link
             href="/workouts"
-            className="mt-5 inline-flex w-full justify-center rounded-xl bg-amber-300 px-4 py-3 text-sm font-black text-black transition hover:bg-amber-200"
+            className="mt-5 inline-flex w-full justify-center rounded-xl bg-action px-4 py-3 text-sm font-black text-action-foreground transition hover:bg-action-hover"
           >
             Keep building history
           </Link>

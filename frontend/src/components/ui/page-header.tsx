@@ -15,12 +15,12 @@ export function PageHeader({
     <section className="mb-8 flex flex-col justify-between gap-4 sm:mb-10 md:flex-row md:items-end">
       <div>
         {eyebrow && (
-          <p className="text-xs font-black uppercase tracking-[0.28em] text-emerald-400">
+          <p className="text-xs font-black uppercase tracking-[0.28em] text-text-secondary">
             {eyebrow}
           </p>
         )}
 
-        <h1 className="mt-3 bg-gradient-to-r from-white via-neutral-100 to-neutral-400 bg-clip-text text-3xl font-black tracking-tight text-transparent sm:text-5xl">
+        <h1 className="mt-3 text-3xl font-black tracking-tight text-text-primary sm:text-5xl">
           {title}
         </h1>
 

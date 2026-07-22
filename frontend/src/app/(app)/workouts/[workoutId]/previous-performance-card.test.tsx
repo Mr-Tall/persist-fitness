@@ -1,5 +1,4 @@
 import { render, screen, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { PreviousPerformanceCard } from "./previous-performance-card";
 import type { PreviousPerformance } from "@/lib/previous-performance";
@@ -16,6 +15,38 @@ const previous: PreviousPerformance = {
 };
 
 describe("PreviousPerformanceCard", () => {
+  it.each([
+    ["reps_only", { reps: 20 }, "20 reps"],
+    ["time", { durationSeconds: 90 }, "90 sec"],
+    ["distance", { distance: 5, distanceUnit: "km" }, "5 km"],
+    [
+      "distance_time",
+      { distance: 500, distanceUnit: "m", durationSeconds: 102 },
+      "500 m in 1:42",
+    ],
+  ])("formats %s previous performance", (trackingType, trackedValues, expected) => {
+    render(
+      <PreviousPerformanceCard
+        previous={{
+          ...previous,
+          trackingType,
+          sets: [
+            {
+              setNumber: 1,
+              weight: null,
+              reps: null,
+              rir: null,
+              ...trackedValues,
+            },
+          ],
+        }}
+      />,
+    );
+
+    expect(screen.getAllByText(expected).length).toBeGreaterThan(0);
+    expect(screen.queryByText("Suggested next:")).not.toBeInTheDocument();
+  });
+
   it("shows the most useful previous result in the compact summary", () => {
     render(<PreviousPerformanceCard previous={previous} />);
 
@@ -34,37 +65,25 @@ describe("PreviousPerformanceCard", () => {
     ).toHaveTextContent("225 lb × 8");
   });
 
-  it("keeps every previous set and supporting context inside the disclosure", () => {
+  it("keeps every previous set and supporting context immediately visible", () => {
     render(<PreviousPerformanceCard previous={previous} />);
 
-    const summary = screen.getByText("View previous sets").closest("summary");
-    const disclosure = summary?.closest("details");
+    const region = screen.getByRole("region", { name: "Previous performance" });
     const previousSets = screen.getByRole("list", { name: "Previous sets" });
 
-    expect(summary).not.toBeNull();
-    expect(disclosure).not.toBeNull();
-    expect(disclosure).toContainElement(previousSets);
-    expect(within(disclosure!).getByText(previous.workoutTitle)).toBeInTheDocument();
-    expect(within(disclosure!).getByText(/Paused Back Squat/)).toBeInTheDocument();
+    expect(region).toContainElement(previousSets);
+    expect(within(region).getByText(previous.workoutTitle)).toBeInTheDocument();
+    expect(within(region).getByText(/Paused Back Squat/)).toBeInTheDocument();
     expect(within(previousSets).getAllByRole("listitem")).toHaveLength(3);
     expect(within(previousSets).getByText("RIR 3")).toBeInTheDocument();
     expect(within(previousSets).getByText("RIR 1")).toBeInTheDocument();
   });
 
-  it("uses a focusable native disclosure that can be activated", async () => {
-    const user = userEvent.setup();
+  it("does not require an extra disclosure interaction", () => {
     render(<PreviousPerformanceCard previous={previous} />);
 
-    const summary = screen.getByText("View previous sets").closest("summary");
-    const disclosure = summary?.closest("details");
-
-    expect(summary?.tagName).toBe("SUMMARY");
-    expect(disclosure).not.toHaveAttribute("open");
-
-    summary!.focus();
-    expect(summary).toHaveFocus();
-    await user.click(summary!);
-    expect(disclosure).toHaveAttribute("open");
+    expect(screen.queryByText("View previous sets")).not.toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "Previous sets" })).toBeVisible();
   });
 
   it("preserves the existing progression suggestion", () => {
@@ -105,11 +124,9 @@ describe("PreviousPerformanceCard", () => {
       />
     );
 
-    const disclosure = screen
-      .getByText("View previous sets")
-      .closest("details");
+    const region = screen.getByRole("region", { name: "Previous performance" });
 
-    expect(within(disclosure!).getByText(longWorkoutTitle)).toBeInTheDocument();
-    expect(within(disclosure!).getByText(new RegExp(longExerciseName))).toBeInTheDocument();
+    expect(within(region).getByText(longWorkoutTitle)).toBeInTheDocument();
+    expect(within(region).getByText(new RegExp(longExerciseName))).toBeInTheDocument();
   });
 });

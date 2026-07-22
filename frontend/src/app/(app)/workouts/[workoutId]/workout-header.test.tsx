@@ -52,8 +52,12 @@ function renderHeader(
   return render(
     <WorkoutHeader
       workout={workout}
+      completedExercises={1}
+      totalExercises={2}
       totalSets={7}
       totalVolume="12,450 lb"
+      personalRecordCount={2}
+      estimatedDuration="~38m"
       duration={isCompleted ? "52m" : "In progress"}
       workoutProgress={58}
       isCompleted={isCompleted}
@@ -71,13 +75,20 @@ describe("WorkoutHeader", () => {
     expect(screen.getByText("Active workout")).toBeVisible();
     expect(screen.getByLabelText("Duration: In progress")).toBeVisible();
 
-    const momentum = screen.getByRole("group", { name: "Workout momentum" });
-    expect(within(momentum).getByText("Exercises")).toBeVisible();
-    expect(within(momentum).getByText("2")).toBeVisible();
-    expect(within(momentum).getByText("Sets")).toBeVisible();
-    expect(within(momentum).getByText("7")).toBeVisible();
-    expect(within(momentum).getByText("Volume")).toBeVisible();
-    expect(within(momentum).getByText("12,450 lb")).toBeVisible();
+    expect(screen.getByText("1 / 2 exercises completed")).toBeVisible();
+    expect(screen.getByRole("progressbar", { name: "Workout progress" }))
+      .toHaveAttribute("aria-valuenow", "58");
+    const summary = screen.getByRole("group", { name: "Workout summary" });
+    expect(within(summary).getByText("Exercises completed")).toBeVisible();
+    expect(within(summary).getByText("1 / 2")).toBeVisible();
+    expect(within(summary).getByText("Sets logged")).toBeVisible();
+    expect(within(summary).getByText("7")).toBeVisible();
+    expect(within(summary).getByText("Total volume")).toBeVisible();
+    expect(within(summary).getByText("12,450 lb")).toBeVisible();
+    expect(within(summary).getByText("PRs earned")).toBeVisible();
+    expect(within(summary).getByText("2")).toBeVisible();
+    expect(within(summary).getByText("Estimated duration")).toBeVisible();
+    expect(within(summary).getByText("~38m")).toBeVisible();
   });
 
   it("keeps every active-workout action available by accessible name", () => {
@@ -130,8 +141,12 @@ describe("WorkoutHeader", () => {
     render(
       <WorkoutHeader
         workout={{ ...activeWorkout, title: longTitle }}
+        completedExercises={2}
+        totalExercises={2}
         totalSets={24}
         totalVolume="1,234,567,890 lb"
+        personalRecordCount={4}
+        estimatedDuration="~1h 22m"
         duration="In progress"
         workoutProgress={100}
         isCompleted={false}

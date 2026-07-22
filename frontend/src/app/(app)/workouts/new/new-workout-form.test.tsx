@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -24,20 +24,27 @@ describe("NewWorkoutForm", () => {
   });
 
   it("preserves the field contract and entered values after failure", async () => {
-    const user = userEvent.setup();
     render(<NewWorkoutForm today="2026-07-19" />);
 
-    await user.type(screen.getByLabelText("Workout title"), "Upper Strength");
-    await user.selectOptions(screen.getByLabelText("Goal"), "Strength");
+    fireEvent.change(screen.getByLabelText("Workout title"), {
+      target: { value: "Upper Strength" },
+    });
+    fireEvent.change(screen.getByLabelText("Goal"), {
+      target: { value: "Strength" },
+    });
     fireEvent.change(screen.getByLabelText("Date"), {
       target: { value: "2026-07-18" },
     });
-    await user.type(screen.getByLabelText("Notes"), "Heavy compounds");
-    await user.click(
+    fireEvent.change(screen.getByLabelText("Notes"), {
+      target: { value: "Heavy compounds" },
+    });
+    fireEvent.click(
       screen.getByRole("button", { name: "Create workout and add exercises" }),
     );
 
-    await waitFor(() => expect(createWorkoutMock).toHaveBeenCalledTimes(1));
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(errorState.message);
+    expect(createWorkoutMock).toHaveBeenCalledTimes(1);
     const submitted = createWorkoutMock.mock.calls[0][1] as FormData;
     expect(submitted.get("title")).toBe("Upper Strength");
     expect(submitted.get("goal")).toBe("Strength");

@@ -3,6 +3,9 @@ export type AddSetPrefill = {
   reps: number | null;
   rir: number | null;
   tempo: string | null;
+  durationSeconds?: number | null;
+  distance?: number | null;
+  distanceUnit?: string | null;
 };
 
 type SavedSetForPrefill = AddSetPrefill & {
@@ -27,5 +30,8 @@ export function getLatestSetPrefill(
     reps: latestSet.reps,
     rir: latestSet.rir,
     tempo: latestSet.tempo,
+    durationSeconds: latestSet.durationSeconds,
+    distance: latestSet.distance,
+    distanceUnit: latestSet.distanceUnit,
   };
 }

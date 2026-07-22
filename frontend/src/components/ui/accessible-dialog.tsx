@@ -245,7 +245,7 @@ export function AccessibleDialog({
 
   return createPortal(
     <div
-      className={`fixed inset-0 z-[70] flex items-end bg-black/80 px-2 pt-3 backdrop-blur-sm motion-reduce:transition-none sm:items-center sm:justify-center sm:p-4 ${overlayClassName}`}
+      className={`fixed inset-0 z-[70] flex items-end bg-black/85 px-2 pt-3 backdrop-blur-md motion-reduce:transition-none sm:items-center sm:justify-center sm:p-4 ${overlayClassName}`}
       data-dialog-overlay
       data-dialog-portal
       ref={overlayRef}
@@ -254,7 +254,7 @@ export function AccessibleDialog({
         aria-describedby={descriptionId}
         aria-labelledby={titleId}
         aria-modal="true"
-        className={`flex h-[calc(100dvh-0.75rem)] w-full scroll-pb-[env(safe-area-inset-bottom)] flex-col overflow-hidden rounded-t-[2rem] border border-white/10 bg-neutral-950 shadow-[0_-24px_80px_-35px_rgba(16,185,129,0.55)] motion-reduce:transition-none sm:h-auto sm:max-h-[calc(100dvh-2rem)] sm:max-w-xl sm:rounded-3xl ${panelClassName}`}
+        className={`flex h-[calc(100dvh-0.75rem)] w-full scroll-pb-[env(safe-area-inset-bottom)] flex-col overflow-hidden rounded-t-[2rem] border border-border bg-surface-elevated shadow-[0_-28px_90px_-38px_rgba(0,0,0,0.92)] motion-reduce:transition-none sm:h-auto sm:max-h-[calc(100dvh-2rem)] sm:max-w-xl sm:rounded-3xl ${panelClassName}`}
         data-dialog-panel
         ref={panelRef}
         role="dialog"

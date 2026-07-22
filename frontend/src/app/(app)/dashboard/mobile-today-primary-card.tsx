@@ -21,14 +21,14 @@ export function MobileTodayPrimaryCard({
 }: MobileTodayPrimaryCardProps) {
   return (
     <Card
-      variant={activeWorkout ? "emerald" : "glass"}
+      variant={activeWorkout ? "elevated" : "glass"}
       className="relative min-w-0 overflow-hidden rounded-[1.75rem] p-5"
     >
-      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,rgba(52,211,153,0.2),transparent_44%)]" />
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.10),transparent_44%)]" />
 
       {activeWorkout ? (
         <>
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-300">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-text-secondary">
             Workout in progress
           </p>
           <h2 className="mt-2 line-clamp-2 break-words text-2xl font-black leading-tight tracking-tight text-white [overflow-wrap:anywhere]">
@@ -49,7 +49,7 @@ export function MobileTodayPrimaryCard({
         </>
       ) : (
         <>
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-300">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-text-secondary">
             Next up
           </p>
           <h2 className="mt-2 break-words text-2xl font-black leading-tight tracking-tight text-white">

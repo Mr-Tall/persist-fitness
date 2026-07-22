@@ -181,6 +181,9 @@ describe("getTopExercisePersonalRecords", () => {
         exercises: {
           include: {
             sets: true,
+            exercise: {
+              select: { primaryMuscles: true, trackingType: true },
+            },
           },
         },
       },

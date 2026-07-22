@@ -17,6 +17,7 @@ import {
   updateWorkoutSchema,
   workoutIdSchema,
 } from "@/lib/validation/workout";
+import { advanceProgramForCompletedWorkout } from "@/lib/program-progress";
 
 export type UpdateWorkoutFormState = ActionFormState;
 export type CreateWorkoutFormState = ActionFormState;
@@ -211,9 +212,12 @@ export async function finishWorkout(formData: FormData) {
     }
   }
 
+  await advanceProgramForCompletedWorkout(userId, parsed.workoutId);
+
   revalidatePath(`/workouts/${parsed.workoutId}`);
   revalidatePath("/workouts");
   revalidatePath("/dashboard");
+  revalidatePath("/programs");
 }
 
 export async function reopenWorkout(formData: FormData) {

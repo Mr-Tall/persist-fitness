@@ -18,16 +18,16 @@ type ButtonProps = {
 
 const styles = {
   primary:
-    "bg-emerald-400 text-black hover:bg-emerald-300",
+    "bg-action text-action-foreground shadow-[0_10px_30px_rgba(0,0,0,0.28)] hover:bg-action-hover",
 
   secondary:
-    "border border-white/10 bg-white/5 text-white hover:bg-white/10",
+    "border border-border bg-action-secondary text-text-primary hover:border-border-strong hover:bg-surface-elevated",
 
   danger:
-    "bg-red-500 text-white hover:bg-red-400",
+    "bg-danger text-white hover:brightness-110",
 
   ghost:
-    "text-neutral-300 hover:bg-white/5",
+    "text-text-secondary hover:bg-action-secondary hover:text-text-primary",
 };
 
 export function Button({
@@ -39,7 +39,7 @@ export function Button({
   ...props
 }: ButtonProps) {
   const classes = clsx(
-    "inline-flex items-center justify-center rounded-2xl px-5 py-3 font-bold transition-all duration-200",
+    "inline-flex min-h-11 items-center justify-center rounded-2xl px-5 py-3 font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas",
     styles[variant],
     fullWidth && "w-full",
     className

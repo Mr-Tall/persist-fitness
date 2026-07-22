@@ -1,49 +1,53 @@
 type WorkoutStatGridProps = {
-  exerciseCount: number;
+  completedExercises: number;
+  totalExercises: number;
   totalSets: number;
   totalVolume: string;
+  personalRecordCount: number;
+  estimatedDuration: string;
 };
 
 export function WorkoutStatGrid({
-  exerciseCount,
+  completedExercises,
+  totalExercises,
   totalSets,
   totalVolume,
+  personalRecordCount,
+  estimatedDuration,
 }: WorkoutStatGridProps) {
+  const metrics = [
+    { label: "Total volume", value: totalVolume, title: totalVolume },
+    {
+      label: "Exercises completed",
+      value: `${completedExercises} / ${totalExercises}`,
+    },
+    { label: "Sets logged", value: totalSets },
+    { label: "PRs earned", value: personalRecordCount },
+    { label: "Estimated duration", value: estimatedDuration },
+  ];
+
   return (
     <dl
       role="group"
-      aria-label="Workout momentum"
-      className="grid min-w-0 grid-cols-3 divide-x divide-white/10 rounded-2xl border border-white/10 bg-black/25"
+      aria-label="Workout summary"
+      className="grid min-w-0 grid-cols-2 overflow-hidden rounded-2xl border border-border bg-black/25 sm:grid-cols-5"
     >
-      <div className="min-w-0 px-2 py-2.5 text-center sm:px-4 sm:py-3">
-        <dt className="text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-500 sm:text-xs">
-          Exercises
-        </dt>
-        <dd className="mt-0.5 text-lg font-black text-white sm:text-xl">
-          {exerciseCount}
-        </dd>
-      </div>
-
-      <div className="min-w-0 px-2 py-2.5 text-center sm:px-4 sm:py-3">
-        <dt className="text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-500 sm:text-xs">
-          Sets
-        </dt>
-        <dd className="mt-0.5 text-lg font-black text-white sm:text-xl">
-          {totalSets}
-        </dd>
-      </div>
-
-      <div className="min-w-0 px-2 py-2.5 text-center sm:px-4 sm:py-3">
-        <dt className="text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-500 sm:text-xs">
-          Volume
-        </dt>
-        <dd
-          title={totalVolume}
-          className="mt-0.5 truncate text-base font-black text-white sm:text-xl"
+      {metrics.map((metric) => (
+        <div
+          className="min-w-0 border-b border-r border-border px-2 py-2.5 text-center last:col-span-2 sm:border-b-0 sm:last:col-span-1 sm:last:border-r-0"
+          key={metric.label}
         >
-          {totalVolume}
-        </dd>
-      </div>
+          <dt className="text-[10px] font-bold uppercase tracking-[0.11em] text-text-muted">
+            {metric.label}
+          </dt>
+          <dd
+            className="mt-0.5 break-words text-base font-black text-text-primary sm:text-lg"
+            title={metric.title}
+          >
+            {metric.value}
+          </dd>
+        </div>
+      ))}
     </dl>
   );
 }

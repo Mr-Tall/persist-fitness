@@ -57,6 +57,24 @@ describe("EditSetForm", () => {
     document.body.style.overflow = "";
   });
 
+  it("renders only time fields for a time-tracked set", async () => {
+    const user = userEvent.setup();
+    render(
+      <EditSetForm
+        trackingType="time"
+        workoutId="workout-1"
+        set={{ ...workoutSet, weight: null, reps: null, durationSeconds: 90 }}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Edit set 3" }));
+    await waitFor(() => expect(screen.getByLabelText("Minutes")).toHaveFocus());
+    expect(screen.getByLabelText("Minutes")).toHaveValue(1);
+    expect(screen.getByLabelText("Seconds")).toHaveValue(30);
+    expect(screen.queryByLabelText("Weight")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Reps")).not.toBeInTheDocument();
+  });
+
   it("opens a labelled modal sheet, locks scrolling, and focuses Weight", async () => {
     const user = userEvent.setup();
     renderEditSet();

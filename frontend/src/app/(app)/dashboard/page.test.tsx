@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   getDashboardData: vi.fn(),
+  requireUserSession: vi.fn(),
   routerPush: vi.fn(),
 }));
 
@@ -11,13 +12,15 @@ vi.mock("@/lib/dashboard-data", () => ({
 }));
 
 vi.mock("@/lib/auth/require-user", () => ({
-  requireUserSession: vi.fn().mockResolvedValue({
-    user: { id: "user-1", name: "Taylor" },
-  }),
+  requireUserSession: mocks.requireUserSession,
 }));
 
 vi.mock("@/app/actions/workouts", () => ({
   startTodaysWorkout: vi.fn(),
+}));
+
+vi.mock("@/app/actions/programs", () => ({
+  startProgramWorkout: vi.fn(),
 }));
 
 vi.mock("@/app/actions/onboarding", () => ({
@@ -42,61 +45,100 @@ const completeProfile = {
   preferredSplit: null,
 };
 
-const defaultDashboardData = {
-  activeWorkout: {
-    id: "active-workout",
-    title: "Active strength session",
-    goal: null,
-    status: "active",
-    startedAt: new Date("2026-07-13T18:00:00.000Z"),
-    date: new Date("2026-07-13T18:00:00.000Z"),
-    exercises: [],
-  },
-  activeWorkoutSetCount: 0,
-  activeWorkoutVolume: 0,
-  analytics: {
-    workoutCount: 1,
-    workoutsThisWeek: 1,
-    totalSets: 3,
-    totalVolume: 1200,
-    currentStreak: 1,
-    recentWorkouts: [
-      {
-        id: "recent-workout",
-        title: "Recent session",
-        goal: "Strength",
-        status: "completed",
-        startedAt: new Date("2026-07-12T18:00:00.000Z"),
-        date: new Date("2026-07-12T18:00:00.000Z"),
-        exercises: [],
+function createDashboardData() {
+  return {
+    activeWorkout: {
+      id: "active-workout",
+      title: "Active strength session",
+      goal: null,
+      status: "active",
+      startedAt: new Date("2026-07-13T18:00:00.000Z"),
+      date: new Date("2026-07-13T18:00:00.000Z"),
+      exercises: [],
+    },
+    activeWorkoutSetCount: 0,
+    activeWorkoutVolume: 0,
+    coach: {
+      generatedAt: new Date("2026-07-20T00:00:00.000Z"),
+      insights: [],
+      recommendations: [],
+      topInsight: {
+        id: "coach-workout-frequency-overall",
+        type: "workout_frequency",
+        category: "consistency",
+        priority: "low",
+        direction: "positive",
+        confidence: 0.75,
+        metrics: [
+          { key: "workouts_per_week", value: 2, unit: "sessions_per_week" },
+        ],
       },
-    ],
-  },
-  onboardingCompletedAt: new Date("2026-07-19T00:00:00.000Z"),
-  personalRecords: [],
-  profile: {
-    ...completeProfile,
-    equipment: [],
-  },
-  routineCount: 0,
-};
+      topRecommendation: {
+        id: "recommendation-workout-frequency",
+        title: "Schedule the next session",
+        priority: "low",
+        category: "consistency",
+        supportingMetrics: [],
+        confidence: 0.75,
+        suggestedAction: { type: "schedule_session" },
+        sourceInsightType: "workout_frequency",
+      },
+    },
+    currentProgram: null,
+    analytics: {
+      workoutCount: 1,
+      workoutsThisWeek: 1,
+      totalSets: 3,
+      totalVolume: 1200,
+      currentStreak: 1,
+      recentWorkouts: [
+        {
+          id: "recent-workout",
+          title: "Recent session",
+          goal: "Strength",
+          status: "completed",
+          startedAt: new Date("2026-07-12T18:00:00.000Z"),
+          date: new Date("2026-07-12T18:00:00.000Z"),
+          exercises: [],
+        },
+      ],
+    },
+    onboardingCompletedAt: new Date("2026-07-19T00:00:00.000Z"),
+    personalRecords: [],
+    profile: {
+      ...completeProfile,
+      equipment: [],
+    },
+    routineCount: 0,
+  };
+}
 
 beforeEach(() => {
   mocks.getDashboardData.mockReset();
-  mocks.getDashboardData.mockResolvedValue(defaultDashboardData);
+  mocks.requireUserSession.mockReset();
+  mocks.requireUserSession.mockResolvedValue({
+    user: { id: "user-1", name: "Taylor" },
+  });
+  mocks.getDashboardData.mockResolvedValue(createDashboardData());
 });
 
 describe("DashboardPage mobile profile nudge", () => {
   it("keeps the nudge below core Today content during an active workout", async () => {
-    render(await DashboardPage());
+    const { container } = render(await DashboardPage());
+    const mobileToday = container.querySelector<HTMLElement>(
+      "main > div.md\\:hidden",
+    );
 
-    const weekly = screen
+    expect(mobileToday).not.toBeNull();
+    const mobile = within(mobileToday!);
+
+    const weekly = mobile
       .getByRole("heading", { name: "Weekly momentum" })
       .closest("section");
-    const latest = screen
+    const latest = mobile
       .getByRole("heading", { name: "Latest workout" })
       .closest("section");
-    const nudge = screen.getByRole("region", {
+    const nudge = mobile.getByRole("region", {
       name: "Finish your training setup",
     });
 
@@ -112,16 +154,16 @@ describe("DashboardPage mobile profile nudge", () => {
       latest!.compareDocumentPosition(nudge) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
     expect(
-      screen.getAllByRole("link", { name: "Resume workout" }).length
+      mobile.getAllByRole("link", { name: "Resume workout" }).length
     ).toBeGreaterThan(0);
     expect(
-      screen.getByRole("link", { name: "Finish setup" })
+      mobile.getByRole("link", { name: "Finish setup" })
     ).toHaveAttribute("href", "/settings");
   });
 
   it("hides the mobile nudge for a complete profile without changing desktop setup content", async () => {
     mocks.getDashboardData.mockResolvedValue({
-      ...defaultDashboardData,
+      ...createDashboardData(),
       profile: completeProfile,
     });
 
@@ -136,10 +178,22 @@ describe("DashboardPage mobile profile nudge", () => {
   });
 });
 
+describe("DashboardPage AI Coach integration", () => {
+  it("shows structured coaching insight and recommendation summaries", async () => {
+    render(await DashboardPage());
+
+    expect(
+      screen.getAllByRole("heading", { name: "Training intelligence" }),
+    ).toHaveLength(2);
+    expect(screen.getAllByText("Workout frequency")).toHaveLength(2);
+    expect(screen.getAllByText("Schedule the next session")).toHaveLength(2);
+  });
+});
+
 describe("DashboardPage first-time onboarding", () => {
   it("shows onboarding when the persisted completion timestamp is null", async () => {
     mocks.getDashboardData.mockResolvedValue({
-      ...defaultDashboardData,
+      ...createDashboardData(),
       onboardingCompletedAt: null,
     });
 

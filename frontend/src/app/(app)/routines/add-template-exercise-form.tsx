@@ -4,7 +4,11 @@ import {
   addExerciseToRoutineWithState,
   type AddRoutineExerciseFormState,
 } from "@/app/actions/routines";
-import { ExerciseSelect } from "@/components/exercise-select";
+import { ExerciseDetailsDialog } from "@/components/exercise-details-dialog";
+import {
+  ExerciseSelect,
+  type ExerciseLibraryOption,
+} from "@/components/exercise-select";
 import { AccessibleDialog } from "@/components/ui/accessible-dialog";
 import { ToastSubmitButton } from "@/components/ui/toast-submit-button";
 import {
@@ -20,13 +24,7 @@ import { toast } from "sonner";
 
 type AddTemplateExerciseFormProps = {
   routineId: string;
-  exercises: {
-    id: string;
-    name: string;
-    equipment: string | null;
-    primaryMuscles: string[];
-    isFavorite?: boolean;
-  }[];
+  exercises: ExerciseLibraryOption[];
   isEmptyRoutine?: boolean;
 };
 
@@ -43,12 +41,22 @@ export function AddTemplateExerciseForm({
 }: AddTemplateExerciseFormProps) {
   const [canSubmit, setCanSubmit] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [detailsExercise, setDetailsExercise] =
+    useState<ExerciseLibraryOption | null>(null);
+  const [detailsTriggerExerciseId, setDetailsTriggerExerciseId] = useState<
+    string | null
+  >(null);
+  const [pickerSearchQuery, setPickerSearchQuery] = useState("");
+  const [pickerSelectedExerciseId, setPickerSelectedExerciseId] = useState("");
+  const [pickerCustomName, setPickerCustomName] = useState("");
   const [selectorVersion, setSelectorVersion] = useState(0);
   const [showActionMessage, setShowActionMessage] = useState(true);
   const [sets, setSets] = useState("");
   const [reps, setReps] = useState("");
   const [notes, setNotes] = useState("");
   const launcherRef = useRef<HTMLButtonElement>(null);
+  const detailsTriggerRef = useRef<HTMLButtonElement>(null);
+  const returnToPickerSheetRef = useRef(false);
   const formRef = useRef<HTMLFormElement>(null);
   const handledSubmittedAtRef = useRef<number | null>(null);
   const titleId = useId();
@@ -63,7 +71,29 @@ export function AddTemplateExerciseForm({
   );
 
   const closeSheet = useCallback(() => {
+    setDetailsTriggerExerciseId(null);
     setIsSheetOpen(false);
+  }, []);
+
+  const openExerciseDetails = useCallback(
+    (exercise: ExerciseLibraryOption) => {
+      setDetailsTriggerExerciseId(exercise.id);
+      returnToPickerSheetRef.current = isSheetOpen;
+      setDetailsExercise(exercise);
+
+      if (isSheetOpen) {
+        setIsSheetOpen(false);
+      }
+    },
+    [isSheetOpen],
+  );
+
+  const closeExerciseDetails = useCallback(() => {
+    setDetailsExercise(null);
+    if (returnToPickerSheetRef.current) {
+      setIsSheetOpen(true);
+    }
+    returnToPickerSheetRef.current = false;
   }, []);
 
   const handleActionResult = useEffectEvent(
@@ -74,6 +104,9 @@ export function AddTemplateExerciseForm({
         setReps("");
         setNotes("");
         setCanSubmit(false);
+        setPickerSearchQuery("");
+        setPickerSelectedExerciseId("");
+        setPickerCustomName("");
         setSelectorVersion((version) => version + 1);
 
         if (isSheetOpen) {
@@ -98,7 +131,7 @@ export function AddTemplateExerciseForm({
     }
     handledSubmittedAtRef.current = state.submittedAt;
     handleActionResult(state);
-  }, [state.message, state.status, state.submittedAt]);
+  }, [state]);
 
   return (
     <>
@@ -106,13 +139,14 @@ export function AddTemplateExerciseForm({
         ref={launcherRef}
         type="button"
         onClick={() => {
+          setDetailsTriggerExerciseId(null);
           setShowActionMessage(false);
           setIsSheetOpen(true);
         }}
-        className={`flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-black transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-black md:hidden ${
+        className={`flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-black transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas md:hidden ${
           isEmptyRoutine
-            ? "bg-emerald-400 text-black hover:bg-emerald-300"
-            : "border border-white/10 bg-white/[0.06] text-white hover:border-emerald-300/35 hover:bg-emerald-400/[0.08]"
+            ? "bg-action text-action-foreground hover:bg-action-hover"
+            : "border border-border bg-action-secondary text-text-primary hover:border-border-strong hover:bg-surface-elevated"
         }`}
         aria-label="Open add exercise"
         aria-haspopup="dialog"
@@ -135,12 +169,13 @@ export function AddTemplateExerciseForm({
         overlayClassName="sm:items-end sm:justify-start sm:p-0 md:items-center md:justify-center md:p-4"
         panelClassName="sm:h-[calc(100dvh-0.75rem)] sm:max-h-none sm:max-w-none sm:rounded-t-[2rem] sm:rounded-b-none md:h-auto md:max-h-[calc(100dvh-2rem)] md:max-w-xl md:rounded-3xl"
         renderInlineWhenClosed
+        initialFocusRef={detailsTriggerRef}
         restoreFocusRef={launcherRef}
         titleId={titleId}
       >
           <div className="flex shrink-0 items-start justify-between gap-4 border-b border-white/10 px-4 py-4 md:border-b-0 md:px-5 md:pb-0 md:pt-5">
             <div className="min-w-0">
-              <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-300 md:hidden">
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-text-secondary md:hidden">
                 Plan routine
               </p>
               <h2 id={titleId} className="mt-0.5 text-lg font-black text-white md:mt-0">
@@ -154,7 +189,7 @@ export function AddTemplateExerciseForm({
             <button
               type="button"
               onClick={closeSheet}
-              className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-lg font-bold text-neutral-200 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950 md:hidden"
+              className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full border border-border bg-action-secondary text-lg font-bold text-text-secondary transition hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas md:hidden"
               aria-label="Close add exercise"
             >
               <span aria-hidden="true">×</span>
@@ -175,6 +210,15 @@ export function AddTemplateExerciseForm({
                 key={selectorVersion}
                 exercises={exercises}
                 onValidityChange={setCanSubmit}
+                onViewDetails={openExerciseDetails}
+                detailsFocusExerciseId={detailsTriggerExerciseId}
+                detailsTriggerRef={detailsTriggerRef}
+                searchQuery={pickerSearchQuery}
+                onSearchQueryChange={setPickerSearchQuery}
+                selectedExerciseId={pickerSelectedExerciseId}
+                onSelectedExerciseIdChange={setPickerSelectedExerciseId}
+                customName={pickerCustomName}
+                onCustomNameChange={setPickerCustomName}
               />
 
               <fieldset className="mt-5 border-t border-white/10 pt-4">
@@ -197,7 +241,7 @@ export function AddTemplateExerciseForm({
                       placeholder="3"
                       value={sets}
                       onChange={(event) => setSets(event.target.value)}
-                      className="mt-1 min-h-12 w-full rounded-xl border border-white/10 bg-black/25 px-3 py-3 text-white outline-none transition placeholder:text-neutral-600 focus-visible:border-emerald-300/60 focus-visible:ring-2 focus-visible:ring-emerald-400/35"
+                      className="mt-1 min-h-12 w-full rounded-xl border border-border bg-surface px-3 py-3 text-text-primary outline-none transition placeholder:text-text-muted focus-visible:border-focus focus-visible:ring-2 focus-visible:ring-focus/35"
                     />
                   </div>
 
@@ -212,7 +256,7 @@ export function AddTemplateExerciseForm({
                       placeholder="8-12"
                       value={reps}
                       onChange={(event) => setReps(event.target.value)}
-                      className="mt-1 min-h-12 w-full rounded-xl border border-white/10 bg-black/25 px-3 py-3 text-white outline-none transition placeholder:text-neutral-600 focus-visible:border-emerald-300/60 focus-visible:ring-2 focus-visible:ring-emerald-400/35"
+                      className="mt-1 min-h-12 w-full rounded-xl border border-border bg-surface px-3 py-3 text-text-primary outline-none transition placeholder:text-text-muted focus-visible:border-focus focus-visible:ring-2 focus-visible:ring-focus/35"
                     />
                   </div>
 
@@ -227,7 +271,7 @@ export function AddTemplateExerciseForm({
                       placeholder="Optional"
                       value={notes}
                       onChange={(event) => setNotes(event.target.value)}
-                      className="mt-1 min-h-12 w-full rounded-xl border border-white/10 bg-black/25 px-3 py-3 text-white outline-none transition placeholder:text-neutral-600 focus-visible:border-emerald-300/60 focus-visible:ring-2 focus-visible:ring-emerald-400/35"
+                      className="mt-1 min-h-12 w-full rounded-xl border border-border bg-surface px-3 py-3 text-text-primary outline-none transition placeholder:text-text-muted focus-visible:border-focus focus-visible:ring-2 focus-visible:ring-focus/35"
                     />
                   </div>
                 </div>
@@ -241,8 +285,8 @@ export function AddTemplateExerciseForm({
                   role={state.status === "error" ? "alert" : "status"}
                   className={`mb-3 rounded-2xl border px-4 py-3 text-sm font-bold leading-6 ${
                     state.status === "success"
-                      ? "border-emerald-300/25 bg-emerald-400/[0.08] text-emerald-200"
-                      : "border-red-300/25 bg-red-400/[0.08] text-red-200"
+                      ? "border-success/25 bg-success-soft text-success"
+                      : "border-danger/25 bg-danger-soft text-danger"
                   }`}
                 >
                   {state.message}
@@ -253,13 +297,19 @@ export function AddTemplateExerciseForm({
                 pendingText="Adding exercise..."
                 toastMessage="Adding exercise..."
                 disabled={!canSubmit}
-                className="min-h-12 w-full rounded-xl bg-emerald-400 px-5 py-3 font-black text-black transition hover:bg-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950 disabled:bg-neutral-700 disabled:text-neutral-400 md:w-auto"
+                className="min-h-12 w-full rounded-xl bg-action px-5 py-3 font-black text-action-foreground transition-colors hover:bg-action-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas disabled:bg-neutral-700 disabled:text-neutral-400 md:w-auto"
               >
                 Add exercise
               </ToastSubmitButton>
             </div>
           </form>
       </AccessibleDialog>
+
+      <ExerciseDetailsDialog
+        exercise={detailsExercise}
+        onClose={closeExerciseDetails}
+        restoreFocusRef={detailsTriggerRef}
+      />
     </>
   );
 }

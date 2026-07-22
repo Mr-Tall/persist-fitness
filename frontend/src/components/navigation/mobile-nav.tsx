@@ -107,7 +107,7 @@ export function MobileNav() {
   return (
     <nav
       aria-label="Primary navigation"
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-black/85 px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-16px_40px_rgba(0,0,0,0.45)] backdrop-blur-xl md:hidden"
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-canvas/90 px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-16px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl md:hidden"
     >
       <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
         {navItems.map((item) => {
@@ -122,11 +122,11 @@ export function MobileNav() {
               className={`flex min-h-[52px] flex-col items-center justify-center gap-1 rounded-2xl px-1 text-[11px] font-bold transition active:scale-95 ${
                 isLog
                   ? active
-                    ? "bg-emerald-300 text-black shadow-[0_8px_28px_rgba(52,211,153,0.28)] ring-2 ring-emerald-100/70"
-                    : "border border-emerald-300/40 bg-emerald-400/10 text-emerald-200 shadow-[0_8px_24px_rgba(52,211,153,0.12)] hover:bg-emerald-400/15"
+                    ? "bg-action text-action-foreground shadow-[0_8px_28px_rgba(0,0,0,0.35)] ring-1 ring-white/60"
+                    : "border border-border-strong bg-action-secondary text-text-primary shadow-[0_8px_24px_rgba(0,0,0,0.24)] hover:bg-surface-elevated"
                   : active
-                    ? "bg-white/10 text-emerald-300"
-                    : "text-neutral-400 hover:bg-white/[0.06] hover:text-white"
+                    ? "bg-action-secondary text-text-primary"
+                    : "text-text-muted hover:bg-action-secondary hover:text-text-primary"
               }`}
             >
               <NavIcon name={item.icon} />

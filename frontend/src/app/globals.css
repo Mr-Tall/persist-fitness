@@ -1,8 +1,45 @@
 @import "tailwindcss";
 
+@theme {
+  --color-canvas: #050505;
+  --color-surface: #0d0d0f;
+  --color-surface-elevated: #161619;
+  --color-border: #29292e;
+  --color-border-strong: #414148;
+  --color-text-primary: #f7f7f8;
+  --color-text-secondary: #b6b6be;
+  --color-text-muted: #777780;
+  --color-action: #f4f4f5;
+  --color-action-hover: #ffffff;
+  --color-action-foreground: #09090b;
+  --color-action-secondary: #1b1b1f;
+  --color-focus: #d4d4d8;
+  --color-success: #4ade80;
+  --color-success-soft: #14281c;
+  --color-danger: #f87171;
+  --color-danger-soft: #301719;
+  --color-warning: #fbbf24;
+  --color-warning-soft: #2d2411;
+  --color-info: #818cf8;
+  --color-info-soft: #1c1d38;
+
+  /* Legacy brand utilities resolve to monochrome until call sites migrate. */
+  --color-emerald-50: #18181b;
+  --color-emerald-100: #27272a;
+  --color-emerald-200: #d4d4d8;
+  --color-emerald-300: #e4e4e7;
+  --color-emerald-400: #f4f4f5;
+  --color-emerald-500: #ffffff;
+  --color-emerald-600: #e4e4e7;
+  --color-emerald-700: #d4d4d8;
+  --color-emerald-800: #a1a1aa;
+  --color-emerald-950: #fafafa;
+}
+
 :root {
-  --background: #050505;
-  --foreground: #fafafa;
+  --background: var(--color-canvas);
+  --foreground: var(--color-text-primary);
+  color-scheme: dark;
 }
 
 * {
@@ -29,7 +66,7 @@ select {
 }
 
 ::selection {
-  background: rgba(52, 211, 153, 0.35);
+  background: rgba(255, 255, 255, 0.22);
 }
 
 .bg-white {
@@ -74,36 +111,19 @@ select {
 input,
 textarea,
 select {
-  background-color: rgba(9, 9, 11, 0.86);
-  color: #fafafa;
-  border-color: rgba(255, 255, 255, 0.12);
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+  border-color: var(--color-border);
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: #71717a;
+  color: var(--color-text-muted);
 }
 
 option {
-  background-color: #09090b;
-  color: #fafafa;
-}
-
-.bg-emerald-50 {
-  background-color: rgba(6, 78, 59, 0.35);
-}
-
-.border-emerald-100,
-.border-emerald-200,
-.border-emerald-300 {
-  border-color: rgba(52, 211, 153, 0.32);
-}
-
-.text-emerald-600,
-.text-emerald-700,
-.text-emerald-800,
-.text-emerald-950 {
-  color: #6ee7b7;
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
 }
 
 .bg-amber-50,

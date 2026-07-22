@@ -77,7 +77,7 @@ export function EditWorkoutForm({ workout }: EditWorkoutFormProps) {
           setOpenedAt(Date.now());
           setIsOpen(true);
         }}
-        className="min-h-11 min-w-0 flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-bold text-neutral-300 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/40 sm:flex-none sm:text-sm"
+        className="min-h-11 min-w-0 flex-1 rounded-xl border border-border bg-action-secondary px-3 py-2 text-xs font-bold text-text-secondary transition hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus sm:flex-none sm:text-sm"
       >
         Edit workout
       </button>
@@ -116,7 +116,7 @@ export function EditWorkoutForm({ workout }: EditWorkoutFormProps) {
             name="title"
             maxLength={100}
             defaultValue={workout.title}
-            className="mt-2 w-full rounded-xl border border-neutral-300 px-3 py-3 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+            className="mt-2 w-full rounded-xl border border-border px-3 py-3 outline-none transition focus:border-focus focus:ring-2 focus:ring-focus/30"
             required
           />
         </div>
@@ -130,7 +130,7 @@ export function EditWorkoutForm({ workout }: EditWorkoutFormProps) {
             name="date"
             type="date"
             defaultValue={toDateInputValue(workout.date)}
-            className="mt-2 w-full rounded-xl border border-neutral-300 px-3 py-3 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+            className="mt-2 w-full rounded-xl border border-border px-3 py-3 outline-none transition focus:border-focus focus:ring-2 focus:ring-focus/30"
             required
           />
         </div>
@@ -143,7 +143,7 @@ export function EditWorkoutForm({ workout }: EditWorkoutFormProps) {
             id="goal"
             name="goal"
             defaultValue={workout.goal ?? ""}
-            className="mt-2 w-full rounded-xl border border-neutral-300 px-3 py-3 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+            className="mt-2 w-full rounded-xl border border-border px-3 py-3 outline-none transition focus:border-focus focus:ring-2 focus:ring-focus/30"
           >
             <option value="">No specific goal</option>
             <option value="Hypertrophy">Hypertrophy</option>
@@ -165,7 +165,7 @@ export function EditWorkoutForm({ workout }: EditWorkoutFormProps) {
             rows={4}
             defaultValue={workout.notes ?? ""}
             placeholder="How did the session feel? Any pain, fatigue, or changes?"
-            className="mt-2 w-full rounded-xl border border-neutral-300 px-3 py-3 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+            className="mt-2 w-full rounded-xl border border-border px-3 py-3 outline-none transition focus:border-focus focus:ring-2 focus:ring-focus/30"
           />
         </div>
 
@@ -174,8 +174,8 @@ export function EditWorkoutForm({ workout }: EditWorkoutFormProps) {
             role={state.status === "error" ? "alert" : "status"}
             className={`rounded-2xl border px-4 py-3 text-sm font-bold leading-6 ${
               state.status === "success"
-                ? "border-emerald-300/25 bg-emerald-50 text-emerald-700"
-                : "border-red-300/25 bg-red-50 text-red-700"
+                ? "border-success/25 bg-success-soft text-success"
+                : "border-danger/25 bg-danger-soft text-danger"
             }`}
           >
             {state.message}

@@ -94,7 +94,7 @@ export function ExerciseProgressChart({ points }: ExerciseProgressChartProps) {
             d={path}
             fill="none"
             stroke="currentColor"
-            className="text-emerald-500"
+            className="text-info"
             strokeWidth="4"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -118,7 +118,7 @@ export function ExerciseProgressChart({ points }: ExerciseProgressChartProps) {
                   cy={y}
                   r="6"
                   fill="currentColor"
-                  className="text-emerald-500"
+                  className="text-info"
                 />
                 <text
                   x={x}

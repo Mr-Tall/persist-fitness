@@ -4,11 +4,15 @@ export type VolumeSet = {
 };
 
 export type VolumeExercise = {
+  trackingType?: string | null;
   sets: VolumeSet[];
 };
 
 export function calculateWorkoutVolume(exercises: VolumeExercise[]) {
   return exercises.reduce((total, exercise) => {
+    if (normalizeTrackingType(exercise.trackingType) !== "weight_reps") {
+      return total;
+    }
     return (
       total +
       exercise.sets.reduce((setTotal, set) => {
@@ -49,3 +53,4 @@ export function formatWorkoutDuration(
 
   return `${hours}h ${minutes}m`;
 }
+import { normalizeTrackingType } from "@/lib/exercise-tracking";

@@ -5,10 +5,12 @@ import ProgressLoading from "./loading";
 
 const progressSections = [
   "progress-header",
-  "weekly-momentum",
-  "lifetime-summary",
-  "top-lift",
-  "personal-records",
+  "overview",
+  "performance-trends",
+  "top-lifts",
+  "recent-personal-records",
+  "muscle-distribution",
+  "biggest-improvements",
   "recent-training",
 ];
 
@@ -34,12 +36,8 @@ describe("ProgressLoading", () => {
       ).toBeTruthy();
     }
 
-    expect(
-      mobileSkeleton.querySelectorAll('[data-skeleton="personal-record-row"]'),
-    ).toHaveLength(3);
-    expect(
-      mobileSkeleton.querySelectorAll('[data-skeleton="recent-training-row"]'),
-    ).toHaveLength(2);
+    expect(mobileSkeleton.querySelector('[data-skeleton="overview"]')).toBeInTheDocument();
+    expect(mobileSkeleton.querySelector('[data-skeleton="performance-trends"]')).toBeInTheDocument();
   });
 
   it("uses one accessible loading region and hides decorative placeholders", () => {

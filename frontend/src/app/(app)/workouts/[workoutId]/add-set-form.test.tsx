@@ -89,6 +89,20 @@ describe("AddSetForm", () => {
     vi.mocked(toast.error).mockClear();
   });
 
+  it.each([
+    ["weight_reps", ["Weight", "Reps"], ["Minutes", "Distance"]],
+    ["reps_only", ["Reps"], ["Weight", "Minutes", "Distance"]],
+    ["time", ["Minutes", "Seconds"], ["Weight", "Reps", "Distance"]],
+    ["distance", ["Distance", "Unit"], ["Weight", "Reps", "Minutes"]],
+    ["distance_time", ["Distance", "Unit", "Minutes", "Seconds"], ["Weight", "Reps"]],
+  ])("renders only the relevant %s tracking inputs", (trackingType, present, absent) => {
+    renderComposer({ trackingType });
+
+    present.forEach((label) => expect(screen.getByLabelText(label)).toBeVisible());
+    absent.forEach((label) => expect(screen.queryByLabelText(label)).not.toBeInTheDocument());
+    expect(screen.getByLabelText("Notes")).toBeInTheDocument();
+  });
+
   it("leaves the first set composer empty", () => {
     const prefill = getLatestSetPrefill([]);
     renderComposer({ prefill });

@@ -4,6 +4,8 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { WorkoutMobileBar } from "./workout-mobile-bar";
+import { RestTimer } from "./rest-timer";
+import { WorkoutExperienceProvider } from "./workout-experience-provider";
 
 vi.mock("@/app/actions/workouts", () => ({
   finishWorkout: vi.fn(),
@@ -127,6 +129,36 @@ describe("WorkoutMobileBar", () => {
     ).toBeVisible();
   });
 
+  it("shows a running rest timer and opens its controls from the dock", async () => {
+    const user = userEvent.setup();
+    mockScrollIntoView();
+    render(
+      <WorkoutExperienceProvider>
+        <RestTimer />
+        <WorkoutMobileBar
+          workoutId="workout-1"
+          workoutStatus="active"
+          totalSets={7}
+          duration="In progress"
+        />
+      </WorkoutExperienceProvider>,
+    );
+
+    const timerPanel = screen.getByText("Rest timer").closest("details");
+    expect(timerPanel).not.toHaveAttribute("open");
+    await user.click(screen.getByText("Timer controls"));
+    await user.click(screen.getByRole("button", { name: "Start" }));
+    await user.click(screen.getByText(/Running/));
+
+    const dockTimer = screen.getByRole("button", {
+      name: /Rest timer 2:00, open controls/,
+    });
+    expect(timerPanel).not.toHaveAttribute("open");
+    await user.click(dockTimer);
+    expect(timerPanel).toHaveAttribute("open");
+    await waitFor(() => expect(timerPanel?.querySelector("summary")).toHaveFocus());
+  });
+
   it("preserves lifecycle form wiring and the workout identifier", () => {
     render(
       <WorkoutMobileBar
@@ -200,7 +232,9 @@ describe("WorkoutMobileBar", () => {
     expect(appLayout).toContain(
       "pb-[calc(5rem+env(safe-area-inset-bottom))]"
     );
-    expect(workoutPage).toContain("px-4 pb-28 pt-6");
+    expect(workoutPage).toContain(
+      "pb-[calc(var(--mobile-nav-height)_+_7rem)]",
+    );
   });
 
   it("hides for a meaningful Visual Viewport reduction while an Add Set field is focused", async () => {

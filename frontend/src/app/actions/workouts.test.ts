@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => {
     redirectError,
     requireUserId: vi.fn(),
     coordinateActiveWorkout: vi.fn(),
+    advanceProgram: vi.fn(),
     createInTransaction: vi.fn(),
     updateWorkout: vi.fn(),
     updateWorkoutInTransaction: vi.fn(),
@@ -35,6 +36,10 @@ vi.mock("@/lib/auth/require-user", () => ({
 
 vi.mock("@/lib/workouts/active-workout-coordinator", () => ({
   coordinateActiveWorkout: mocks.coordinateActiveWorkout,
+}));
+
+vi.mock("@/lib/program-progress", () => ({
+  advanceProgramForCompletedWorkout: mocks.advanceProgram,
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -99,6 +104,7 @@ describe("workout creation coordination", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.requireUserId.mockResolvedValue("user_1");
+    mocks.advanceProgram.mockResolvedValue({ advanced: false, completed: false });
     mocks.redirect.mockImplementation(() => {
       throw mocks.redirectError;
     });
@@ -291,6 +297,7 @@ describe("workout lifecycle transitions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.requireUserId.mockResolvedValue("user_1");
+    mocks.advanceProgram.mockResolvedValue({ advanced: false, completed: false });
     mocks.redirect.mockImplementation(() => {
       throw mocks.redirectError;
     });
@@ -316,7 +323,9 @@ describe("workout lifecycle transitions", () => {
       ["/workouts/workout_1"],
       ["/workouts"],
       ["/dashboard"],
+      ["/programs"],
     ]);
+    expect(mocks.advanceProgram).toHaveBeenCalledWith("user_1", "workout_1");
   });
 
   it("treats a completed workout as an idempotent finish retry", async () => {
@@ -340,7 +349,8 @@ describe("workout lifecycle transitions", () => {
         finishedAt: true,
       },
     });
-    expect(mocks.revalidatePath).toHaveBeenCalledTimes(3);
+    expect(mocks.revalidatePath).toHaveBeenCalledTimes(4);
+    expect(mocks.advanceProgram).toHaveBeenCalledWith("user_1", "workout_1");
   });
 
   it("returns not-found when finishing a missing or cross-user workout", async () => {

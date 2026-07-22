@@ -17,10 +17,10 @@ export function CompletionSummary({
   personalRecordCount,
 }: CompletionSummaryProps) {
   return (
-    <Card variant="emerald" className="mt-6 p-5 sm:p-6">
+    <Card variant="success" className="mt-6 p-5 sm:p-6">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-300">
+          <p className="text-xs font-black uppercase tracking-[0.24em] text-success">
             Workout complete
           </p>
 
@@ -34,7 +34,7 @@ export function CompletionSummary({
           </p>
         </div>
 
-        <MetricBadge variant="emerald">Completed</MetricBadge>
+        <MetricBadge variant="success">Completed</MetricBadge>
       </div>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-5">

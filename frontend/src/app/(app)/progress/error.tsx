@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
+import { ErrorReference } from "@/components/observability/error-reference";
 
 export default function ProgressError({
   error,
@@ -26,7 +27,7 @@ export default function ProgressError({
         className="max-w-xl rounded-3xl border border-white/10 bg-white/[0.05] p-5 shadow-[0_18px_60px_rgba(0,0,0,0.2)] sm:p-7"
         role="alert"
       >
-        <p className="text-xs font-semibold tracking-[0.16em] text-emerald-300 uppercase">
+        <p className="text-xs font-semibold tracking-[0.16em] text-text-secondary uppercase">
           Progress
         </p>
         <h1
@@ -38,17 +39,18 @@ export default function ProgressError({
         <p className="mt-3 max-w-md text-sm leading-6 text-slate-300">
           Your workout history is still safe. Try loading your progress again.
         </p>
+        <ErrorReference error={error} />
 
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
           <Button
-            className="min-h-12 w-full bg-emerald-400 text-slate-950 hover:bg-emerald-300 focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 sm:w-auto"
+            className="min-h-12 w-full bg-action text-action-foreground hover:bg-action-hover focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas sm:w-auto"
             onClick={reset}
             type="button"
           >
             Try again
           </Button>
           <Link
-            className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-white/15 px-4 py-2 text-sm font-semibold text-slate-200 transition-colors hover:border-white/25 hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 sm:w-auto"
+            className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-border px-4 py-2 text-sm font-semibold text-text-secondary transition-colors hover:border-border-strong hover:bg-action-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas sm:w-auto"
             href="/workouts"
           >
             View workouts

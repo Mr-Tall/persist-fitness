@@ -4,6 +4,7 @@ import { requireUserId } from "@/lib/auth/require-user";
 import { formatWorkoutDate } from "@/lib/format-date";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
+import { OfflineWorkoutGarbageCollector } from "./offline-workout-garbage-collector";
 
 export default async function WorkoutsPage() {
   const userId = await requireUserId();
@@ -26,6 +27,10 @@ export default async function WorkoutsPage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
+      <OfflineWorkoutGarbageCollector
+        userId={userId}
+        activeWorkoutIds={workouts.filter((workout) => workout.status === "active").map((workout) => workout.id)}
+      />
       <PageHeader
         eyebrow="Workouts"
         title="Training log"
@@ -47,7 +52,7 @@ export default async function WorkoutsPage() {
           action={
             <Link
               href="/workouts/new"
-              className="inline-block rounded-xl bg-emerald-500 px-5 py-3 font-semibold text-white hover:bg-emerald-600"
+              className="inline-block rounded-xl bg-action px-5 py-3 font-semibold text-action-foreground hover:bg-action-hover"
             >
               Log first workout
             </Link>

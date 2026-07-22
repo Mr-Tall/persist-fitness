@@ -32,7 +32,7 @@ export default async function RoutinesPage() {
   return (
     <main className="mx-auto max-w-5xl px-4 pb-10 pt-4 sm:px-6 sm:py-10">
       <header className="px-1">
-        <p className="text-xs font-black tracking-[0.24em] text-emerald-300 uppercase">
+        <p className="text-xs font-black tracking-[0.24em] text-text-secondary uppercase">
           Routines
         </p>
         <h1 className="mt-1 text-3xl font-black tracking-tight text-white sm:mt-2 sm:text-5xl">
@@ -41,12 +41,18 @@ export default async function RoutinesPage() {
         <p className="mt-1 max-w-2xl text-sm leading-6 text-neutral-400 sm:mt-2 sm:text-base">
           Build reusable plans and get into your next workout faster.
         </p>
-        <div className="mt-4 sm:mt-5">
+        <div className="mt-4 flex flex-col gap-2 sm:mt-5 sm:flex-row">
           <Link
-            className="inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-emerald-400 px-5 py-3 font-bold text-black transition hover:bg-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950 sm:w-auto"
+            className="inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-action px-5 py-3 font-bold text-action-foreground transition-colors hover:bg-action-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas sm:w-auto"
             href="/routines/new"
           >
             Create routine
+          </Link>
+          <Link
+            className="inline-flex min-h-12 w-full items-center justify-center rounded-2xl border border-border bg-action-secondary px-5 py-3 font-bold text-text-primary hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus sm:w-auto"
+            href="/programs"
+          >
+            Browse programs
           </Link>
         </div>
       </header>
@@ -58,7 +64,7 @@ export default async function RoutinesPage() {
             description="Create your first routine, add planned exercises, then start it whenever you are ready to train."
             action={
               <Link
-                className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-emerald-400 px-5 py-3 font-bold text-black transition hover:bg-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950"
+                className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-action px-5 py-3 font-bold text-action-foreground transition-colors hover:bg-action-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
                 href="/routines/new"
               >
                 Create routine
@@ -135,7 +141,7 @@ export default async function RoutinesPage() {
                         <input name="routineId" type="hidden" value={routine.id} />
                         <button
                           aria-label={`Start ${routine.title} workout`}
-                          className="inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-emerald-400 px-4 py-3 text-sm font-black text-black transition hover:bg-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950"
+                          className="inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-action px-4 py-3 text-sm font-black text-action-foreground transition-colors hover:bg-action-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
                           type="submit"
                         >
                           Start workout
@@ -145,7 +151,7 @@ export default async function RoutinesPage() {
                       <div className="grid grid-cols-2 gap-2">
                         <Link
                           aria-label={`Edit ${routine.title} routine`}
-                          className="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-center text-sm font-bold text-white transition hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950"
+                          className="inline-flex min-h-11 items-center justify-center rounded-xl border border-border bg-action-secondary px-3 py-2 text-center text-sm font-bold text-text-primary transition hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
                           href={`/routines/${routine.id}`}
                         >
                           Edit

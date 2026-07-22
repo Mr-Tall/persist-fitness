@@ -15,6 +15,7 @@ import {
   type OnboardingFormState,
 } from "@/app/actions/onboarding";
 import { AccessibleDialog } from "@/components/ui/accessible-dialog";
+import { captureProductEvent } from "@/lib/analytics/client";
 
 const initialState: OnboardingFormState = {
   status: "idle",
@@ -72,6 +73,7 @@ export function FirstTimeOnboarding({
       const result = await completeOnboarding(previousState, formData);
 
       if (result.status === "success") {
+        captureProductEvent("onboarding_completed", { goal_selected: Boolean(goal) }, { onceKey: "onboarding" });
         setIsVisible(false);
 
         if (intent === "create-workout") {
@@ -83,6 +85,10 @@ export function FirstTimeOnboarding({
     },
     initialState,
   );
+
+  useEffect(() => {
+    captureProductEvent("onboarding_started", {}, { onceKey: "onboarding" });
+  }, []);
 
   useEffect(() => {
     if (!isVisible) {
@@ -118,7 +124,7 @@ export function FirstTimeOnboarding({
           <input type="hidden" name="goal" value={goal} />
 
           <header className="flex shrink-0 items-center justify-between gap-4 border-b border-white/10 px-5 py-4">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-300">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-text-secondary">
               Step {step} of 3
             </p>
             <button
@@ -127,7 +133,7 @@ export function FirstTimeOnboarding({
               name="intent"
               value="skip"
               disabled={isPending}
-              className="min-h-11 rounded-xl px-3 text-sm font-bold text-neutral-300 transition hover:bg-white/[0.06] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 disabled:opacity-60"
+              className="min-h-11 rounded-xl px-3 text-sm font-bold text-text-secondary transition-colors hover:bg-action-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:opacity-60"
             >
               Skip onboarding
             </button>
@@ -136,7 +142,7 @@ export function FirstTimeOnboarding({
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-6 sm:px-7">
             {step === 1 && (
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-300">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-text-secondary">
                   Welcome to Persist
                 </p>
                 <h2
@@ -163,7 +169,7 @@ export function FirstTimeOnboarding({
                       >
                         <span
                           aria-hidden="true"
-                          className="flex size-7 shrink-0 items-center justify-center rounded-full bg-emerald-400/15 text-emerald-300"
+                          className="flex size-7 shrink-0 items-center justify-center rounded-full bg-action-secondary text-text-primary"
                         >
                           ✓
                         </span>
@@ -177,7 +183,7 @@ export function FirstTimeOnboarding({
 
             {step === 2 && (
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-300">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-text-secondary">
                   Your direction
                 </p>
                 <h2
@@ -201,9 +207,9 @@ export function FirstTimeOnboarding({
                         type="button"
                         aria-pressed={isSelected}
                         onClick={() => setGoal(option.value)}
-                        className={`min-h-14 rounded-2xl border px-4 py-3 text-left text-base font-black transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 ${
+                        className={`min-h-14 rounded-2xl border px-4 py-3 text-left text-base font-black transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus ${
                           isSelected
-                            ? "border-emerald-300/50 bg-emerald-400/15 text-emerald-100"
+                            ? "border-border-strong bg-surface-elevated text-text-primary"
                             : "border-white/10 bg-white/[0.05] text-white hover:bg-white/[0.09]"
                         }`}
                       >
@@ -217,7 +223,7 @@ export function FirstTimeOnboarding({
 
             {step === 3 && (
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-300">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-text-secondary">
                   Ready to train
                 </p>
                 <h2
@@ -232,8 +238,8 @@ export function FirstTimeOnboarding({
                   Start with a title and add exercises as you train. You can keep it simple.
                 </p>
 
-                <div className="mt-7 rounded-3xl border border-emerald-300/25 bg-emerald-400/[0.08] p-5">
-                  <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-300">
+                <div className="mt-7 rounded-3xl border border-border-strong bg-surface-elevated p-5">
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-text-secondary">
                     First step
                   </p>
                   <p className="mt-2 text-xl font-black text-white">First Workout</p>
@@ -248,7 +254,7 @@ export function FirstTimeOnboarding({
               <p
                 id={messageId}
                 role="alert"
-                className="mt-5 rounded-2xl border border-red-300/25 bg-red-400/[0.08] px-4 py-3 text-sm font-bold leading-6 text-red-200"
+                className="mt-5 rounded-2xl border border-danger/25 bg-danger-soft px-4 py-3 text-sm font-bold leading-6 text-danger"
               >
                 {state.message}
               </p>
@@ -260,7 +266,7 @@ export function FirstTimeOnboarding({
               <button
                 type="button"
                 onClick={() => setStep(2)}
-                className="min-h-12 w-full rounded-2xl bg-emerald-400 px-5 py-3 font-black text-black transition hover:bg-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950"
+                className="min-h-12 w-full rounded-2xl bg-action px-5 py-3 font-black text-action-foreground transition-colors hover:bg-action-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
               >
                 Continue
               </button>
@@ -274,14 +280,14 @@ export function FirstTimeOnboarding({
                     setGoal("");
                     setStep(3);
                   }}
-                  className="min-h-12 rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm font-black text-neutral-200 transition hover:bg-white/[0.09] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
+                  className="min-h-12 rounded-2xl border border-border bg-action-secondary px-4 py-3 text-sm font-black text-text-secondary transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
                 >
                   Skip goal
                 </button>
                 <button
                   type="button"
                   onClick={() => setStep(3)}
-                  className="min-h-12 rounded-2xl bg-emerald-400 px-4 py-3 text-sm font-black text-black transition hover:bg-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200"
+                  className="min-h-12 rounded-2xl bg-action px-4 py-3 text-sm font-black text-action-foreground transition-colors hover:bg-action-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
                 >
                   Continue
                 </button>
@@ -295,7 +301,7 @@ export function FirstTimeOnboarding({
                   name="intent"
                   value="create-workout"
                   disabled={isPending}
-                  className="min-h-12 rounded-2xl bg-emerald-400 px-5 py-3 font-black text-black transition hover:bg-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 disabled:opacity-60"
+                  className="min-h-12 rounded-2xl bg-action px-5 py-3 font-black text-action-foreground transition-colors hover:bg-action-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:opacity-60"
                 >
                   {isPending ? "Saving..." : "Create Workout"}
                 </button>
@@ -304,7 +310,7 @@ export function FirstTimeOnboarding({
                   name="intent"
                   value="skip"
                   disabled={isPending}
-                  className="min-h-12 rounded-2xl px-5 py-3 text-sm font-bold text-neutral-300 transition hover:bg-white/[0.06] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 disabled:opacity-60"
+                  className="min-h-12 rounded-2xl px-5 py-3 text-sm font-bold text-text-secondary transition-colors hover:bg-action-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus disabled:opacity-60"
                 >
                   Skip for now
                 </button>

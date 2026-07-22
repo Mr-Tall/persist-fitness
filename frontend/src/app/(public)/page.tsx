@@ -4,7 +4,7 @@ export default function HomePage() {
   return (
     <main className="bg-neutral-950 text-white">
       <section className="mx-auto flex min-h-[calc(100vh-73px)] max-w-6xl flex-col justify-center px-5 py-12 sm:px-6 sm:py-20">
-        <p className="mb-4 text-xs font-semibold uppercase tracking-[0.3em] text-emerald-400 sm:text-sm">
+        <p className="mb-4 text-xs font-semibold uppercase tracking-[0.3em] text-text-secondary sm:text-sm">
           Persist Fitness
         </p>
 
@@ -19,7 +19,7 @@ export default function HomePage() {
         <div className="mt-8 grid gap-3 sm:flex sm:flex-wrap">
           <Link
             href="/login"
-            className="rounded-2xl bg-emerald-400 px-5 py-3 text-center font-semibold text-neutral-950 transition hover:bg-emerald-300"
+            className="rounded-2xl bg-action px-5 py-3 text-center font-semibold text-action-foreground transition hover:bg-action-hover"
           >
             Start with Google
           </Link>

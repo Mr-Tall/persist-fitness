@@ -1,24 +1,28 @@
 import Link from "next/link";
 import { MobileNav } from "@/components/navigation/mobile-nav";
 import { requireUserSession } from "@/lib/auth/require-user";
+import { ObservabilityIdentity } from "@/components/observability/observability-identity";
+import { recordCurrentSessionActivity } from "@/lib/auth/session-management";
 
 export default async function AppLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  await requireUserSession();
+  const session = await requireUserSession();
+  await recordCurrentSessionActivity(session);
 
   return (
     <>
-      <header className="sticky top-0 z-40 hidden border-b border-white/10 bg-black/55 backdrop-blur-xl md:block">
+      <ObservabilityIdentity userId={session.user.id} />
+      <header className="sticky top-0 z-40 hidden border-b border-border bg-canvas/80 backdrop-blur-xl md:block">
         <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-6">
           <Link
             href="/dashboard"
-            className="rounded-lg text-lg font-black tracking-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+            className="rounded-lg text-lg font-black tracking-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
           >
             <span className="text-white">Persist</span>{" "}
-            <span className="text-emerald-400">Fitness</span>
+            <span className="text-text-secondary">Fitness</span>
           </Link>
 
           <div className="hidden items-center gap-5 text-sm font-medium text-neutral-300 md:flex">
