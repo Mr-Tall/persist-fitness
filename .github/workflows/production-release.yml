@@ -1,0 +1,126 @@
+name: Persist Fitness Production Release
+
+on:
+  workflow_run:
+    workflows:
+      - Persist Fitness CI
+    types:
+      - completed
+
+permissions:
+  contents: read
+
+concurrency:
+  group: persist-fitness-production-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Migrate, deploy, and smoke test
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_ORIGIN }}
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      VERCEL_TELEMETRY_DISABLED: "1"
+
+    steps:
+      - name: Checkout the validated commit
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate and validate Prisma client
+        run: |
+          npm run prisma:generate
+          npm run prisma:validate
+        env:
+          DATABASE_URL: postgresql://release:release@127.0.0.1:5432/not_connected
+          DIRECT_URL: postgresql://release:release@127.0.0.1:5432/not_connected
+
+      - name: Verify Vercel production access
+        working-directory: .
+        run: >-
+          npx --yes vercel@56.5.0 project inspect
+          --yes
+          --no-color
+          --token="$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Surface pre-deploy migration status
+        id: migration-preflight
+        shell: bash
+        run: |
+          set +e
+          npm run prisma:status
+          status_code="$?"
+          set -e
+          echo "status_code=$status_code" >> "$GITHUB_OUTPUT"
+          if [ "$status_code" -ne 0 ]; then
+            echo "::notice::Pending or incomplete migrations were detected. prisma migrate deploy will resolve pending migrations or stop the release."
+          fi
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+
+      - name: Apply production migrations
+        run: npm run prisma:deploy
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+
+      - name: Confirm production migration status
+        run: npm run prisma:status
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+
+      - name: Deploy validated commit to Vercel Production
+        shell: bash
+        working-directory: .
+        run: |
+          deployment_url="$(
+            npx --yes vercel@56.5.0 deploy \
+              --prod \
+              --yes \
+              --no-color \
+              --archive=tgz \
+              --token="$VERCEL_TOKEN" \
+              --meta githubDeployment=1 \
+              --meta githubCommitRef=main \
+              --meta githubCommitSha="${{ github.event.workflow_run.head_sha }}" \
+              --meta githubOrg="${{ github.repository_owner }}" \
+              --meta githubRepo="${{ github.event.repository.name }}"
+          )"
+          echo "Production deployment completed: $deployment_url"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Run non-destructive production smoke tests
+        run: npm run release:smoke -- --origin "$PRODUCTION_ORIGIN"
+        env:
+          PRODUCTION_ORIGIN: ${{ vars.PRODUCTION_ORIGIN }}

@@ -6,15 +6,84 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   quality:
-    name: Quality and migration checks
+    name: Code and schema validation
     runs-on: ubuntu-latest
-
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: frontend
+    env:
+      # These values are syntactically valid but are never connected to production.
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/persist_fitness_not_connected
+      DIRECT_URL: postgresql://ci:ci@127.0.0.1:5432/persist_fitness_not_connected
+      AUTH_SECRET: persist-fitness-ci-only-placeholder-secret
+      AUTH_GOOGLE_ID: ci-placeholder-google-id
+      AUTH_GOOGLE_SECRET: ci-placeholder-google-secret
+      AUTH_URL: http://localhost:3000
+      NEXTAUTH_URL: http://localhost:3000
 
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run prisma:generate
+
+      - name: Validate Prisma schema
+        run: npm run prisma:validate
+
+      - name: Require migration SQL for database schema changes
+        if: github.event_name == 'pull_request'
+        run: npm run prisma:check-migration -- --base "$BASE_SHA" --head "$HEAD_SHA"
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PRISMA_SCHEMA_OVERRIDE: ${{ contains(github.event.pull_request.labels.*.name, 'prisma-no-migration') }}
+          PRISMA_SCHEMA_CHANGE_JUSTIFICATION: Maintainer approved via the prisma-no-migration pull request label.
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Test
+        run: npm run test
+
+      - name: Build production application
+        run: npm run build
+
+  migration-history:
+    name: Disposable migration history
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
     services:
       postgres:
         image: postgres:17
@@ -29,19 +98,15 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
-
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/persist_fitness_ci
       DIRECT_URL: postgresql://postgres:postgres@localhost:5432/persist_fitness_ci
-      AUTH_SECRET: persist-fitness-ci-only-placeholder-secret
-      AUTH_GOOGLE_ID: ci-placeholder-google-id
-      AUTH_GOOGLE_SECRET: ci-placeholder-google-secret
-      AUTH_URL: http://localhost:3000
-      NEXTAUTH_URL: http://localhost:3000
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js
         uses: actions/setup-node@v5
@@ -53,11 +118,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Validate Prisma schema
-        run: npm run db:validate
+      - name: Generate and validate Prisma client
+        run: |
+          npm run prisma:generate
+          npm run prisma:validate
 
-      - name: Apply migrations to disposable database
-        run: npm run db:migrate:deploy
+      - name: Apply migration history to disposable PostgreSQL
+        run: npm run prisma:deploy
 
       - name: Verify one-active-workout partial unique index
         shell: bash
@@ -66,12 +133,9 @@ jobs:
             psql --dbname="$DIRECT_URL" --no-psqlrc --tuples-only --no-align --set ON_ERROR_STOP=1 --command "
               SELECT COUNT(*)
               FROM pg_index AS index_data
-              JOIN pg_class AS index_class
-                ON index_class.oid = index_data.indexrelid
-              JOIN pg_class AS table_data
-                ON table_data.oid = index_data.indrelid
-              JOIN pg_namespace AS schema_data
-                ON schema_data.oid = table_data.relnamespace
+              JOIN pg_class AS index_class ON index_class.oid = index_data.indexrelid
+              JOIN pg_class AS table_data ON table_data.oid = index_data.indrelid
+              JOIN pg_namespace AS schema_data ON schema_data.oid = table_data.relnamespace
               WHERE schema_data.nspname = 'public'
                 AND table_data.relname = 'Workout'
                 AND index_class.relname = 'Workout_one_active_per_user_key'
@@ -81,8 +145,7 @@ jobs:
                 AND index_data.indnkeyatts = 1
                 AND (
                   SELECT array_agg(attribute_data.attname ORDER BY key_data.ordinality)
-                  FROM unnest(index_data.indkey) WITH ORDINALITY
-                    AS key_data(attnum, ordinality)
+                  FROM unnest(index_data.indkey) WITH ORDINALITY AS key_data(attnum, ordinality)
                   JOIN pg_attribute AS attribute_data
                     ON attribute_data.attrelid = table_data.oid
                    AND attribute_data.attnum = key_data.attnum
@@ -92,12 +155,10 @@ jobs:
                   '(status = ''active''::text)';
             "
           )"
-          index_count="$(printf '%s' "$index_count" | tr -d '[:space:]')"
-
-          if [ "$index_count" != "1" ]; then
+          test "$(printf '%s' "$index_count" | tr -d '[:space:]')" = "1" || {
             echo "Expected the one-active-workout partial unique index."
             exit 1
-          fi
+          }
 
       - name: Verify one-active-program partial unique index
         shell: bash
@@ -106,12 +167,9 @@ jobs:
             psql --dbname="$DIRECT_URL" --no-psqlrc --tuples-only --no-align --set ON_ERROR_STOP=1 --command "
               SELECT COUNT(*)
               FROM pg_index AS index_data
-              JOIN pg_class AS index_class
-                ON index_class.oid = index_data.indexrelid
-              JOIN pg_class AS table_data
-                ON table_data.oid = index_data.indrelid
-              JOIN pg_namespace AS schema_data
-                ON schema_data.oid = table_data.relnamespace
+              JOIN pg_class AS index_class ON index_class.oid = index_data.indexrelid
+              JOIN pg_class AS table_data ON table_data.oid = index_data.indrelid
+              JOIN pg_namespace AS schema_data ON schema_data.oid = table_data.relnamespace
               WHERE schema_data.nspname = 'public'
                 AND table_data.relname = 'ProgramEnrollment'
                 AND index_class.relname = 'ProgramEnrollment_one_active_per_user_key'
@@ -121,8 +179,7 @@ jobs:
                 AND index_data.indnkeyatts = 1
                 AND (
                   SELECT array_agg(attribute_data.attname ORDER BY key_data.ordinality)
-                  FROM unnest(index_data.indkey) WITH ORDINALITY
-                    AS key_data(attnum, ordinality)
+                  FROM unnest(index_data.indkey) WITH ORDINALITY AS key_data(attnum, ordinality)
                   JOIN pg_attribute AS attribute_data
                     ON attribute_data.attrelid = table_data.oid
                    AND attribute_data.attnum = key_data.attnum
@@ -132,12 +189,10 @@ jobs:
                   '(status = ''active''::text)';
             "
           )"
-          index_count="$(printf '%s' "$index_count" | tr -d '[:space:]')"
-
-          if [ "$index_count" != "1" ]; then
+          test "$(printf '%s' "$index_count" | tr -d '[:space:]')" = "1" || {
             echo "Expected the one-active-program partial unique index."
             exit 1
-          fi
+          }
 
       - name: Verify migration history matches Prisma schema
         run: |
@@ -145,12 +200,3 @@ jobs:
             --from-url "$DIRECT_URL" \
             --to-schema-datamodel prisma/schema.prisma \
             --exit-code
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Test
-        run: npm run test
-
-      - name: Build production application
-        run: npm run build
