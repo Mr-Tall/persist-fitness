@@ -3,6 +3,10 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 Browser-level test setup and commands are documented in
 [`docs/testing/e2e.md`](docs/testing/e2e.md).
 
+Production migration ownership, deployment gating, environment configuration,
+smoke tests, and rollback guidance are documented in
+[`docs/release-checklist.md`](docs/release-checklist.md).
+
 ## Getting Started
 
 First, run the development server:
@@ -33,6 +37,10 @@ To learn more about Next.js, take a look at the following resources:
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
 ## Deploy on Vercel
+
+Production releases are owned by the protected GitHub Actions release workflow.
+Do not add Prisma migration execution to the Vercel Build Command or deploy
+Production directly from a Preview build. Follow the release checklist above.
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
