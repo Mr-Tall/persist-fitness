@@ -38,9 +38,11 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 
 ## Deploy on Vercel
 
-Production releases are owned by the protected GitHub Actions release workflow.
-Do not add Prisma migration execution to the Vercel Build Command or deploy
-Production directly from a Preview build. Follow the release checklist above.
+Vercel Git integration deploys the application from `main`. For a release that
+contains Prisma migrations, a release developer must apply the reviewed
+migrations to Production before merging code that depends on them. Do not add
+Prisma migration execution to the Vercel Build Command, and never migrate
+Production from a Preview deployment. Follow the release checklist above.
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
